@@ -15,7 +15,7 @@ class Planet:
         self.identifier = self.rawdata.get('PlanetIdentifier')
 
         # Init resources
-        allmaterials = fio.request("GET", "/material/allmaterials", cache=-1)
+        allmaterials = fio.request("GET", "/material/allmaterials", cache=60*60*24)
         self.resources = {}
 
         # Create a lookup dictionary for all materials by MaterialId
