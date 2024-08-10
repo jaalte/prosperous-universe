@@ -1,0 +1,12 @@
+# Ignore folders
+/cache/
+/old/
+/__pycache__/
+
+# Ignore the API key file
+apikey.txt
+
+# Ignore some particularly large old files that might be important
+allplanets.json
+allplanets-raw.json
+cx_report_full.csv
