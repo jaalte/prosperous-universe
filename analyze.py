@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import math
 from fio_api import fio
 
 # Global variables
@@ -14,10 +15,82 @@ class Planet:
         self.identifier = self.rawdata.get('PlanetIdentifier')
 
         # Init resources
-        allmaterials = fio.request("GET", f"/material/allmaterials")
+        allmaterials = fio.request("GET", "/material/allmaterials", cache=-1)
         self.resources = {}
+
+        # Create a lookup dictionary for all materials by MaterialId
+        material_lookup = {material['MaterialId']: material for material in allmaterials}
+
+        # Process the resources in rawdata
         for resource in self.rawdata.get('Resources', []):
-        
+            material_id = resource.get('MaterialId')
+            material_data = material_lookup.get(material_id)
+
+            if material_data:
+                ticker = material_data['Ticker']
+                resource_type = resource.get('ResourceType')
+                factor = threshold_round(resource.get('Factor', 0))
+                
+                extractor_type = self.get_extractor_type(resource_type)
+                daily_amount = self.calculate_daily_amount(resource_type, factor)
+                process_hours, process_amount = self.calculate_process_time_and_amount(extractor_type, daily_amount)
+
+                self.resources[ticker] = {
+                    'name': material_data['Name'],
+                    'ticker': ticker,
+                    'category': material_data['CategoryName'],
+                    'weight': threshold_round(material_data['Weight']),
+                    'volume': threshold_round(material_data['Volume']),
+                    'type': resource_type,
+                    'factor': factor,
+                    'extractor_type': extractor_type,
+                    'daily_amount': daily_amount,
+                    'process_amount': process_amount,
+                    'process_hours': process_hours
+                }
+
+    def get_extractor_type(self, resource_type):
+        """Determine the extractor type based on the resource type."""
+        if resource_type == 'GASEOUS':
+            return 'COL'
+        elif resource_type == 'LIQUID':
+            return 'RIG'
+        elif resource_type == 'MINERAL':
+            return 'EXT'
+        else:
+            raise ValueError(f"Unknown resource type: {resource_type}")
+
+    def calculate_daily_amount(self, resource_type, factor):
+        """Calculate the daily extraction amount based on resource type and factor."""
+        if resource_type == 'GASEOUS':
+            return (factor * 100) * 0.6
+        else:  # LIQUID or MINERAL
+            return (factor * 100) * 0.7
+
+    def calculate_process_time_and_amount(self, extractor_type, daily_amount):
+        """Calculate the process hours and process amount based on the extractor type."""
+        if extractor_type == 'COL':
+            base_cycle_time = 6  # hours per cycle
+        elif extractor_type == 'RIG':
+            base_cycle_time = 4.8  # hours per cycle
+        elif extractor_type == 'EXT':
+            base_cycle_time = 12  # hours per cycle
+
+        cycles_per_day = 24 / base_cycle_time
+        base_process_amount = daily_amount / cycles_per_day
+
+        fractional_part = math.ceil(base_process_amount) - base_process_amount
+        if fractional_part > 0:
+            # Adjust the process time based on the fractional part
+            additional_time = base_cycle_time * (fractional_part / base_process_amount)
+            process_hours = base_cycle_time + additional_time
+            process_amount = int(base_process_amount) + 1
+        else:
+            process_hours = base_cycle_time
+            process_amount = int(base_process_amount)
+
+        return threshold_round(process_hours), process_amount
+
 
 class Base:
     def __init__(self, rawdata):
@@ -38,7 +111,15 @@ class Base:
                     self.buildings[ticker] = 1
 
     def __repr__(self):
-        return f"Base(Planet: {self.planet.name}, Buildings: {self.buildings})"
+        return f"Base(Planet: {self.planet.name}, Buildings: {self.buildings}, Resources: {list(self.planet.resources.keys())})"
+
+# Rounds a given value to a specified threshold.
+def threshold_round(val, threshold=1e-5):
+    for decimal_places in range(15):  # Check rounding from 0 to 14 decimal places
+        rounded_value = round(val, decimal_places)
+        if abs(val - rounded_value) < threshold:
+            return rounded_value
+    return val
 
 
 def main():
@@ -53,7 +134,7 @@ def main():
     # For debugging: Print a summary of each base
     for base in bases:
         print(base)
-        print(json.dumps(base.planet.rawdata, indent=2))
+        print(json.dumps(base.planet.resources, indent=2))
 
 if __name__ == "__main__":
     main()
