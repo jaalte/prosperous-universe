@@ -76,6 +76,10 @@ def loadResources(prices_filename='all-prices.csv', materials_filename='material
                         'bidAvail': float(row[f'{MARKET}-BidAvail']) if row[f'{MARKET}-BidAvail'] else None,
                     })
 
+# Helper function to format numbers
+def fm(num):
+    return ('{:.2f}'.format(num)).rstrip('0').rstrip('.') if isinstance(num, float) else str(num)
+
 # Function to parse input string into a list of (quantity, ticker) pairs
 def parse_input(input_string):
     # Find all matches of the pattern: number followed by a ticker
@@ -90,8 +94,10 @@ def estimate_costs_volumes(input_string):
     total_volume = 0
     total_cost = 0
 
-    print(f"{'Resource':<10} {'Count':<6} {'MPU':<6} {'VPU':<6} {'CPU':<8} {'TM':<10} {'TV':<10} {'TC':<10}")
-    print("="*68)
+    line_length = 64
+
+    print(f"{'Ticker':<7} {'Count':<6} {'MPU':<6} {'VPU':<6} {'CPU':<8} {'TM':<8} {'TV':<8} {'TC':<10}")
+    print("="*line_length)
 
     for count, ticker in items:
         if ticker in resources:
@@ -107,10 +113,10 @@ def estimate_costs_volumes(input_string):
             total_volume += tv
             total_cost += tc
 
-            print(f"{ticker:<10} {count:<6} {mpu:<6.2f} {vpu:<6.2f} {cpu:<8.2f} {tm:<10.2f} {tv:<10.2f} {tc:<10.2f}")
+            print(f"{ticker:<7} {count:<6} {fm(mpu):<6} {fm(vpu):<6} {fm(cpu):<8} {fm(tm):<8} {fm(tv):<8} {fm(tc):<10}")
 
-    print("="*68)
-    print(f"{'Total':<44} {total_mass:<10.2f} {total_volume:<10.2f} {total_cost:<10.2f}")
+    print("="*line_length)
+    print(f"{'Total':<37} {fm(total_mass):<8} {fm(total_volume):<8} {fm(total_cost):<10}")
 
 # Main script
 if __name__ == "__main__":
