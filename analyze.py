@@ -101,19 +101,19 @@ class Base:
         self.planet = Planet(planet_id=self.rawdata.get('PlanetId'))
 
         # Extract and count buildings by their ticker
-        self.buildings = {}
+        self.buildingCounts = {}
         for building in rawdata.get('Buildings', []):
             ticker = building.get('BuildingTicker')
             if ticker:
-                if ticker in self.buildings:
-                    self.buildings[ticker] += 1
+                if ticker in self.buildingCounts:
+                    self.buildingCounts[ticker] += 1
                 else:
-                    self.buildings[ticker] = 1
+                    self.buildingCounts[ticker] = 1
         
         # Now we need to aggregate building recipes
         allbuildings = fio.request("GET", f"/building/allbuildings", cache=-1)
         available_recipes = []
-        for building_ticker in list(self.buildings.keys()):
+        for building_ticker in list(self.buildingCounts.keys()):
             if building_ticker == 'COL' or building_ticker == 'RIG' or building_ticker == 'EXT':
                 # Extractors will need to be handled separately based on the planet resources
                 continue
@@ -124,7 +124,7 @@ class Base:
                     recipes = building.get('Recipes', [])
                     for recipe in recipes:
                         recipe["Building"] = building_ticker
-                        recipe["BuildingCount"] = self.buildings[building_ticker]
+                        recipe["BuildingCount"] = self.buildingCounts[building_ticker]
                         available_recipes.append(recipe)
 
         for recipe in available_recipes:
@@ -132,8 +132,11 @@ class Base:
             
             
 
-    def __repr__(self):
-        return f"Base(Planet: {self.planet.name}, Buildings: {self.buildings}, Resources: {list(self.planet.resources.keys())})"
+    def __str__(self):
+        buildings_str = ', '.join([f"{count} {name}" for name, count in self.buildingCounts.items()])
+        resources_str = ', '.join(self.planet.resources.keys())
+        return f"Base ({self.planet.name}):\n  Buildings: {buildings_str}\n  Resources: {resources_str}"
+
 
 # Rounds a given value to a specified threshold.
 def threshold_round(val, threshold=1e-5):
@@ -155,7 +158,7 @@ def main():
 
     # For debugging: Print a summary of each base
     for base in bases:
-        print(base)
+        print(f"\n{base}\n")
         #print(json.dumps(base.planet.resources, indent=2))
 
 if __name__ == "__main__":
