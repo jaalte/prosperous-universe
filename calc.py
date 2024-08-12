@@ -15,7 +15,6 @@ def load_resources():
 
     # Fetch materials data
     materials = fio.request("GET", "/material/allmaterials", cache=60*60*24)
-    
 
     # Initialize resources with materials data
     for material in materials:
@@ -68,10 +67,25 @@ def fm(num):
 
 # Function to parse input string into a list of (quantity, ticker) pairs
 def parse_input(input_string):
-    # Find all matches of the pattern: number followed by a ticker
-    matches = re.findall(r'(\d+)\s*x?\s*([A-Z]+)', input_string)
-    return [(int(quantity), ticker) for quantity, ticker in matches]
+    # Sort tickers by length in descending order to prioritize longer tickers
+    sorted_tickers = sorted(resources.keys(), key=len, reverse=True)
 
+    # Create a regex pattern that matches any of the tickers
+    pattern = r'\b(\d+)\s*x?\s*({})\b'.format('|'.join(re.escape(ticker) for ticker in sorted_tickers))
+
+    # Find all matches of the pattern
+    matches = re.findall(pattern, input_string)
+
+    recognized_tickers = {ticker for _, ticker in matches}
+
+    # Check for unrecognized tickers
+    unrecognized = re.findall(r'(\d+\s*x?\s*[A-Z0-9]+)', input_string)
+    for item in unrecognized:
+        quantity, ticker = re.findall(r'(\d+)\s*x?\s*([A-Z0-9]+)', item)[0]
+        if ticker not in recognized_tickers:
+            print(f"Unrecognized material ticker: {ticker}")
+
+    return [(int(quantity), ticker) for quantity, ticker in matches]
 # Function to calculate and print the table
 def estimate_costs_volumes(input_string):
     items = parse_input(input_string)
