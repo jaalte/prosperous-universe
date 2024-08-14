@@ -53,9 +53,9 @@ class Planet:
                 resource_type = resource.get('ResourceType')
                 factor = threshold_round(resource.get('Factor', 0))
                 
-                for ticker, info in EXTRACTORS.items():
+                for building, info in EXTRACTORS.items():
                     if info["type"] == resource_type:
-                        extractor_building = ticker
+                        extractor_building = building
                         break
                 
                 daily_amount = factor * 100 * EXTRACTORS[extractor_building]["multiplier"]
