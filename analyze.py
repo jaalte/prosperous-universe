@@ -111,25 +111,30 @@ class Base:
                     self.buildingCounts[ticker] = 1
         
         # Now we need to aggregate building recipes
-        allbuildings = fio.request("GET", f"/building/allbuildings", cache=-1)
+        
         available_recipes = []
         for building_ticker in list(self.buildingCounts.keys()):
+            # Extractors will need to be handled separately based on the planet resources
             if building_ticker == 'COL' or building_ticker == 'RIG' or building_ticker == 'EXT':
-                # Extractors will need to be handled separately based on the planet resources
-                continue
-
-            # Find and process the building recipes
-            for building in allbuildings:
-                if building['Ticker'] == building_ticker:
-                    recipes = building.get('Recipes', [])
-                    for recipe in recipes:
-                        recipe["Building"] = building_ticker
-                        recipe["BuildingCount"] = self.buildingCounts[building_ticker]
-                        available_recipes.append(recipe)
+                available_recipes += self.get_extractor_recipes(building_ticker)
+            else:
+                available_recipes += self.get_crafter_recipes(building_ticker)
 
         for recipe in available_recipes:
             print(recipe["BuildingRecipeId"])
-            
+    
+    def get_crafter_recipes(self, building_ticker):
+        allbuildings = fio.request("GET", f"/building/allbuildings", cache=-1)
+        for building in allbuildings:
+            if building['Ticker'] == building_ticker:
+                recipes = building.get('Recipes', [])
+                for recipe in recipes:
+                    recipe["Building"] = building_ticker
+                    recipe["BuildingCount"] = self.buildingCounts[building_ticker]
+                return recipes
+
+    def get_extractor_recipes(self, building_ticker):
+        return []
             
 
     def __str__(self):
