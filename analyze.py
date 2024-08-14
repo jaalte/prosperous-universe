@@ -91,6 +91,35 @@ class Planet:
 
         return threshold_round(process_hours), process_amount
 
+class Recipe:
+    def __init__(self, rawdata):
+        # Importing from buildings.json format
+        if 'BuildingRecipeId' in rawdata:
+            self.building = rawdata.get('StandardRecipeName')[0:3]
+            self.name = rawdata.get('BuildingRecipeId')
+            self.duration = rawdata.get('DurationMs')/1000/60/60
+
+            self.inputs = {}
+            for inputResource in rawdata.get('Inputs', []):
+                ticker = inputResource.get('CommodityTicker')
+                amount = inputResource.get('Amount')
+                self.inputs[ticker] = amount
+            
+            self.outputs = {}
+            for outputResource in rawdata.get('Outputs', []):
+                ticker = outputResource.get('CommodityTicker')
+                amount = outputResource.get('Amount')
+                self.outputs[ticker] = amount
+        # Manually specified format
+        else:
+            self.building = rawdata.get('building')
+            self.name = rawdata.get('name')
+            self.duration = rawdata.get('duration')
+            self.inputs = rawdata.get('inputs')
+            self.outputs = rawdata.get('outputs')
+
+    def __str__(self):
+        return self.name
 
 class Base:
     def __init__(self, rawdata):
@@ -129,11 +158,17 @@ class Base:
             if building['Ticker'] == building_ticker:
                 recipes = building.get('Recipes', [])
                 for recipe in recipes:
-                    recipe["Building"] = building_ticker
-                    recipe["BuildingCount"] = self.buildingCounts[building_ticker]
+                    recipe = Recipe(recipe)
+                    #recipe["Building"] = building_ticker
+                    #recipe["BuildingCount"] = self.buildingCounts[building_ticker]
                 return recipes
 
     def get_extractor_recipes(self, building_ticker):
+        recipes = []
+        for ticker in self.planet.resources:
+            resource = self.planet.resources[ticker]
+            recipe = {}
+            print(resource)
         return []
             
 
