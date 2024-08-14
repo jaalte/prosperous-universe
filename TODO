@@ -4,3 +4,8 @@ Recipe handling
 
 Market calculation
 - Implement a way to specify goods that can be reliably bought/sold on the LM
+- Treat credits as a crafting resource (eg NCC: 35)
+ - Should streamline cost of goods as well as crafting fees
+  - Add recipes for [bid amt] NCC -> [any resource]
+  - And for [ask amt] NCC -> [any resource]
+  - Then can easily compare input and output NCC
