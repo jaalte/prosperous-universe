@@ -8,4 +8,7 @@ Market calculation
  - Should streamline cost of goods as well as crafting fees
   - Add recipes for [bid amt] NCC -> [any resource]
   - And for [ask amt] NCC -> [any resource]
+   - Might be fiddly with local markets as supply isn't guaranteed.
+    - Maybe just assume if it can be produced via only 1 pioneer recipe on-planet it will be available?
+    - Best to assume market rate rather than adjusted price 
   - Then can easily compare input and output NCC
