@@ -4,8 +4,15 @@ import json
 import math
 from fio_api import fio
 
-# Global variables
-USERNAME = "fishmodem"
+# Editable global variables
+username = "fishmodem"
+
+# Constants
+EXTRACTOR_TYPES = {
+    'GASEOUS': 'COL',
+    'LIQUID': 'RIG',
+    'MINERAL': 'EXT',
+}
 
 class Planet:
     def __init__(self, planet_id):
@@ -31,7 +38,7 @@ class Planet:
                 resource_type = resource.get('ResourceType')
                 factor = threshold_round(resource.get('Factor', 0))
                 
-                extractor_type = self.get_extractor_type(resource_type)
+                extractor_type = EXTRACTOR_TYPES[resource_type]
                 daily_amount = self.calculate_daily_amount(resource_type, factor)
                 process_hours, process_amount = self.calculate_process_time_and_amount(extractor_type, daily_amount)
 
@@ -48,17 +55,6 @@ class Planet:
                     'process_amount': process_amount,
                     'process_hours': process_hours
                 }
-
-    def get_extractor_type(self, resource_type):
-        """Determine the extractor type based on the resource type."""
-        if resource_type == 'GASEOUS':
-            return 'COL'
-        elif resource_type == 'LIQUID':
-            return 'RIG'
-        elif resource_type == 'MINERAL':
-            return 'EXT'
-        else:
-            raise ValueError(f"Unknown resource type: {resource_type}")
 
     def calculate_daily_amount(self, resource_type, factor):
         """Calculate the daily extraction amount based on resource type and factor."""
@@ -201,7 +197,7 @@ def threshold_round(val, threshold=1e-5):
 
 
 def main():
-    sites = fio.request("GET", f"/sites/{USERNAME}")
+    sites = fio.request("GET", f"/sites/{username}")
 
     # Create Base objects
     bases = []
