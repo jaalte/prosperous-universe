@@ -1,0 +1,6 @@
+
+Recipe handling
+- Minerals need to have pseudo-recipes created for them
+
+Market calculation
+- Implement a way to specify goods that can be reliably bought/sold on the LM
