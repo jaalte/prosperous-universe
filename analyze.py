@@ -150,15 +150,17 @@ class Base:
                 available_recipes += self.get_crafter_recipes(building_ticker)
 
         for recipe in available_recipes:
-            print(recipe["BuildingRecipeId"])
+            print(recipe)
     
     def get_crafter_recipes(self, building_ticker):
         allbuildings = fio.request("GET", f"/building/allbuildings", cache=-1)
         for building in allbuildings:
             if building['Ticker'] == building_ticker:
-                recipes = building.get('Recipes', [])
-                for recipe in recipes:
-                    recipe = Recipe(recipe)
+                rawrecipes = building.get('Recipes', [])
+                recipes = []
+                for rawrecipe in rawrecipes:
+                    recipe = Recipe(rawrecipe)
+                    recipes.append(recipe)
                     #recipe["Building"] = building_ticker
                     #recipe["BuildingCount"] = self.buildingCounts[building_ticker]
                 return recipes
@@ -167,9 +169,20 @@ class Base:
         recipes = []
         for ticker in self.planet.resources:
             resource = self.planet.resources[ticker]
-            recipe = {}
-            print(resource)
-        return []
+
+            # Skip resources that aren't for this extractor
+            if resource["extractor_type"] == building_ticker:
+                recipedata = {
+                    'building': building_ticker,
+                    'name': f"@{building_ticker}=>{resource["process_amount"]}x{ticker}",
+                    'duration': resource["process_hours"],
+                    'inputs': {},
+                    'outputs': {
+                        ticker: resource["process_amount"]
+                    }
+                }
+                recipes.append(Recipe(recipedata))
+        return recipes
             
 
     def __str__(self):
