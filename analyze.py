@@ -8,10 +8,37 @@ from fio_api import fio
 username = "fishmodem"
 
 # Constants
+EXTRACTORS = {
+    'COL': {
+        'ticker': 'COL',
+        'type': 'GASEOUS',
+        'cycle_time': 6, # hours per cycle
+        'multiplier': 0.6,
+    },
+    'RIG': {
+        'ticker': 'RIG',
+        'type': 'LIQUID',
+        'cycle_time': 4.8,
+        'multiplier': 0.7,
+    },
+    'EXT': {
+        'ticker': 'EXT',
+        'type': 'MINERAL',
+        'cycle_time': 12,
+        'multiplier': 0.7,
+    },
+}
+
 EXTRACTOR_TYPES = {
     'GASEOUS': 'COL',
     'LIQUID': 'RIG',
     'MINERAL': 'EXT',
+}
+
+EXTRACTOR_CYCLE_TIMES = {
+    'COL': 6,
+    'RIG': 4.8,
+    'EXT': 12,
 }
 
 class Planet:
@@ -38,9 +65,13 @@ class Planet:
                 resource_type = resource.get('ResourceType')
                 factor = threshold_round(resource.get('Factor', 0))
                 
-                extractor_type = EXTRACTOR_TYPES[resource_type]
-                daily_amount = self.calculate_daily_amount(resource_type, factor)
-                process_hours, process_amount = self.calculate_process_time_and_amount(extractor_type, daily_amount)
+                for ticker, info in EXTRACTORS.items():
+                    if info["type"] == resource_type:
+                        extractor_building = ticker
+                        break
+                
+                daily_amount = factor * 100 * EXTRACTORS[extractor_building]["multiplier"]
+                process_hours, process_amount = self.calculate_process_time_and_amount(extractor_building, daily_amount)
 
                 self.resources[ticker] = {
                     'name': material_data['Name'],
@@ -50,27 +81,15 @@ class Planet:
                     'volume': threshold_round(material_data['Volume']),
                     'type': resource_type,
                     'factor': factor,
-                    'extractor_type': extractor_type,
+                    'extractor_building': extractor_building,
                     'daily_amount': daily_amount,
                     'process_amount': process_amount,
                     'process_hours': process_hours
                 }
 
-    def calculate_daily_amount(self, resource_type, factor):
-        """Calculate the daily extraction amount based on resource type and factor."""
-        if resource_type == 'GASEOUS':
-            return (factor * 100) * 0.6
-        else:  # LIQUID or MINERAL
-            return (factor * 100) * 0.7
-
-    def calculate_process_time_and_amount(self, extractor_type, daily_amount):
+    def calculate_process_time_and_amount(self, extractor_building, daily_amount):
         """Calculate the process hours and process amount based on the extractor type."""
-        if extractor_type == 'COL':
-            base_cycle_time = 6  # hours per cycle
-        elif extractor_type == 'RIG':
-            base_cycle_time = 4.8  # hours per cycle
-        elif extractor_type == 'EXT':
-            base_cycle_time = 12  # hours per cycle
+        base_cycle_time = EXTRACTORS[extractor_building]["cycle_time"]
 
         cycles_per_day = 24 / base_cycle_time
         base_process_amount = daily_amount / cycles_per_day
@@ -115,7 +134,7 @@ class Recipe:
             self.outputs = rawdata.get('outputs')
 
     def __str__(self):
-        return self.name
+        return f"{self.name} {self.duration}h"
 
 class Base:
     def __init__(self, rawdata):
@@ -167,7 +186,7 @@ class Base:
             resource = self.planet.resources[ticker]
 
             # Skip resources that aren't for this extractor
-            if resource["extractor_type"] == building_ticker:
+            if resource["extractor_building"] == building_ticker:
                 recipedata = {
                     'building': building_ticker,
                     'name': f"@{building_ticker}=>{resource["process_amount"]}x{ticker}",
