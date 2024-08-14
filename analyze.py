@@ -29,18 +29,6 @@ EXTRACTORS = {
     },
 }
 
-EXTRACTOR_TYPES = {
-    'GASEOUS': 'COL',
-    'LIQUID': 'RIG',
-    'MINERAL': 'EXT',
-}
-
-EXTRACTOR_CYCLE_TIMES = {
-    'COL': 6,
-    'RIG': 4.8,
-    'EXT': 12,
-}
-
 class Planet:
     def __init__(self, planet_id):
         self.rawdata = fio.request("GET", f"/planet/{planet_id}")
