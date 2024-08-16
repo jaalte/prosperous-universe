@@ -2,6 +2,29 @@
 
 import csv
 import heapq
+import os
+
+CACHE_FILE = './cache/jump_distance.csv'
+
+# Load the cache when the script is run or imported
+def load_cache():
+    cache = {}
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, 'r') as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip the header
+            for row in reader:
+                origin, destination, distance = row
+                cache[(origin, destination)] = int(distance)
+    return cache
+
+cache = load_cache()
+
+def save_to_cache(origin, destination, distance):
+    with open(CACHE_FILE, 'a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([origin, destination, distance])
+    cache[(origin, destination)] = distance
 
 def read_system_links(filename):
     graph = {}
@@ -55,9 +78,16 @@ def number_of_jumps(path):
     return len(path) - 1 if path else float('inf')
 
 def jump_distance(origin, destination):
+    if (origin, destination) in cache:
+        return cache[(origin, destination)]
+    
     graph = read_system_links('systemlinks.csv')
     path = a_star_search(graph, origin, destination)
-    return number_of_jumps(path)
+    distance = number_of_jumps(path)
+    
+    save_to_cache(origin, destination, distance)
+    
+    return distance
 
 if __name__ == "__main__":
     origin = 'OT-580'
