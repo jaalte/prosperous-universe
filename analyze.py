@@ -19,7 +19,6 @@ def main():
     # For debugging: Print a summary of each base
     for base in bases:
         print(f"\n{base}\n")
-        #print(json.dumps(base.planet.resources, indent=2))
 
 if __name__ == "__main__":
     main()
