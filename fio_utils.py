@@ -33,9 +33,20 @@ material_lookup = {material['MaterialId']: material for material in allmaterials
 allplanets = fio.request("GET", f"/planet/allplanets/full", cache=-1)
 planet_lookup = {planet['PlanetId']: planet for planet in allplanets}
 
-# Create a lookup dictionary for all exchanges by exchange ticker (ComexCode)
-rawexchanges = fio.request("GET", "/exchange/station", cache='forever')
-exchanges = {exchange['ComexCode']: exchange for exchange in rawexchanges}
+rawsystemstars = fio.request("GET", f"/systemstars", cache=-1)
+systemstars_lookup = {system["SystemId"]: system["NaturalId"] for system in rawsystemstars}
+
+# rawsystemdata = 
+
+rawexchangedata = fio.request("GET", f"/exchange/full", cache=60*15, message="Fetching exchange data...") # 15m
+# Split list into dicts by ExchangeCode
+exchange_goods = {}
+for good in rawexchangedata:
+    if good['ExchangeCode'] not in exchange_goods:
+        exchange_goods[good['ExchangeCode']] = {}
+    exchange_goods[good['ExchangeCode']][good['MaterialTicker']] = good
+
+#print(json.dumps(exchange_goods, indent=4))
 
 class Planet:
     def __init__(self, planet_id):
@@ -45,8 +56,7 @@ class Planet:
         self.natural_id = self.rawdata.get('PlanetNaturalId')
         self.system_natural_id = self.rawdata.get('PlanetNaturalId')[:-1]
         self.resources = {}
-        self.exchange = self.get_nearest_exchange()
-        print(json.dumps(self.exchange, indent=2))
+        #self.exchange = self.get_nearest_exchange()
 
         # Process the resources in rawdata
         for resource in self.rawdata.get('Resources', []):
@@ -107,11 +117,40 @@ class Planet:
             if distance < nearest_distance:
                 nearest_exchange = exchange
                 nearest_distance = distance
-        nearest_exchange['ticker'] = ticker
-        nearest_exchange['distance'] = nearest_distance
+        nearest_exchange['Distance'] = nearest_distance
         return nearest_exchange
 
-    #def is_colonized(self):
+    # Make Planet printable
+    def __str__(self):
+        # Note: Reimplement once Planet.system class is added
+        return f"(Planet {self.name} ({self.natural_id}) in the {self.system_natural_id} system)"
+
+class System:
+    def __init__(self, rawdata):
+        self.rawdata = rawdata
+        self.name = rawdata.get('Name')
+        self.id = rawdata.get('NaturalId')
+        self.hash = rawdata.get('SystemId')
+        self.pos = {
+            'x': rawdata.get('PositionX'),
+            'y': rawdata.get('PositionY'),
+            'z': rawdata.get('PositionZ'),
+        }
+        
+        #self.connections = []
+        #for connection in rawdata.get('Connections', []):
+
+    def init_connections(self):
+        pass
+
+    def __repr__(self):
+        return json.dumps({
+            "name": self.name,
+            "id": self.id,
+            "hash": self.hash,
+            "pos": self.pos,
+            "connections": getattr(self, 'connections', [])
+        }, indent=2)
 
 class Recipe:
     def __init__(self, rawdata):
@@ -212,6 +251,25 @@ class Base:
         resources_str = ', '.join(self.planet.resources.keys())
         return f"Base ({self.planet.name}):\n  Buildings: {buildings_str}\n  Resources: {resources_str}"
 
+class System:
+    def __init__(self, rawdata):
+        pass
+
+class Exchange:
+    def __init__(self, rawdata):
+        self.rawdata = rawdata
+        self.ticker = rawdata.get('ComexCode')
+        self.name = rawdata.get('ComexName')
+        self.currency = rawdata.get('CurrencyCode')
+        self.country = rawdata.get('CountryCode')
+        self.system_natural_id = rawdata.get('SystemNaturalId')
+        self.goods = exchange_goods[self.ticker]
+    
+    def get_average_price(self, material, buy_or_sell, amount):
+        good = self.goods[material]
+        if buy_or_sell == "Buy":
+            pass
+
 
 # Rounds a given value to a specified threshold.
 def threshold_round(val, threshold=1e-5):
@@ -221,9 +279,36 @@ def threshold_round(val, threshold=1e-5):
             return rounded_value
     return val
 
+def distance(pos1, pos2):
+    return math.sqrt((pos1['x'] - pos2['x'])**2 + (pos1['y'] - pos2['y'])**2 + (pos1['z'] - pos2['z'])**2)
+
+# Get a dict of all planets in the game keyed by name
 def get_all_planets():
     planets = {}
-    for planet in allplanets:
+    total = len(allplanets)
+    for i, planet in enumerate(allplanets):
         planet_class = Planet(planet_id=planet.get('PlanetId'))
         planets[planet_class.name] = planet_class
+        print(f"\rLoading all planets: {i+1}/{total}", end="")
+    print("\n")
     return planets
+
+# Get a dict of all exchanges in the game keyed by ticker
+def get_all_exchanges():
+    rawexchanges = fio.request("GET", "/exchange/station", cache='forever')
+    exchanges = {}
+    for rawexchange in rawexchanges:
+        exchanges[rawexchange['ComexCode']] = Exchange(rawexchange)
+    return exchanges
+
+def main():
+    #planets = get_all_planets()
+    #print(planets['Montem'])
+    #print(json.dumps(planets['Montem'].rawdata, indent=2))
+
+    exchanges = get_all_exchanges()
+    #print(json.dumps(exchanges['NC1'].get_good('AMM'), indent=2))
+    
+
+if __name__ == "__main__":
+    main()
