@@ -12,3 +12,16 @@ Market calculation
     - Maybe just assume if it can be produced via only 1 pioneer recipe on-planet it will be available?
     - Best to assume market rate rather than adjusted price 
   - Then can easily compare input and output NCC
+
+
+- For each recipe:
+ - ~~Determine max that can be produced per hour based on building capacity alone~~
+ - Determine max that can be produced with every input as a bottleneck
+ - Determine true max based on minimum of the above, which will be used in #2 to determine max of further products
+  - Note: Does not factor in the ability to get resources from multiple sources (eg buying LST to make up for deficit in mining rate)
+
+ - Determine minimum cost in NCC based on inputs
+
+
+ - Count number of workers needed for building
+  - Constant for worker needs: dict of resources consumed per worker per hour
