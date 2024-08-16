@@ -127,7 +127,7 @@ class Planet:
 
         return threshold_round(process_hours), process_amount
 
-    def get_nearest_exchange():
+    def get_nearest_exchange(self):
         nearest_distance = 99999999
         nearest_exchange = None
         for ticker in EXCHANGES:
@@ -137,6 +137,8 @@ class Planet:
                 nearest_exchange = exchange
                 nearest_distance = distance
         return nearest_exchange, nearest_distance
+
+    #def is_colonized(self):
 
 class Recipe:
     def __init__(self, rawdata):
