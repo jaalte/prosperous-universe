@@ -30,7 +30,7 @@ class FIOAPI:
             print(f"Error reading API key: {e}")
             return None
 
-    def request(self, method, endpoint, data=None, response_format='json', cache=0):
+    def request(self, method, endpoint, data=None, response_format='json', cache=0, message=""):
         endpoint = self._strip_base_url(endpoint)
         self._validate_url(endpoint)
 
@@ -52,6 +52,12 @@ class FIOAPI:
                     return self._load_cached_file(cache_path, response_format)
 
         # Fetch the data from the API
+        if message:
+            print(message)
+        else:
+            print(f"Fetching {url}...")
+
+        
         try:
             if method.upper() == 'GET':
                 response = requests.get(url, headers=self.headers)
