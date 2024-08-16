@@ -1,20 +1,79 @@
 #!/usr/bin/env python3
 
+import sys
 import json
 import math
 from fio_api import fio
 import fio_utils as utils
 from pathfinding import jump_distance
 
-origin = "NC1" # IC1
+# Set origin to arg1 or "NC1"
+origin = sys.argv[1] if len(sys.argv) > 1 else "NC1"
+
 base_cost = 1000
 cost_per_jump = 750
-liquid_assets = 40000
+liquid_assets = 60000
 
 ship_specs = {
     "weight": 500,
     "volume": 500,
 }
+
+""" Example good dict:
+{
+  "BuyingOrders": [
+    {
+      "OrderId": "2d761ac09251b8732213cf251ac3f557",
+      "CompanyId": "95d0a1820bf73be355b2d34f85875f49",
+      "CompanyName": "The Star Business",
+      "CompanyCode": "TSB",
+      "ItemCount": 9482,
+      "ItemCost": 70.0
+    },
+  ],
+  "SellingOrders": [
+    {
+      "OrderId": "66f198a799372f4e641569e120195f29",
+      "CompanyId": "aeb1f2c1ccea1d8c82c84191e98dbff7",
+      "CompanyName": "Omg Crazy Kitties",
+      "CompanyCode": "OCK",
+      "ItemCount": 45,
+      "ItemCost": 95.0
+    },
+  ],
+  "CXDataModelId": "df72a43a8655beab2156b4b72a6c97f5",
+  "MaterialName": "sodiumBorohydride",
+  "MaterialTicker": "NAB",
+  "MaterialId": "710cb599231cd6b974bcc5feea9603c7",
+  "ExchangeName": "Moria Station Commodity Exchange",
+  "ExchangeCode": "NC1",
+  "Currency": "NCC",
+  "Previous": null,
+  "Price": 95.0,
+  "PriceTimeEpochMs": 1723740273366,
+  "High": 95.0,
+  "AllTimeHigh": 335.0,
+  "Low": 95.0,
+  "AllTimeLow": 25.0,
+  "Ask": 95.0,
+  "AskCount": 3752,
+  "Bid": 70.0,
+  "BidCount": 10000,
+  "Supply": 24733,
+  "Demand": 19632,
+  "Traded": 388,
+  "VolumeAmount": 36860.0,
+  "PriceAverage": 95.0,
+  "NarrowPriceBandLow": 9.5,
+  "NarrowPriceBandHigh": 237.5,
+  "WidePriceBandLow": 9.5,
+  "WidePriceBandHigh": 237.5,
+  "MMBuy": null,
+  "MMSell": null,
+  "UserNameSubmitted": "SHREWDSUN1",
+  "Timestamp": "2024-08-16T01:52:57.638065"
+}
+"""
 
 def main():
     exchanges = utils.get_all_exchanges()
@@ -144,8 +203,8 @@ def main():
         
 
         cost = liquid_assets - remaining_credits
-        weight = ship_specs['weight']
-        volume = ship_specs['volume']
+        weight = ship_specs['weight'] - remaining_weight
+        volume = ship_specs['volume'] - remaining_volume
 
         total_profit = 0
         for trade in approved_trades:
@@ -169,9 +228,16 @@ def main():
     for code, dex in destinations.items():
         trade_job = dex.trade_job
         if trade_job['adjusted_profit'] > 0:
-            print(f"{dex.ticker}: {trade_job['adjusted_profit']:.2f} profit, ({trade_job['distance']} jumps, {trade_job['weight']:.2f} kg, {trade_job['volume']:.2f} m3)")
+            total_profit_ratio = (trade_job['adjusted_profit']+trade_job['cost']) / trade_job['cost']
+            print(f"{origin}->{dex.ticker}: {trade_job['adjusted_profit']:.0f}c ({total_profit_ratio*100:.2f}%) profit, ({trade_job['distance']} jumps, {trade_job['cost']:.0f}c, {trade_job['weight']:.2f} kg, {trade_job['volume']:.2f} m3)")
             for trade in trade_job['trades']:
-                print(f"{trade['amount']:>5} {trade['material']:<3}: {trade['buy']['ItemCost']:.2f} - {trade['sell']['ItemCost']:.2f} -> {trade['profit_per_unit']:.2f} ({trade['profit_ratio']*100:.2f}%)")
+                trade_volume = dex.goods[trade['material']]['Traded']
+                trades_available = trade['sell']['ItemCount']
+                warn = ""
+                if trade_volume > trade['amount']:
+                    warn = f" (Warning: Trade volume ({trade_volume}) > trades available ({trades_available})!)"
+                    warn = ""
+                print(f"{trade['amount']:>5} {trade['material']:<3}: {trade['buy']['ItemCost']:.2f} - {trade['sell']['ItemCost']:.2f} -> {trade['profit_per_unit']:.2f} ({trade['profit_ratio']*100:.2f}%) {warn}")
             print()
 
         
@@ -180,8 +246,6 @@ def get_max_space_remaining(trade, material, remaining_weight, remaining_volume,
     max_by_volume = int(remaining_volume / material['Volume'])
     max_by_weight = int(remaining_weight / material['Weight'])
     max_by_cost   = int(remaining_credits / trade['buy']['ItemCost'])
-    if material['Ticker'] == 'BWS':
-        print(f"max_by_volume: {max_by_volume}, max_by_weight: {max_by_weight}, max_by_cost: {max_by_cost}, cost: {trade['buy']['ItemCost']}")
     max_units = min(max_by_volume, max_by_weight, max_by_cost)
     return max_units
 

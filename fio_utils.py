@@ -33,10 +33,16 @@ material_lookup = {material['MaterialId']: material for material in allmaterials
 allplanets = fio.request("GET", f"/planet/allplanets/full", cache=-1)
 planet_lookup = {planet['PlanetId']: planet for planet in allplanets}
 
-rawsystemstars = fio.request("GET", f"/systemstars", cache=-1)
-systemstars_lookup = {system["SystemId"]: system["NaturalId"] for system in rawsystemstars}
+# Create a lookup dictionary keyed by SystemId each equal a list of PlanetName
+system_planet_lookup = {}
+for planet in allplanets:
+    if planet['SystemId'] not in system_planet_lookup:
+        system_planet_lookup[planet['SystemId']] = []
+    system_planet_lookup[planet['SystemId']].append(planet['PlanetName'])
 
-# rawsystemdata = 
+
+rawsystemstars = fio.request("GET", f"/systemstars", cache=-1)
+systemstars_lookup = {system["SystemId"]: system for system in rawsystemstars}
 
 rawexchangedata = fio.request("GET", f"/exchange/full", cache=60*15, message="Fetching exchange data...") # 15m
 # Split list into dicts by ExchangeCode
@@ -126,9 +132,11 @@ class Planet:
         return f"(Planet {self.name} ({self.natural_id}) in the {self.system_natural_id} system)"
 
 class System:
-    def __init__(self, rawdata):
-        self.rawdata = rawdata
+    def __init__(self, hashid):
+        rawdata = systemstars_lookup[hashid]
+
         self.name = rawdata.get('Name')
+        self.natural_id = rawdata.get('NaturalId')
         self.id = rawdata.get('NaturalId')
         self.hash = rawdata.get('SystemId')
         self.pos = {
@@ -136,21 +144,29 @@ class System:
             'y': rawdata.get('PositionY'),
             'z': rawdata.get('PositionZ'),
         }
+        self.sectorid = rawdata.get('SectorId')
+        self.subsectorid = rawdata.get('SubSectorId')
+
+        self.connections = {}
+        for connection in rawdata.get('Connections', []):
+            system_hash = connection["ConnectingId"]
+            other_system = systemstars_lookup[system_hash]
+            connection_name = other_system.get('Name')
+            connection_pos = {
+                'x': other_system.get('PositionX'),
+                'y': other_system.get('PositionY'),
+                'z': other_system.get('PositionZ')
+            }
+            self.connections[connection_name] = {
+                'system': connection_name,
+                'distance': distance(self.pos, connection_pos),
+            }
         
-        #self.connections = []
-        #for connection in rawdata.get('Connections', []):
+        self.planets = system_planet_lookup.get(hashid, [])  
 
-    def init_connections(self):
-        pass
+    def __str__(self):
+        return f"[System {self.name} ({self.natural_id}), {len(self.connections)} connections, {len(self.planets)} planets]"
 
-    def __repr__(self):
-        return json.dumps({
-            "name": self.name,
-            "id": self.id,
-            "hash": self.hash,
-            "pos": self.pos,
-            "connections": getattr(self, 'connections', [])
-        }, indent=2)
 
 class Recipe:
     def __init__(self, rawdata):
@@ -251,10 +267,6 @@ class Base:
         resources_str = ', '.join(self.planet.resources.keys())
         return f"Base ({self.planet.name}):\n  Buildings: {buildings_str}\n  Resources: {resources_str}"
 
-class System:
-    def __init__(self, rawdata):
-        pass
-
 class Exchange:
     def __init__(self, rawdata):
         self.rawdata = rawdata
@@ -293,6 +305,16 @@ def get_all_planets():
     print("\n")
     return planets
 
+# Get a dict of all systems in the game keyed by name
+def get_all_systems():
+    systems = {}
+    total = len(systemstars_lookup)
+    for system_hash in systemstars_lookup.keys():
+        system_class = System(system_hash)
+        systems[system_class.name] = system_class
+    return systems
+
+
 # Get a dict of all exchanges in the game keyed by ticker
 def get_all_exchanges():
     rawexchanges = fio.request("GET", "/exchange/station", cache='forever')
@@ -306,8 +328,10 @@ def main():
     #print(planets['Montem'])
     #print(json.dumps(planets['Montem'].rawdata, indent=2))
 
-    exchanges = get_all_exchanges()
+    #exchanges = get_all_exchanges()
     #print(json.dumps(exchanges['NC1'].get_good('AMM'), indent=2))
+
+    systems = get_all_systems()
     
 
 if __name__ == "__main__":
