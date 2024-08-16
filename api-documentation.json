@@ -1,0 +1,6324 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "FIO REST API. \nInstructions for testing the API:\n 1) Click on /auth/login endpoint\n 2) Click the `Try it out` button\n 3) Enter your credentials into the JSON payload\n 4) Copy the resultant value for `AuthToken` (the GUID inside the quotes)\n 5) Click on `Authorize` and paste in the AuthToken\n 6) Commands with the lock icon will now function, assuming appropriate parameters/settings are present\n",
+    "version": "1.0.0",
+    "title": "FIO API",
+    "contact": {
+      "name": "Saganaki"
+    },
+    "license": {
+      "name": "MIT License",
+      "url": "https://choosealicense.com/licenses/mit/"
+    }
+  },
+  "host": "rest.fnar.net",
+  "basePath": "/",
+  "tags": [
+    {
+      "name": "auth",
+      "description": "Authentication"
+    },
+    {
+      "name": "admin",
+      "description": "Administration - Requires admin account"
+    },
+    {
+      "name": "building",
+      "description": "Building (BUI) information"
+    },
+    {
+      "name": "chat",
+      "description": "Chat information"
+    },
+    {
+      "name": "company",
+      "description": "Company information"
+    },
+    {
+      "name": "contract",
+      "description": "Contract information"
+    },
+    {
+      "name": "csv",
+      "description": "CSV endpoints for use in spreadsheets.\nIn Google Sheets, use: =IMPORTDATA(\"https://rest.fnar.net/csv/ENDPOINT\")\n"
+    },
+    {
+      "name": "cxos",
+      "description": "Commodity exchange orders (CXOS) information"
+    },
+    {
+      "name": "exchange",
+      "description": "Commodity exchange information"
+    },
+    {
+      "name": "global",
+      "description": "Global game data"
+    },
+    {
+      "name": "infrastructure",
+      "description": "Infrastructure information"
+    },
+    {
+      "name": "localmarket",
+      "description": "Local Market information"
+    },
+    {
+      "name": "material",
+      "description": "Material information"
+    },
+    {
+      "name": "planet",
+      "description": "Planet information"
+    },
+    {
+      "name": "production",
+      "description": "Production information"
+    },
+    {
+      "name": "rain",
+      "description": "Rain google sheet helpers"
+    },
+    {
+      "name": "recipes",
+      "description": "Recipes information"
+    },
+    {
+      "name": "ship",
+      "description": "Ship information"
+    },
+    {
+      "name": "sites",
+      "description": "Sites information"
+    },
+    {
+      "name": "storage",
+      "description": "Storage information"
+    },
+    {
+      "name": "systemstars",
+      "description": "SystemStars and WorldSectors information"
+    },
+    {
+      "name": "user",
+      "description": "User information"
+    },
+    {
+      "name": "usersettings",
+      "description": "UserSettings information"
+    },
+    {
+      "name": "version",
+      "description": "Version information"
+    },
+    {
+      "name": "workforce",
+      "description": "Workforce information"
+    },
+    {
+      "name": "requiresAuth",
+      "description": "Requires the user be authenticated"
+    },
+    {
+      "name": "requiresAdminAuth",
+      "description": "Requires the user be an admini and authenticated"
+    },
+    {
+      "name": "permissionFlight",
+      "description": "Requires flight permission be assigned to you (does not apply is requesting data for yourself)"
+    },
+    {
+      "name": "permissionBuilding",
+      "description": "Requires building permission be assigned to you (does not apply is requesting data for yourself)"
+    },
+    {
+      "name": "permissionStorage",
+      "description": "Requires storage permission be assigned to you (does not apply is requesting data for yourself)"
+    },
+    {
+      "name": "permissionProduction",
+      "description": "Requires flight production be assigned to you (does not apply is requesting data for yourself)"
+    },
+    {
+      "name": "permissionWorkforce",
+      "description": "Requires workforce permission be assigned to you (does not apply is requesting data for yourself)"
+    },
+    {
+      "name": "permissionExperts",
+      "description": "Requires experts permission be assigned to you (does not apply is requesting data for yourself)"
+    },
+    {
+      "name": "permissionContracts",
+      "description": "Requires contracts permission be assigned to you (does not apply is requesting data for yourself)"
+    },
+    {
+      "name": "permissionShipmentTracking",
+      "description": "Requires shipment tracking permission be assigned to you."
+    }
+  ],
+  "schemes": [
+    "https"
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login to FIO",
+        "description": "Authenticates against FIO.\nAny requests that require auth must have the response AuthToken as a HTTP header:\n`Authorization`:`<AUTH_TOKEN_HASH>`\n",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "LoginAndPasswordPayload",
+            "description": "Login and password for user",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Auth_LoginAndPassword"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully authenticated",
+            "schema": {
+              "$ref": "#/definitions/Auth_LoginResponse"
+            }
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Failed to authenticate"
+          }
+        }
+      }
+    },
+    "/auth": {
+      "get": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Determines if the user is authenticated",
+        "responses": {
+          "200": {
+            "description": "Authenticated"
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/permissions": {
+      "get": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Retrieves all permission allowances",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved permission allowances",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Auth_PermissionAllowance"
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/visibility": {
+      "get": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Retrieves all allowances given to the user",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved all allowances given to the user",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Auth_PermissionAllowance"
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/visibility/{PermissionType}": {
+      "get": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Retrieves all users where we have the permissionType specified given to us",
+        "parameters": [
+          {
+            "name": "PermissionType",
+            "in": "path",
+            "description": "The PermissionType",
+            "required": true,
+            "type": "string",
+            "enum": [
+              "flight",
+              "building",
+              "storage",
+              "production",
+              "workforce",
+              "experts",
+              "contracts",
+              "shipmenttracking"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved list of users who have given us the permissionType specified",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/refreshauthtoken": {
+      "post": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Refreshes the user's auth token",
+        "responses": {
+          "200": {
+            "description": "Successfully refreshed and AuthToken expiry is now current time plus 24 hours"
+          },
+          "400": {
+            "description": "Failed to find authentication model.  Internal server error"
+          },
+          "401": {
+            "description": "User not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/changepassword": {
+      "post": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Changes the user's password",
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "ChangePasswordPayload",
+            "description": "Old and new password",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Auth_ChangePassword"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully changed password"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "User not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/addpermission": {
+      "post": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Add a permission allowance",
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "PermissionAllowancePayload",
+            "description": "A payload of a user and the permissions you grant them",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Auth_PermissionAllowance"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully added permission allowance"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "User specified not found"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/deletepermission/{UserName}": {
+      "post": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Delete a permission allowance",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The UserName for which to delete the permission allowance",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully removed permission allowance"
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "User not present in permission allowance table"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/createapikey": {
+      "post": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Creates an API key",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "CreateApiKeyPayload",
+            "description": "The payload required for creating an API key.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Auth_CreateApiKey"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully created API key. Plaintext payload response"
+          },
+          "400": {
+            "description": "Failed to parse payload or Application specified was empty"
+          },
+          "401": {
+            "description": "Failed to authenticate"
+          },
+          "406": {
+            "description": "Exceed 20 API key limit"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/revokeapikey": {
+      "post": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Revokes an API key",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "RevokeApiKeyPayload",
+            "description": "The payload required for revoking an API key.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Auth_RevokeApiKey"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully revoked API key"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Failed to authenticate"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/listapikeys": {
+      "post": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Lists all API keys",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "RevokeApiKeyPayload",
+            "description": "The payload required for retrieving all API keys.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Auth_LoginAndPassword"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully revoked API key"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Failed to authenticate"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/creategroup": {
+      "post": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Creates a group or modifies an existing group if GroupId is specified",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "CreateGroupPayload",
+            "description": "A group description",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Auth_CreateGroupPayload"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully created group",
+            "schema": {
+              "$ref": "#/definitions/Auth_CreateGroupResponse"
+            }
+          },
+          "401": {
+            "description": "User is not authenticated"
+          },
+          "406": {
+            "description": "CreatePayload failure: Inspect response for reason."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/deletegroup/{GroupId}": {
+      "post": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Deletes a group you own by id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "GroupId",
+            "description": "The Group's Id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully deleted group"
+          },
+          "204": {
+            "description": "No group found with that id"
+          },
+          "401": {
+            "description": "User is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/groups": {
+      "get": {
+        "tags": [
+          "auth",
+          "requiresAuth"
+        ],
+        "summary": "Retrieves all groups owned by the current user",
+        "responses": {
+          "200": {
+            "description": "Returns all groups owned by current user.  See payload"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/group/{GroupId}": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Retrieves group by GroupId",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "GroupId",
+            "description": "The group's Id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully found group.  See payload"
+          },
+          "204": {
+            "description": "Group with specified id not found"
+          }
+        }
+      }
+    },
+    "/admin": {
+      "get": {
+        "tags": [
+          "admin",
+          "requiresAdminAuth"
+        ],
+        "summary": "Check if the user is an administrator",
+        "responses": {
+          "200": {
+            "description": "User is an admin"
+          },
+          "401": {
+            "description": "Current user is not authenticated and/or not an administrator"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/{UserName}": {
+      "get": {
+        "tags": [
+          "admin",
+          "requiresAdminAuth"
+        ],
+        "summary": "Checks if the UserName provided exists",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to check",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The username exists"
+          },
+          "204": {
+            "description": "The username does not exist"
+          },
+          "401": {
+            "description": "Current user is not authenticated and/or not an administrator"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/allusers": {
+      "get": {
+        "tags": [
+          "admin",
+          "requiresAdminAuth"
+        ],
+        "summary": "Retrieves a list of all usernames provided data from chat messages",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved a list of all users",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "401": {
+            "description": "Current user is not authenticated and/or not an administrator"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/usercount": {
+      "get": {
+        "tags": [
+          "admin",
+          "requiresAdminAuth"
+        ],
+        "summary": "Retrieves a count of all usernames provided data from chat messages",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved a count of all users",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "401": {
+            "description": "Current user is not authenticated and/or not an administrator"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/requestdata": {
+      "get": {
+        "tags": [
+          "admin",
+          "requiresAdminAuth"
+        ],
+        "summary": "Retrieves request data statistics for this run instance",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved request data statistics"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/create": {
+      "post": {
+        "tags": [
+          "admin",
+          "requiresAdminAuth"
+        ],
+        "summary": "Creates an account",
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "AdminCreatePayload",
+            "description": "New account information",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Admin_Create"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User successfully created/overwritten"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated and/or not an administrator"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/disable": {
+      "post": {
+        "tags": [
+          "admin",
+          "requiresAdminAuth"
+        ],
+        "summary": "Disables an account",
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "DisablePayload",
+            "description": "Payload to disable an account with reason",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Admin_Disable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User successfully disabled"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated and/or not an administrator"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/clearcxdata": {
+      "post": {
+        "tags": [
+          "admin",
+          "requiresAdminAuth"
+        ],
+        "summary": "Clears all CX Data",
+        "responses": {
+          "200": {
+            "description": "Successfully cleared all CX data"
+          },
+          "401": {
+            "description": "Current user is not authenticated and/or not an administrator"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/clearmatdata": {
+      "post": {
+        "tags": [
+          "admin",
+          "requiresAdminAuth"
+        ],
+        "summary": "Clears all MAT Data",
+        "responses": {
+          "200": {
+            "description": "Successfully cleared all MAT data"
+          },
+          "401": {
+            "description": "Current user is not authenticated and/or not an administrator"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/clearjumpcache": {
+      "post": {
+        "tags": [
+          "admin",
+          "requiresAdminAuth"
+        ],
+        "summary": "Clears all JumpCache Data",
+        "responses": {
+          "200": {
+            "description": "Successfully cleared all JumpCache data"
+          },
+          "401": {
+            "description": "Current user is not authenticated and/or not an administrator"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/forceupdatesystemid": {
+      "post": {
+        "tags": [
+          "admin",
+          "requiresAdminAuth"
+        ],
+        "summary": "Force update system ids (manual upgrade path)",
+        "deprecated": true,
+        "responses": {
+          "200": {
+            "description": "Successfully force updated all PlanetDataModel systemids"
+          },
+          "401": {
+            "description": "Current user is not authenticated and/or not an administrator"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/resetuserdata/{UserName}": {
+      "post": {
+        "tags": [
+          "admin",
+          "requiresAdminAuth"
+        ],
+        "summary": "Resets the provided username's userdata\"",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The UserName to reset",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The username's userdata was successfully reset"
+          },
+          "400": {
+            "description": "The user doesn't exist"
+          },
+          "401": {
+            "description": "Current user is not authenticated and/or not an administrator"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/building": {
+      "post": {
+        "tags": [
+          "building",
+          "requiresAuth"
+        ],
+        "summary": "Posts building game data (WorldReactorData) to the server.  For payload, see FIORest source",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/building/allbuildings": {
+      "get": {
+        "tags": [
+          "building"
+        ],
+        "summary": "Gets a list of all buildings (WorldReactorData).",
+        "responses": {
+          "200": {
+            "description": "Retrieval success.  For payload, try it out"
+          }
+        }
+      }
+    },
+    "/building/{BuildingTicker}": {
+      "get": {
+        "tags": [
+          "building"
+        ],
+        "summary": "Retrieve a payload describing the specified BuildingTicker",
+        "parameters": [
+          {
+            "name": "BuildingTicker",
+            "in": "path",
+            "description": "The building ticker to retrieve",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Retrieval success.  For payload, try it out"
+          },
+          "204": {
+            "description": "Building not found"
+          }
+        }
+      }
+    },
+    "/chat/data": {
+      "post": {
+        "tags": [
+          "chat",
+          "requiresAuth"
+        ],
+        "summary": "Posts the CHANNEL_DATA payload to the server.  For payload, see FIORest source",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/chat/message_added": {
+      "post": {
+        "tags": [
+          "chat",
+          "requiresAuth"
+        ],
+        "summary": "Posts the CHANNEL_MESSAGE_ADDED payload to the server.  For payload, see FIORest source",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/chat/message_deleted": {
+      "post": {
+        "tags": [
+          "chat",
+          "requiresAuth"
+        ],
+        "summary": "Posts the CHANNEL_MESSAGE_DELETED payload to the server.  For payload, see FIORest source",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/chat/message_list": {
+      "post": {
+        "tags": [
+          "chat",
+          "requiresAuth"
+        ],
+        "summary": "Posts the CHANNEL_MESSAGE_LIST payload to the server.  For payload, see FIORest source",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/chat/list": {
+      "get": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Retrieves a list of searchable channel names and their corresponding ChannelIds",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved list of Channels",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Chat_ListItem"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/display/{ChannelDescription}": {
+      "get": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Retrieves the last 300 messages of the provided ChannelDescription",
+        "parameters": [
+          {
+            "name": "ChannelDescription",
+            "in": "path",
+            "description": "The ChannelDescription.  Can be:\n1) ChannelId\n2) ChannelDisplayName\n2) PlanetName\n3) PlanetNaturalId\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved channel data.  See FIORest source for payload"
+          },
+          "204": {
+            "description": "Provided ChannelDescription was not recognized/did not match"
+          }
+        }
+      }
+    },
+    "/chat/display/pretty/{ChannelDescription}": {
+      "get": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Retrieves the last 300 messages of the provided ChannelDescription in a 'pretty' (textual) format",
+        "parameters": [
+          {
+            "name": "ChannelDescription",
+            "in": "path",
+            "description": "The ChannelDescription.  Can be:\n1) ChannelId\n2) ChannelDisplayName\n2) PlanetName\n3) PlanetNaturalId\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved channel data.  Response payload will be up to 300 most recent messages as plaintext"
+          }
+        }
+      }
+    },
+    "/company": {
+      "post": {
+        "tags": [
+          "company",
+          "requiresAuth"
+        ],
+        "summary": "Posts COMPANY_DATA payload.  For payload, see FIORest source",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/company/data": {
+      "post": {
+        "tags": [
+          "company",
+          "requiresAuth"
+        ],
+        "summary": "Posts COMPANY_DATA_DATA payload.  For payload, see FIORest source",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/company/code/{CompanyCode}": {
+      "get": {
+        "tags": [
+          "company",
+          "requiresAuth",
+          "permissionStorage"
+        ],
+        "summary": "Retrieves company data by CompanyCode",
+        "parameters": [
+          {
+            "name": "CompanyCode",
+            "in": "path",
+            "description": "The company code to lookup",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved company data.  See FIORest source for payload definition"
+          },
+          "204": {
+            "description": "User specified not found"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have permission to view the data"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/company/name/{CompanyName}": {
+      "get": {
+        "tags": [
+          "company",
+          "requiresAuth",
+          "permissionStorage"
+        ],
+        "summary": "Retrieves company data by CompanyName",
+        "parameters": [
+          {
+            "name": "CompanyName",
+            "in": "path",
+            "description": "The company name to lookup",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved company data.  See FIORest source for payload definition"
+          },
+          "204": {
+            "description": "User specified not found"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have permission to view the data"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/contract": {
+      "post": {
+        "tags": [
+          "contract",
+          "requiresAuth"
+        ],
+        "summary": "Posts CONTRACTS_CONTRACTS payload. See FIORest source for payload definition",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/contract/change": {
+      "post": {
+        "tags": [
+          "contract",
+          "requiresAuth"
+        ],
+        "summary": "Posts CONTRACTS_CONTRACT payload. See FIORest source for payload definition",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/contract/allcontracts": {
+      "get": {
+        "tags": [
+          "contract",
+          "requiresAuth"
+        ],
+        "summary": "Retrieves most recent 100 contracts for the current user",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved contracts payload.  See FIORest source for payload definition"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/contract/allcontracts/{UserName}": {
+      "get": {
+        "tags": [
+          "contract",
+          "requiresAuth",
+          "permissionContracts"
+        ],
+        "summary": "Retrieves most recent 100 contracts for the given UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The UserName to lookup",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved contracts payload.  See FIORest source for payload definition"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have permission"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/contract/concerns": {
+      "get": {
+        "tags": [
+          "contract",
+          "requiresAuth"
+        ],
+        "summary": "Retrieves contracts which can be extended or are within 1 day of ending",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved contracts payload.  See FIORest source for payload definition"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/contract/concerns/{UserName}": {
+      "get": {
+        "tags": [
+          "contract",
+          "requiresAuth",
+          "permissionContracts"
+        ],
+        "summary": "Retrieves concerning contracts for the given UserName",
+        "description": "Concerning contracts are defined as contracts which:\n1) Can be extended\n2) Are within 1 day of ending\n",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The UserName to lookup",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved contracts payload.  See FIORest source for payload definition"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have permission"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/contract/loans": {
+      "get": {
+        "tags": [
+          "contract",
+          "requiresAuth"
+        ],
+        "summary": "Retrieves loan contracts for the current user",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved contracts payload.  See FIORest source for payload definition"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/contract/loans/{UserName}": {
+      "get": {
+        "tags": [
+          "contract",
+          "requiresAuth",
+          "permissionContracts"
+        ],
+        "summary": "Retrieves loan contracts for the given UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The UserName to lookup",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved contracts payload.  See FIORest source for payload definition"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have permission"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/contract/taco": {
+      "get": {
+        "tags": [
+          "contract",
+          "requiresAuth",
+          "permissionContracts"
+        ],
+        "summary": "Retrieves taco statistics for EatTacos88",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved contracts payload."
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have permission"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/contract/shipments": {
+      "get": {
+        "tags": [
+          "contract",
+          "requiresAuth",
+          "permissionShipmentTracking"
+        ],
+        "summary": "Retrieves information on the location of your shipments",
+        "description": "This will retrieve the location of your shipment, assuming that user\nis also present on FIO and has given you the 'ShipmentTracking' permission\n",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved shipment tracking information.  See payload."
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/csv/buildings": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Building information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/buildingcosts": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Building cost information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/buildingworkforces": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Building workforce information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/buildingrecipes": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Building recipe information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/materials": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Material information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/prices": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Full price information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/prices/condensed": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Price information (condensed horizontally)",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/orders": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Price order information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/bids": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Price bid information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/recipeinputs": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Recipe input information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/recipeoutputs": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Recipe output information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/planets": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Planet information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/planetresources": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Planet resource information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/planetproductionfees": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Planet production fee information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/planetdetail": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Detailed planet information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/systems": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "System information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/systemlinks": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "System links",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/systemplanets": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "System planet information",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/infrastructure/report/{Planet}": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Infrastructure report for a given planet",
+        "parameters": [
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "The Planet to lookup",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/infrastructure/allreports": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "All infrastructure reports",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/infrastructure/infos/{Planet}": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "Infrastructure infos for a given planet",
+        "parameters": [
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "The Planet to lookup",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/infrastructure/allinfos": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "All infrastructure infos",
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/localmarket/buy/{Planet}": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "All buy ads on a given planet's LM",
+        "parameters": [
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "The Planet to lookup",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/localmarket/sell/{Planet}": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "All sell ads on a given planet's LM",
+        "parameters": [
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "The Planet to lookup",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/localmarket/ship/{Planet}": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "All shipping ads on a given planet's LM",
+        "parameters": [
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "The Planet to lookup",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/cxpc/{Ticker}": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "CXPC data for a given ticker",
+        "parameters": [
+          {
+            "name": "Ticker",
+            "in": "path",
+            "description": "The Ticker to lookup",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/inventory": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "A specified user's inventory",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string",
+            "description": "An API key with read permissions for the given user"
+          },
+          {
+            "in": "query",
+            "name": "username",
+            "required": true,
+            "type": "string",
+            "description": "The username to retrieve information for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/burnrate": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "A specified user's burnrate",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string",
+            "description": "An API key with read permissions for the given user"
+          },
+          {
+            "in": "query",
+            "name": "username",
+            "required": true,
+            "type": "string",
+            "description": "The username to retrieve information for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/sites": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "A specified user's sites",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string",
+            "description": "An API key with read permissions for the given user"
+          },
+          {
+            "in": "query",
+            "name": "username",
+            "required": true,
+            "type": "string",
+            "description": "The username to retrieve information for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/workforce": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "A specified user's workforce information",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string",
+            "description": "An API key with read permissions for the given user"
+          },
+          {
+            "in": "query",
+            "name": "username",
+            "required": true,
+            "type": "string",
+            "description": "The username to retrieve information for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/csv/cxos": {
+      "get": {
+        "tags": [
+          "csv"
+        ],
+        "produces": [
+          "application/csv"
+        ],
+        "summary": "A specified user's CXOS trades",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string",
+            "description": "An API key with read permissions for the given user"
+          },
+          {
+            "in": "query",
+            "name": "username",
+            "required": true,
+            "type": "string",
+            "description": "The username to retrieve information for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received CSV.  See payload.\""
+          }
+        }
+      }
+    },
+    "/cxos": {
+      "post": {
+        "tags": [
+          "cxos",
+          "requiresAuth"
+        ],
+        "summary": "Posts COMEX_TRADER_ORDERS data payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/cxos/added": {
+      "post": {
+        "tags": [
+          "cxos",
+          "requiresAuth"
+        ],
+        "summary": "Posts COMEX_TRADER_ORDER_ADDED data payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/cxos/removed": {
+      "post": {
+        "tags": [
+          "cxos",
+          "requiresAuth"
+        ],
+        "summary": "Posts COMEX_TRADER_ORDER_REMOVED data payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/cxos/updated": {
+      "post": {
+        "tags": [
+          "cxos",
+          "requiresAuth"
+        ],
+        "summary": "Posts COMEX_TRADER_ORDER_UPDATED data payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/cxos/{UserName}": {
+      "get": {
+        "tags": [
+          "cxos",
+          "requiresAuth",
+          "permissionContracts"
+        ],
+        "summary": "Retrieves CXOS data for provided username.  See FIORest source for payload definition",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to lookup CXOS data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "User specified not found"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/exchange": {
+      "post": {
+        "tags": [
+          "exchange",
+          "requiresAuth"
+        ],
+        "summary": "Posts COMEX_BROKER_DATA data payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/exchange/{ExchangeTicker}": {
+      "get": {
+        "tags": [
+          "exchange"
+        ],
+        "summary": "Retrieves Exchange data for the provided ExchangeTicker",
+        "parameters": [
+          {
+            "name": "ExchangeTicker",
+            "in": "path",
+            "description": "Format: 'Material.ExchangeCode'",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload.  See FIORest source for payload definition"
+          },
+          "204": {
+            "description": "Ticker not found"
+          }
+        }
+      }
+    },
+    "/exchange/all": {
+      "get": {
+        "tags": [
+          "exchange"
+        ],
+        "summary": "Retrieves summarized information of all exchange data",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload."
+          }
+        }
+      }
+    },
+    "/exchange/full": {
+      "get": {
+        "tags": [
+          "exchange"
+        ],
+        "summary": "Retrieves all the exchange data, including order info",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload."
+          }
+        }
+      }
+    },
+    "/exchange/station": {
+      "get": {
+        "tags": [
+          "exchange"
+        ],
+        "summary": "Retrieves all exchange station data",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload."
+          }
+        }
+      }
+    },
+    "/exchange/cxpc/{ExchangeTicker}": {
+      "get": {
+        "tags": [
+          "exchange"
+        ],
+        "summary": "Retrieves exchange price chart data for the given ticker",
+        "parameters": [
+          {
+            "name": "ExchangeTicker",
+            "in": "path",
+            "description": "Format: 'Material.ExchangeCode'",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload."
+          },
+          "204": {
+            "description": "Ticker not found"
+          }
+        }
+      }
+    },
+    "/exchange/cxpc/{ExchangeTicker}/{TimeStamp}": {
+      "get": {
+        "tags": [
+          "exchange"
+        ],
+        "summary": "Retrieves exchange price chart data for the given ticker",
+        "parameters": [
+          {
+            "name": "ExchangeTicker",
+            "in": "path",
+            "description": "Format: 'Material.ExchangeCode'",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "TimeStamp",
+            "in": "path",
+            "description": "Format: 'Milliseconds since epoch, UTC'",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload."
+          },
+          "204": {
+            "description": "Ticker not found"
+          }
+        }
+      }
+    },
+    "/exchange/orders/{CompanyCode}": {
+      "get": {
+        "tags": [
+          "exchange"
+        ],
+        "summary": "Retrieves a provided company code's orders on all exchanges",
+        "parameters": [
+          {
+            "name": "CompanyCode",
+            "in": "path",
+            "description": "The 1 to 4 character company code",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload."
+          }
+        }
+      }
+    },
+    "/exchange/orders/{CompanyCode}/{ExchangeCode}": {
+      "get": {
+        "tags": [
+          "exchange"
+        ],
+        "summary": "Retrieves a provided company code's orders on all exchanges",
+        "parameters": [
+          {
+            "name": "CompanyCode",
+            "in": "path",
+            "description": "The 1 to 4 character company code",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "ExchangeCode",
+            "in": "path",
+            "description": "The 3 character exchange code",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload."
+          }
+        }
+      }
+    },
+    "/global/comexexchanges": {
+      "post": {
+        "tags": [
+          "global",
+          "requiresAdminAuth"
+        ],
+        "summary": "Posts COMEX_EXCHANGE_LIST data",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated or isn't admin"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "global"
+        ],
+        "summary": "Retrieves COMEX_EXCHANGE_LIST data",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved"
+          }
+        }
+      }
+    },
+    "/global/countries": {
+      "post": {
+        "tags": [
+          "global",
+          "requiresAdminAuth"
+        ],
+        "summary": "Posts COUNTRY_REGISTRY_COUNTRIES data",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated or isn't admin"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "global"
+        ],
+        "summary": "Retrieves COUNTRY_REGISTRY_COUNTRIES data",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved"
+          }
+        }
+      }
+    },
+    "/global/simulationdata": {
+      "post": {
+        "tags": [
+          "global",
+          "requiresAdminAuth"
+        ],
+        "summary": "Posts SIMULATION_DATA data",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated or isn't admin"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "global"
+        ],
+        "summary": "Retrieves SIMULATION_DATA data",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved"
+          }
+        }
+      }
+    },
+    "/global/workforceneeds": {
+      "get": {
+        "tags": [
+          "global"
+        ],
+        "summary": "Retrieves workforce needs",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          }
+        }
+      }
+    },
+    "/infrastructure": {
+      "post": {
+        "tags": [
+          "infrastructure",
+          "requiresAuth"
+        ],
+        "summary": "Posts INFRASTRUCTURE_DATA_DATA data payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/infrastructure/project": {
+      "post": {
+        "tags": [
+          "infrastructure",
+          "requiresAuth"
+        ],
+        "summary": "Posts INFRASTRUCTURE_PROJECTS_DATA data payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/infrastructure/{PlanetOrInfrastructureId}": {
+      "get": {
+        "tags": [
+          "infrastructure"
+        ],
+        "summary": "Retrieves infrastucture payload for the given PlanetOrInfrastructureId",
+        "parameters": [
+          {
+            "name": "PlanetOrInfrastructureId",
+            "in": "path",
+            "description": "The planet or infrastucture id.  Can be any of the following:\n1) PopulationId/InfrastructureId\n2) PlanetId\n3) PlanetNaturalId\n4) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload.  See FIORest source for payload definition"
+          },
+          "204": {
+            "description": "Provided PlanetOrInfrastructureId was not found"
+          }
+        }
+      }
+    },
+    "/localmarket": {
+      "post": {
+        "tags": [
+          "localmarket",
+          "requiresAuth"
+        ],
+        "summary": "Posts LOCAL_MARKET_DATA_DATA data payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/localmarket/{LocalMarketId}": {
+      "get": {
+        "tags": [
+          "localmarket"
+        ],
+        "summary": "Retrieves LocalMarket data for the provided LocalMarketId",
+        "parameters": [
+          {
+            "name": "LocalMarketId",
+            "in": "path",
+            "description": "The MarketId (see payload in FIORest)",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload.  See FIORest source for payload definition"
+          },
+          "204": {
+            "description": "Provided LocalMarketId not found"
+          }
+        }
+      }
+    },
+    "/localmarket/planet/{Planet}": {
+      "get": {
+        "tags": [
+          "localmarket"
+        ],
+        "summary": "Retrieves LocalMarket data for provided Planet",
+        "parameters": [
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "Can be any of the following:\n1) PlanetId\n2) PlanetNaturalId\n3) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload.  See FIORest source for payload definition"
+          },
+          "204": {
+            "description": "Provided Planet not found or no ads present"
+          }
+        }
+      }
+    },
+    "/localmarket/planet/{Planet}/{Type}": {
+      "get": {
+        "tags": [
+          "localmarket"
+        ],
+        "summary": "Retrieves LocalMarket data for provided Planet and specified type",
+        "parameters": [
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "Can be any of the following:\n1) PlanetId\n2) PlanetNaturalId\n3) PlanetName\n",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Type",
+            "in": "path",
+            "description": "Can be any of the following:\n1) BUY | BUYS | BUYING\n2) SELL | SELLS | SELLING\n3) SHIP | SHIPPING\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload.  See FIORest source for payload definition"
+          },
+          "204": {
+            "description": "Provided Planet not found or no ads present"
+          }
+        }
+      }
+    },
+    "/localmarket/shipping/source/{SourcePlanet}": {
+      "get": {
+        "tags": [
+          "localmarket"
+        ],
+        "summary": "Retrieves shipping LocalMarket data for the provided Planet where the pick-up location is SourcePlanet",
+        "parameters": [
+          {
+            "name": "SourcePlanet",
+            "in": "path",
+            "description": "Can be any of the following:\n1) PlanetId\n2) PlanetNaturalId\n3) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload.  See FIORest source for payload definition"
+          },
+          "204": {
+            "description": "Provided SourcePlanet not found or no ads found"
+          }
+        }
+      }
+    },
+    "/localmarket/shipping/destination/{DestinationPlanet}": {
+      "get": {
+        "tags": [
+          "localmarket"
+        ],
+        "summary": "Retrieves shipping LocalMarket data for the provided Planet where the drop-off location is DestinationPlanet",
+        "parameters": [
+          {
+            "name": "DestinationPlanet",
+            "in": "path",
+            "description": "Can be any of the following:\n1) PlanetId\n2) PlanetNaturalId\n3) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload.  See FIORest source for payload definition"
+          },
+          "204": {
+            "description": "Provided DestinationPlanet not found or no ads found"
+          }
+        }
+      }
+    },
+    "/localmarket/company/{Company}": {
+      "get": {
+        "tags": [
+          "localmarket"
+        ],
+        "summary": "Retrieves all ads found by specified Company",
+        "parameters": [
+          {
+            "name": "Company",
+            "in": "path",
+            "description": "Can be any of the following:\n1) CompanyId\n2) CompanyId\n3) CompanyName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload.  See FIORest source for payload definition"
+          },
+          "204": {
+            "description": "Provided Company not found or no ads found by Company"
+          }
+        }
+      }
+    },
+    "/localmarket/search": {
+      "post": {
+        "tags": [
+          "localmarket"
+        ],
+        "summary": "Searches all local markets for a given material",
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "LocalMarketSearchParameters",
+            "description": "The search paremeters",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LocalMarket_Search"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/material": {
+      "post": {
+        "tags": [
+          "material",
+          "requiresAuth"
+        ],
+        "summary": "Posts WORLD_MATERIAL_CATEGORIES payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/material/allmaterials": {
+      "get": {
+        "tags": [
+          "material",
+          "requiresAuth"
+        ],
+        "summary": "Retrieves all materials.  See FIORest source for payload definition",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          }
+        }
+      }
+    },
+    "/material/{MaterialTicker}": {
+      "get": {
+        "tags": [
+          "material"
+        ],
+        "summary": "Retrieves an individual material by Ticker.  See FIORest source for payload definition",
+        "parameters": [
+          {
+            "name": "MaterialTicker",
+            "in": "path",
+            "description": "The Ticker of the material to retrieve",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Ticker not found"
+          }
+        }
+      }
+    },
+    "/material/category/{CategoryName}": {
+      "get": {
+        "tags": [
+          "material"
+        ],
+        "summary": "Retrieves all materials that belong to the provided CategoryName. See FIORest source for payload definition",
+        "parameters": [
+          {
+            "name": "CategoryName",
+            "in": "path",
+            "description": "The CategoryName to retrieve",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Category not found"
+          }
+        }
+      }
+    },
+    "/planet": {
+      "post": {
+        "tags": [
+          "planet",
+          "requiresAuth"
+        ],
+        "summary": "Posts PLANET_DATA_DATA payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/planet/cogc": {
+      "post": {
+        "tags": [
+          "planet",
+          "requiresAuth"
+        ],
+        "summary": "Posts PLANET_COGC_DATA payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/planet/sites": {
+      "post": {
+        "tags": [
+          "planet",
+          "requiresAuth"
+        ],
+        "summary": "Posts PLANET_SITES payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/planet/search": {
+      "post": {
+        "tags": [
+          "planet"
+        ],
+        "summary": "Searches for a planet given the parameters in the payload",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "PlanetSearchParameters",
+            "description": "The search parameters. Limitations:\n1) Only the first 4 entries in the Materials array will be considered\n2) Workforce populations (JobData) will not be present if not authenticated\n3) DistanceResults will not be present if not authenticated\n4) Only the first 3 entries in the DistanceChecks array will be considered\n",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Planet_SearchRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/planet/allplanets": {
+      "get": {
+        "tags": [
+          "planet"
+        ],
+        "summary": "Retrieves a list of all planets (minimal payload)",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved list of all planets",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Planet_ListItem"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/planet/allplanets/full": {
+      "get": {
+        "tags": [
+          "planet"
+        ],
+        "summary": "Retrieves all planet data for all planets",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          }
+        }
+      }
+    },
+    "/planet/{Planet}": {
+      "get": {
+        "tags": [
+          "planet"
+        ],
+        "summary": "Retrieves planet payload.  See FIORest for payload definition",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "Can be any of the following:\n1) PlanetId\n2) PlanetNaturalId\n3) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Planet not found"
+          }
+        }
+      }
+    },
+    "/planet/sites/{Planet}": {
+      "get": {
+        "tags": [
+          "planet"
+        ],
+        "summary": "Retrieves the planet sites payload.  See FIORest for payload definition",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "Can be any of the following:\n1) PlanetId\n2) PlanetNaturalId\n3) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Planet not found"
+          }
+        }
+      }
+    },
+    "/planet/sitescounts/{Planet}": {
+      "get": {
+        "tags": [
+          "planet"
+        ],
+        "summary": "Retrieves the number of planet sites for the provided Planet",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "Can be any of the following:\n1) PlanetId\n2) PlanetNaturalId\n3) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Planet not found"
+          }
+        }
+      }
+    },
+    "/production": {
+      "post": {
+        "tags": [
+          "production",
+          "requiresAuth"
+        ],
+        "summary": "Posts PRODUCTION_SITE_PRODUCTION_LINES payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/production/{UserName}": {
+      "get": {
+        "tags": [
+          "production",
+          "requiresAuth",
+          "permissionProduction"
+        ],
+        "summary": "Retrieve all production lines for provided UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve production lines for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Username has no production lines"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/production/planets/{UserName}": {
+      "get": {
+        "tags": [
+          "production",
+          "requiresAuth",
+          "permissionProduction"
+        ],
+        "summary": "Retrieve all the planets where production lines are present for the provided UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve a planet list for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "204": {
+            "description": "Username has no production lines"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/production/{UserName}/{Planet}": {
+      "get": {
+        "tags": [
+          "production",
+          "requiresAuth",
+          "permissionProduction"
+        ],
+        "summary": "Retrieve production line for the given UserName on the specified Planet",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve a planet list for",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "The planet.  It can be any of the following:\n1) PlanetId\n2) PlanetNaturalId\n3) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          },
+          "204": {
+            "description": "Username has no production lines"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/rain/buildings": {
+      "get": {
+        "tags": [
+          "rain"
+        ],
+        "summary": "Retrieves all building data",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_Building"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rain/buildingcosts": {
+      "get": {
+        "tags": [
+          "rain"
+        ],
+        "summary": "Retrieves all building cost data (normalized)",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_BuildingCost"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rain/buildingworkforces": {
+      "get": {
+        "tags": [
+          "rain"
+        ],
+        "summary": "Retrieves all building workforce data (normalized)",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_BuildingWorkforce"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rain/buildingrecipes": {
+      "get": {
+        "tags": [
+          "rain"
+        ],
+        "summary": "Retrieves all building recipe data (normalized)",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_BuildingRecipe"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rain/materials": {
+      "get": {
+        "tags": [
+          "rain"
+        ],
+        "summary": "Retrieves all material data",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_Material"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rain/prices": {
+      "get": {
+        "tags": [
+          "rain"
+        ],
+        "summary": "Retrieves all CX price data",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_Prices"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rain/recipeinputs": {
+      "get": {
+        "tags": [
+          "rain"
+        ],
+        "summary": "Retrieves all recipe input data (normalized)",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_RecipeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rain/recipeoutputs": {
+      "get": {
+        "tags": [
+          "rain"
+        ],
+        "summary": "Retrieves all recipe output data (normalized)",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_RecipeOutput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rain/planetresources": {
+      "get": {
+        "tags": [
+          "rain"
+        ],
+        "summary": "Retrieves all planet resource data (normalized)",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_PlanetResource"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rain/userliquid/{UserName}": {
+      "get": {
+        "tags": [
+          "rain",
+          "requiresAuth",
+          "permissionStorage"
+        ],
+        "summary": "Retrieves liquid asset data for the given UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_Liquid"
+              }
+            }
+          },
+          "204": {
+            "description": "No data available for the UserName"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/rain/userplanets/{UserName}": {
+      "get": {
+        "tags": [
+          "rain",
+          "requiresAuth",
+          "permissionStorage"
+        ],
+        "summary": "Retrieves planets for the given UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_UserPlanet"
+              }
+            }
+          },
+          "204": {
+            "description": "No data available for the UserName"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/rain/userplanetbuildings/{UserName}": {
+      "get": {
+        "tags": [
+          "rain",
+          "requiresAuth",
+          "permissionBuilding"
+        ],
+        "summary": "Retrieves planet buildings for the given UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_PlanetBuilding"
+              }
+            }
+          },
+          "204": {
+            "description": "No data available for the UserName"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/rain/userplanetbuildingreclaimables/{UserName}": {
+      "get": {
+        "tags": [
+          "rain",
+          "requiresAuth",
+          "permissionBuilding"
+        ],
+        "summary": "Retrieves planet building reclaimables for the given UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_PlanetBuildingReclaimable"
+              }
+            }
+          },
+          "204": {
+            "description": "No data available for the UserName"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/rain/userplanetproduction/{UserName}": {
+      "get": {
+        "tags": [
+          "rain",
+          "requiresAuth",
+          "permissionProduction"
+        ],
+        "summary": "Retrieves planet production for the given UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_PlanetProduction"
+              }
+            }
+          },
+          "204": {
+            "description": "No data available for the UserName"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/rain/userplanetproductioninput/{UserName}": {
+      "get": {
+        "tags": [
+          "rain",
+          "requiresAuth",
+          "permissionProduction"
+        ],
+        "summary": "Retrieves planet production inputs for the given UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_PlanetProductionInput"
+              }
+            }
+          },
+          "204": {
+            "description": "No data available for the UserName"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/rain/userplanetproductionoutput/{UserName}": {
+      "get": {
+        "tags": [
+          "rain",
+          "requiresAuth",
+          "permissionProduction"
+        ],
+        "summary": "Retrieves planet production outputs for the given UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_PlanetProductionOutput"
+              }
+            }
+          },
+          "204": {
+            "description": "No data available for the UserName"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/rain/userplanetworkforce/{UserName}": {
+      "get": {
+        "tags": [
+          "rain",
+          "requiresAuth",
+          "permissionWorkforce"
+        ],
+        "summary": "Retrieves planet production workforces for the given UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_PlanetWorkforce"
+              }
+            }
+          },
+          "204": {
+            "description": "No data available for the UserName"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/rain/userstorage/{UserName}": {
+      "get": {
+        "tags": [
+          "rain",
+          "requiresAuth",
+          "permissionStorage"
+        ],
+        "summary": "Retrieves planet production workforces for the given UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Rain_Storage"
+              }
+            }
+          },
+          "204": {
+            "description": "No data available for the UserName"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/recipes/{Ticker}": {
+      "get": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Retrieves the recipes for a given ticker",
+        "parameters": [
+          {
+            "name": "Ticker",
+            "in": "path",
+            "description": "The ticker to retrieve recipe data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          }
+        }
+      }
+    },
+    "/recipes/allrecipes": {
+      "get": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Retrieve all recipes",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Recipe_MinimalRecipe"
+              }
+            }
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/ship/ships": {
+      "post": {
+        "tags": [
+          "ship",
+          "requiresAuth"
+        ],
+        "summary": "Posts SHIP_SHIPS payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/ship/flights": {
+      "post": {
+        "tags": [
+          "ship",
+          "requiresAuth"
+        ],
+        "summary": "Posts SHIP_FLIGHT_FLIGHTS payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/ship/ships/{UserName}": {
+      "get": {
+        "tags": [
+          "ship",
+          "requiresAuth",
+          "permissionFlight"
+        ],
+        "summary": "Retrieves ship data",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve ship data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Username has no ship data"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/ship/ships/fuel/{UserName}": {
+      "get": {
+        "tags": [
+          "ship",
+          "requiresAuth",
+          "permissionFlight"
+        ],
+        "summary": "Retrieves ship fuel store data",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to ship stl/ftl store models for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/ship/flights/{UserName}": {
+      "get": {
+        "tags": [
+          "ship",
+          "requiresAuth",
+          "permissionFlight"
+        ],
+        "summary": "Retrieves ship flight data",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve flight data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Username has no flight data"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/sites": {
+      "post": {
+        "tags": [
+          "sites",
+          "requiresAuth"
+        ],
+        "summary": "Posts SITE_SITES payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/sites/warehouses": {
+      "post": {
+        "tags": [
+          "sites",
+          "requiresAuth"
+        ],
+        "summary": "Posts STORAGE_WAREHOUSES payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/sites/{UserName}": {
+      "get": {
+        "tags": [
+          "sites",
+          "requiresAuth",
+          "permissionBuilding"
+        ],
+        "summary": "Retrieves site data",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve site data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Username has no site data"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/sites/planets/{UserName}": {
+      "get": {
+        "tags": [
+          "sites",
+          "requiresAuth",
+          "permissionBuilding"
+        ],
+        "summary": "Retrieves list of planets user has site data for",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve site data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload.  List of PlanetId returned",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "204": {
+            "description": "Username has no site data"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/sites/{UserName}/{Planet}": {
+      "get": {
+        "tags": [
+          "sites",
+          "requiresAuth",
+          "permissionBuilding"
+        ],
+        "summary": "Retrieves list of planets user has site data for",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve site data for",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "Can be any of the following:\n1) PlanetId\n2) PlanetNaturalId\n3) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload.  Site data for specified Planet"
+          },
+          "204": {
+            "description": "Username has no site data for provided Planet"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/sites/warehouses/{UserName}": {
+      "get": {
+        "tags": [
+          "sites",
+          "requiresAuth",
+          "permissionBuilding"
+        ],
+        "summary": "Retrieves all warehouse sites the user has",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve site data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload.  Site data for specified Planet"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/storage": {
+      "post": {
+        "tags": [
+          "sites",
+          "requiresAuth"
+        ],
+        "summary": "Posts STORAGE_STORAGES payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/storage/change": {
+      "post": {
+        "tags": [
+          "storage",
+          "requiresAuth"
+        ],
+        "summary": "Posts STORAGE_CHANGE payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/storage/{UserName}": {
+      "get": {
+        "tags": [
+          "storage",
+          "requiresAuth",
+          "permissionStorage"
+        ],
+        "summary": "Retrieves storage data",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve storage data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Username has no storage data"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/storage/planets/{UserName}": {
+      "get": {
+        "tags": [
+          "storage",
+          "requiresAuth",
+          "permissionStorage"
+        ],
+        "summary": "Retrieves list of Planets where storage data exists for UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve storage data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "204": {
+            "description": "Username has no storage data"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/storage/{UserName}/{StorageDescription}": {
+      "get": {
+        "tags": [
+          "storage",
+          "requiresAuth",
+          "permissionStorage"
+        ],
+        "summary": "Retrieves list of Planets where storage data exists for UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve storage data for",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "StorageDescription",
+            "in": "path",
+            "description": "Can be any of the following:\n1) StorageId\n2) PlanetId\n3) PlanetNaturalId\n4) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Username has no storage data"
+          },
+          "401": {
+            "description": "Current user is not authenticated or doesn't have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/systemstars": {
+      "post": {
+        "tags": [
+          "systemstars",
+          "requiresAdminAuth"
+        ],
+        "summary": "Posts SYSTEM_STARS_DATA payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "systemstars"
+        ],
+        "summary": "Retrieves system star data",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/systemstars/worldsectors": {
+      "post": {
+        "tags": [
+          "systemstars",
+          "requiresAdminAuth"
+        ],
+        "summary": "Posts WORLD_SECTORS payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "systemstars"
+        ],
+        "summary": "Retrieves world sector data",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/systemstars/jumpcount/{Source}/{Destination}": {
+      "get": {
+        "tags": [
+          "systemstars"
+        ],
+        "summary": "Retrieves jump count from source to destination specified",
+        "parameters": [
+          {
+            "name": "Source",
+            "in": "path",
+            "description": "Can be any of the following:\n1) SystemId (XK-745)\n2) PlanetId\n3) PlanetNaturalId\n4) PlanetName\n",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Destination",
+            "in": "path",
+            "description": "Can be any of the following:\n1) SystemId (XK-745)\n2) PlanetId\n3) PlanetNaturalId\n4) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/systemstars/jumproute/{Source}/{Destination}": {
+      "get": {
+        "tags": [
+          "systemstars"
+        ],
+        "summary": "Retrieves jump route from source to destination specified",
+        "parameters": [
+          {
+            "name": "Source",
+            "in": "path",
+            "description": "Can be any of the following:\n1) SystemId (XK-745)\n2) PlanetId\n3) PlanetNaturalId\n4) PlanetName\n",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Destination",
+            "in": "path",
+            "description": "Can be any of the following:\n1) SystemId (XK-745)\n2) PlanetId\n3) PlanetNaturalId\n4) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/SystemStars_JumpRoute"
+              }
+            }
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/systemstars/star": {
+      "post": {
+        "tags": [
+          "systemstars",
+          "requiresAuth"
+        ],
+        "summary": "Posts SYSTEM_STAR data",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/systemstars/star/{Star}": {
+      "get": {
+        "tags": [
+          "systemstars"
+        ],
+        "summary": "Retrieves SYSTEM_STAR data provided a Star definition",
+        "parameters": [
+          {
+            "name": "Star",
+            "in": "path",
+            "description": "Can be any of the following:\n1) SystemId (hash)\n2) SystemName (Benten)\n3) SystemNaturalId (XK-745)\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "204": {
+            "description": "Star definition not found"
+          }
+        }
+      }
+    },
+    "/user": {
+      "post": {
+        "tags": [
+          "user",
+          "requiresAuth"
+        ],
+        "summary": "Posts USER_DATA payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/user/allusers": {
+      "get": {
+        "tags": [
+          "user",
+          "requiresAuth"
+        ],
+        "summary": "Retrieves all FIO users",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/user/{UserName}": {
+      "get": {
+        "tags": [
+          "user",
+          "requiresAuth"
+        ],
+        "summary": "Retrieves userdata for specified UserName",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve user data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/user/resetalldata": {
+      "post": {
+        "tags": [
+          "user",
+          "requiresAuth"
+        ],
+        "summary": "Resets the current user's data.",
+        "description": "This will delete the following data for your User:\n1) Company data\n2) ProductionLine data\n3) Ship data\n4) Site data\n5) Workforce data\n6) User data\n7) Warehouse data\n8) Contract data\n\nYou should only use this if your data has been corrupted by excess hydration timeouts\n",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/usersettings/general": {
+      "post": {
+        "tags": [
+          "usersettings",
+          "requiresAuth"
+        ],
+        "summary": "Currently unused.  Will be used in the future",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "usersettings",
+          "requiresAuth"
+        ],
+        "summary": "Currently unused.  Will be used in the future",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/usersettings/general/{UserName}": {
+      "get": {
+        "tags": [
+          "usersettings",
+          "requiresAuth"
+        ],
+        "summary": "Currently unused.  Will be used in the future",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/usersettings/burnrate/addexclusion": {
+      "post": {
+        "tags": [
+          "usersettings",
+          "requiresAuth"
+        ],
+        "summary": "Adds a BurnRateExclusion",
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "BurnRateExclusion",
+            "description": "A BurnRateExclusion",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UserSettings_BurnRate_Exclusion"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        }
+      }
+    },
+    "/usersettings/burnrate/deleteexclusion": {
+      "post": {
+        "tags": [
+          "usersettings",
+          "requiresAuth"
+        ],
+        "summary": "Deletes a BurnRateExclusion",
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "BurnRateExclusion",
+            "description": "A BurnRateExclusion",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UserSettings_BurnRate_Exclusion"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        }
+      }
+    },
+    "/usersettings/burnrate/{UserName}": {
+      "get": {
+        "tags": [
+          "usersettings",
+          "requiresAuth",
+          "permissionWorkforce",
+          "permissionStorage"
+        ],
+        "summary": "Retrieves BurnRateSettings for the specified user",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The UserName to retrieve BurnRate settings for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/usersettings/burnrate/{UserName}/{PlanetNaturalId}": {
+      "get": {
+        "tags": [
+          "usersettings",
+          "requiresAuth",
+          "permissionWorkforce",
+          "permissionStorage"
+        ],
+        "summary": "Retrivies BurnRateSettings for the specified user on the specified planet",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The UserName to retrieve BurnRate settings for",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "PlanetNaturalId",
+            "in": "path",
+            "description": "The PlanetNaturalId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissiosn"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/usersettings/burnrate/yellowthreshold": {
+      "post": {
+        "tags": [
+          "usersettings",
+          "requiresAuth"
+        ],
+        "summary": "Currently unused.  Will be used in the future",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/usersettings/burnrate/redthreshold": {
+      "post": {
+        "tags": [
+          "usersettings",
+          "requiresAuth"
+        ],
+        "summary": "Currently unused.  Will be used in the future",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/version/latest": {
+      "get": {
+        "tags": [
+          "version"
+        ],
+        "summary": "Retrieves latest version number of the FIOUI",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "204": {
+            "description": "No version file present"
+          }
+        }
+      }
+    },
+    "/version/releasenotes": {
+      "get": {
+        "tags": [
+          "version"
+        ],
+        "summary": "Retrieves latest version release notes of the FIOUI as an rtf file",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "204": {
+            "description": "No version file present"
+          }
+        }
+      }
+    },
+    "/version/download": {
+      "get": {
+        "tags": [
+          "version"
+        ],
+        "summary": "Retrieves latest FIOUI setup executable",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "204": {
+            "description": "No version file present"
+          }
+        }
+      }
+    },
+    "/version/extension/download": {
+      "get": {
+        "tags": [
+          "version"
+        ],
+        "summary": "Redirects you to to the FIO Chrome Extension page",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/version/extension/script": {
+      "get": {
+        "tags": [
+          "version"
+        ],
+        "summary": "Retrieves the latest version of the FIO uploader script",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "204": {
+            "description": "Uploader script not found"
+          }
+        }
+      }
+    },
+    "/workforce": {
+      "post": {
+        "tags": [
+          "workforce",
+          "requiresAuth"
+        ],
+        "summary": "Posts WORKFORCE_WORKFORCES payload",
+        "responses": {
+          "200": {
+            "description": "Successfully posted"
+          },
+          "400": {
+            "description": "Failed to parse payload"
+          },
+          "401": {
+            "description": "Current user is not authenticated"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/workforce/{UserName}": {
+      "get": {
+        "tags": [
+          "workforce",
+          "requiresAuth",
+          "permissionWorkforce"
+        ],
+        "summary": "Retrieves workforce data for the specified user",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve workforce data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Specified user has no workforce data"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/workforce/planets/{UserName}": {
+      "get": {
+        "tags": [
+          "workforce",
+          "requiresAuth",
+          "permissionWorkforce"
+        ],
+        "summary": "Retrieves list of planets where the specified user has Workforce data",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve workforce data for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "204": {
+            "description": "Specified user has no workforce data"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/workforce/{UserName}/{Planet}": {
+      "get": {
+        "tags": [
+          "workforce",
+          "requiresAuth",
+          "permissionWorkforce"
+        ],
+        "summary": "Retrieves workforce data for the specified usernaem and planet",
+        "parameters": [
+          {
+            "name": "UserName",
+            "in": "path",
+            "description": "The username to retrieve workforce data for",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Planet",
+            "in": "path",
+            "description": "Can be any of the following:\n1) PlanetId\n2) PlanetNaturalId\n3) PlanetName\n",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved payload"
+          },
+          "204": {
+            "description": "Specified user has no workforce data"
+          },
+          "401": {
+            "description": "Current user is not authenticated or does not have appropriate permissions"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    }
+  },
+  "definitions": {
+    "Auth_LoginAndPassword": {
+      "type": "object",
+      "required": [
+        "UserName",
+        "Password"
+      ],
+      "properties": {
+        "UserName": {
+          "type": "string",
+          "example": "Saganaki"
+        },
+        "Password": {
+          "type": "string",
+          "example": "Hunter2"
+        }
+      }
+    },
+    "Auth_LoginResponse": {
+      "type": "object",
+      "properties": {
+        "AuthToken": {
+          "type": "string",
+          "example": "f6639c30d1a647b8937da9874bf1ec10"
+        },
+        "Expiry": {
+          "type": "string",
+          "example": "2021-01-19T17:10:57.8648344Z"
+        },
+        "IsAdministrator": {
+          "type": "boolean",
+          "example": false
+        }
+      }
+    },
+    "Auth_ChangePassword": {
+      "type": "object",
+      "properties": {
+        "OldPassword": {
+          "type": "string",
+          "example": "OldPassword"
+        },
+        "NewPassword": {
+          "type": "string",
+          "example": "Hunter2"
+        }
+      }
+    },
+    "Auth_PermissionAllowance": {
+      "type": "object",
+      "properties": {
+        "UserName": {
+          "type": "string",
+          "example": "Saganaki"
+        },
+        "FlightData": {
+          "type": "boolean",
+          "example": false
+        },
+        "BuildingData": {
+          "type": "boolean",
+          "example": true
+        },
+        "StorageData": {
+          "type": "boolean",
+          "example": true
+        },
+        "ProductionData": {
+          "type": "boolean",
+          "example": false
+        },
+        "WorkforceData": {
+          "type": "boolean",
+          "example": true
+        },
+        "ExpertsData": {
+          "type": "boolean",
+          "example": true
+        },
+        "ContractData": {
+          "type": "boolean",
+          "example": false
+        },
+        "ShipmentTracking": {
+          "type": "boolean",
+          "example": false
+        }
+      }
+    },
+    "Auth_CreateApiKey": {
+      "type": "object",
+      "properties": {
+        "UserName": {
+          "type": "string",
+          "example": "Saganaki"
+        },
+        "Password": {
+          "type": "string",
+          "example": "Hunter2"
+        },
+        "AllowWrites": {
+          "type": "boolean",
+          "example": "false"
+        },
+        "Application": {
+          "type": "string",
+          "example": "FIOWeb-Chrome"
+        }
+      }
+    },
+    "Auth_RevokeApiKey": {
+      "type": "object",
+      "properties": {
+        "UserName": {
+          "type": "string",
+          "example": "Saganaki"
+        },
+        "Password": {
+          "type": "string",
+          "example": "Hunter2"
+        },
+        "ApiKeyToRevoke": {
+          "type": "string",
+          "example": "e04e2e9f-e970-4253-8349-45c33a54d42e"
+        }
+      }
+    },
+    "Auth_CreateGroupPayload": {
+      "type": "object",
+      "properties": {
+        "GroupId": {
+          "type": "string",
+          "example": "12345678"
+        },
+        "GroupName": {
+          "type": "string",
+          "example": "My_Group1"
+        },
+        "GroupUsers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "[\"Saganaki\", \"Kovus\"]"
+        }
+      }
+    },
+    "Auth_CreateGroupResponse": {
+      "type": "object",
+      "properties": {
+        "GroupId": {
+          "type": "integer",
+          "example": 12345678
+        },
+        "GroupString": {
+          "type": "string",
+          "example": "12345678-My_Group1"
+        }
+      }
+    },
+    "Admin_Create": {
+      "type": "object",
+      "properties": {
+        "UserName": {
+          "type": "string",
+          "example": "Saganaki"
+        },
+        "Password": {
+          "type": "string",
+          "example": "Hunter2"
+        },
+        "IsAdmin": {
+          "type": "boolean",
+          "example": false
+        }
+      }
+    },
+    "Admin_Disable": {
+      "type": "object",
+      "properties": {
+        "UserName": {
+          "type": "string",
+          "example": "Saganaki"
+        },
+        "Reason": {
+          "type": "string",
+          "example": "This user was disabled because they abused the API"
+        }
+      }
+    },
+    "Chat_ListItem": {
+      "type": "object",
+      "properties": {
+        "DisplayName": {
+          "type": "string",
+          "example": "CR-701a Global Site Owners"
+        },
+        "ChannelId": {
+          "type": "string",
+          "example": "7a581ed1c9d891f1e372a280b5d77b5c"
+        }
+      }
+    },
+    "Planet_ListItem": {
+      "type": "object",
+      "properties": {
+        "PlanetNaturalId": {
+          "type": "string",
+          "example": "XK-745b"
+        },
+        "PlanetName": {
+          "type": "string",
+          "example": "Katoa"
+        }
+      }
+    },
+    "Planet_SearchRequest": {
+      "type": "object",
+      "properties": {
+        "Materials": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "[\"FEO\", \"LST\"]"
+        },
+        "IncludeRocky": {
+          "type": "boolean",
+          "example": true
+        },
+        "IncludeGaseous": {
+          "type": "boolean",
+          "example": true
+        },
+        "IncludeLowGravity": {
+          "type": "boolean",
+          "example": true
+        },
+        "IncludeHighGravity": {
+          "type": "boolean",
+          "example": false
+        },
+        "IncludeLowPressure": {
+          "type": "boolean",
+          "example": true
+        },
+        "IncludeHighPressure": {
+          "type": "boolean",
+          "example": false
+        },
+        "IncludeLowTemperature": {
+          "type": "boolean",
+          "example": true
+        },
+        "IncludeHighTemperature": {
+          "type": "boolean",
+          "example": false
+        },
+        "MustBeFertile": {
+          "type": "boolean",
+          "example": true
+        },
+        "MustHaveLocalMarket": {
+          "type": "boolean",
+          "example": true
+        },
+        "MustHaveChamberOfCommerce": {
+          "type": "boolean",
+          "example": false
+        },
+        "MustHaveWarehouse": {
+          "type": "boolean",
+          "example": true
+        },
+        "MustHaveAdministrationCenter": {
+          "type": "boolean",
+          "example": true
+        },
+        "MustHaveShipyard": {
+          "type": "boolean",
+          "example": false
+        },
+        "DistanceChecks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "[\"Katoa\", \"Promitor\", \"Montem\"]"
+        }
+      }
+    },
+    "LocalMarket_Search": {
+      "type": "object",
+      "properties": {
+        "SearchBuys": {
+          "type": "boolean",
+          "example": true
+        },
+        "SearchSells": {
+          "type": "boolean",
+          "example": true
+        },
+        "Ticker": {
+          "type": "string",
+          "example": "RAT"
+        },
+        "CostThreshold": {
+          "type": "number",
+          "example": 1.5
+        },
+        "SourceLocation": {
+          "type": "string",
+          "example": "Katoa"
+        }
+      }
+    },
+    "Rain_Building": {
+      "type": "object",
+      "properties": {
+        "Ticker": {
+          "type": "string",
+          "example": "FP"
+        },
+        "Name": {
+          "type": "string",
+          "example": "foodProcessor"
+        },
+        "Area": {
+          "type": "integer",
+          "example": 42
+        },
+        "Expertise": {
+          "type": "string",
+          "example": "FOOD_INDUSTRIES"
+        }
+      }
+    },
+    "Rain_BuildingCost": {
+      "type": "object",
+      "properties": {
+        "Key": {
+          "type": "string",
+          "example": "FP-BSE"
+        },
+        "Building": {
+          "type": "string",
+          "example": "FP"
+        },
+        "Material": {
+          "type": "string",
+          "example": "BSE"
+        },
+        "Amount": {
+          "type": "integer",
+          "example": 3
+        }
+      }
+    },
+    "Rain_BuildingWorkforce": {
+      "type": "object",
+      "properties": {
+        "Key": {
+          "type": "string",
+          "example": "FP-PIONEER"
+        },
+        "Building": {
+          "type": "string",
+          "example": "FP"
+        },
+        "Level": {
+          "type": "string",
+          "example": "PIONEER"
+        },
+        "Capacity": {
+          "type": "integer",
+          "example": 40
+        }
+      }
+    },
+    "Rain_BuildingRecipe": {
+      "type": "object",
+      "properties": {
+        "Key": {
+          "type": "string",
+          "example": "FP-COF"
+        },
+        "Building": {
+          "type": "string",
+          "example": "FP"
+        },
+        "Duration": {
+          "type": "integer",
+          "example": 25920000
+        }
+      }
+    },
+    "Rain_Material": {
+      "type": "object",
+      "properties": {
+        "Ticker": {
+          "type": "string",
+          "example": "BSE"
+        },
+        "Name": {
+          "type": "string",
+          "example": "basicStructuralElements"
+        },
+        "Category": {
+          "type": "string",
+          "example": "onstruction prefabs"
+        },
+        "Weight": {
+          "type": "number",
+          "example": 0.3
+        },
+        "Volume": {
+          "type": "number",
+          "example": 0.5
+        }
+      }
+    },
+    "Rain_Prices": {
+      "type": "object",
+      "properties": {
+        "Ticker": {
+          "type": "string",
+          "example": "RCO",
+          "description": "The Ticker"
+        },
+        "MMBuy": {
+          "type": "number",
+          "example": 399.99,
+          "default": null,
+          "description": "The Market Maker buy (if present)"
+        },
+        "MMSell": {
+          "type": "number",
+          "example": null,
+          "default": null,
+          "description": "The Market Maker sell (if present)"
+        },
+        "CI1-Average": {
+          "type": "number",
+          "example": 681.05,
+          "default": null,
+          "description": "The price average of the material on the CI1 exchange"
+        },
+        "CI1-AskAmt": {
+          "type": "integer",
+          "example": 100,
+          "default": null,
+          "description": "The amount of items available for the lowest asking price"
+        },
+        "CI1-AskPrice": {
+          "type": "number",
+          "example": 699.99,
+          "default": null,
+          "description": "The lowest asking price"
+        },
+        "CI1-AskAvail": {
+          "type": "integer",
+          "example": 255,
+          "default": null,
+          "description": "The amount of items listed available for buy across all ads"
+        },
+        "CI1-BidAmt": {
+          "type": "integer",
+          "example": 4,
+          "default": null,
+          "description": "The amount of items requested for the highest bid price"
+        },
+        "CI1-BidPrice": {
+          "type": "number",
+          "example": 545.01,
+          "default": null,
+          "description": "The highest bid price"
+        },
+        "CI1-BidAvail": {
+          "type": "integer",
+          "example": 995,
+          "default": null,
+          "description": "The amount of items requesting to buy across all ads"
+        },
+        "NI1-Average": {
+          "type": "number",
+          "example": 681.05,
+          "default": null,
+          "description": "The price average of the material on the NC1 exchange"
+        },
+        "NI1-AskAmt": {
+          "type": "integer",
+          "example": 100,
+          "default": null,
+          "description": "The amount of items available for the lowest asking price"
+        },
+        "NI1-AskPrice": {
+          "type": "number",
+          "example": 699.99,
+          "default": null,
+          "description": "The lowest asking price"
+        },
+        "NI1-AskAvail": {
+          "type": "integer",
+          "example": 255,
+          "default": null,
+          "description": "The amount of items listed available for buy across all ads"
+        },
+        "NI1-BidAmt": {
+          "type": "integer",
+          "example": 4,
+          "default": null,
+          "description": "The amount of items requested for the highest bid price"
+        },
+        "NI1-BidPrice": {
+          "type": "number",
+          "example": 545.01,
+          "default": null,
+          "description": "The highest bid price"
+        },
+        "NI1-BidAvail": {
+          "type": "integer",
+          "example": 995,
+          "default": null,
+          "description": "The amount of items requesting to buy across all ads"
+        },
+        "IC1-Average": {
+          "type": "number",
+          "example": 681.05,
+          "default": null,
+          "description": "The price average of the material on the IC1 exchange"
+        },
+        "IC1-AskAmt": {
+          "type": "integer",
+          "example": 100,
+          "default": null,
+          "description": "The amount of items available for the lowest asking price"
+        },
+        "IC1-AskPrice": {
+          "type": "number",
+          "example": 699.99,
+          "default": null,
+          "description": "The lowest asking price"
+        },
+        "IC1-AskAvail": {
+          "type": "integer",
+          "example": 255,
+          "default": null,
+          "description": "The amount of items listed available for buy across all ads"
+        },
+        "IC1-BidAmt": {
+          "type": "integer",
+          "example": 4,
+          "default": null,
+          "description": "The amount of items requested for the highest bid price"
+        },
+        "IC1-BidPrice": {
+          "type": "number",
+          "example": 545.01,
+          "default": null,
+          "description": "The highest bid price"
+        },
+        "IC1-BidAvail": {
+          "type": "integer",
+          "example": 995,
+          "default": null,
+          "description": "The amount of items requesting to buy across all ads"
+        }
+      }
+    },
+    "Rain_RecipeInput": {
+      "type": "object",
+      "properties": {
+        "Key": {
+          "type": "string",
+          "example": "FP-COF"
+        },
+        "Material": {
+          "type": "string",
+          "example": "CAF"
+        },
+        "Amount": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "Rain_RecipeOutput": {
+      "type": "object",
+      "properties": {
+        "Key": {
+          "type": "string",
+          "example": "FP-COF"
+        },
+        "Material": {
+          "type": "string",
+          "example": "COF"
+        },
+        "Amount": {
+          "type": "integer",
+          "example": 3
+        }
+      }
+    },
+    "Rain_PlanetResource": {
+      "type": "object",
+      "properties": {
+        "Key": {
+          "type": "string",
+          "example": "CR-409b-SIO"
+        },
+        "Planet": {
+          "type": "string",
+          "example": "CR-409b"
+        },
+        "Ticker": {
+          "type": "string",
+          "example": "SIO"
+        },
+        "Type": {
+          "type": "string",
+          "example": "MINERAL",
+          "description": "Can be any of the following:\n1) MINERAL\n2) LIQUID\n3) GASEOUS\n"
+        },
+        "Factor": {
+          "type": "number",
+          "example": 0.5979242920875549,
+          "description": "The factor at which extraction occurrs.  To get daily extraction:\n- GASEOUS: Factor * 0.60\n- LIQUID: Factor * 0.70\n- MINERAL: Factor * 0.70\n"
+        }
+      }
+    },
+    "Rain_Liquid": {
+      "type": "object",
+      "properties": {
+        "Source": {
+          "type": "string",
+          "example": "WALLET.IC1"
+        },
+        "Currency": {
+          "type": "string",
+          "example": "ICA"
+        },
+        "Amount": {
+          "type": "number",
+          "example": "1888.9928"
+        }
+      }
+    },
+    "Rain_UserPlanet": {
+      "type": "object",
+      "properties": {
+        "NaturalId": {
+          "type": "string",
+          "example": "CR-409e"
+        },
+        "Name": {
+          "type": "string",
+          "example": "Promitor",
+          "description": "Name will match NaturalId if the planet is not named"
+        }
+      }
+    },
+    "Rain_PlanetBuilding": {
+      "type": "object",
+      "properties": {
+        "NaturalId": {
+          "type": "string",
+          "example": "CR-409e"
+        },
+        "Id": {
+          "type": "string",
+          "example": "FP-A7055081",
+          "description": "The right-hand side hash is the first 8 characters of the BuildingId"
+        },
+        "Ticker": {
+          "type": "string",
+          "example": "FP"
+        },
+        "Created": {
+          "type": "integer",
+          "example": 1607137698677,
+          "description": "This is a long integer which represents epoch time in milliseconds"
+        },
+        "Condition": {
+          "type": "number",
+          "example": 0.9949163198,
+          "description": "The condition of the building"
+        }
+      }
+    },
+    "Rain_PlanetBuildingReclaimable": {
+      "type": "object",
+      "properties": {
+        "BuildingId": {
+          "type": "string",
+          "example": "FP-A7055081",
+          "description": "The right-hand side hash is the first 8 characters of the BuildingId"
+        },
+        "Material": {
+          "type": "string",
+          "example": "BSE"
+        },
+        "Amount": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "Rain_PlanetProduction": {
+      "type": "object",
+      "properties": {
+        "NaturalId": {
+          "type": "string",
+          "example": "CR-409e"
+        },
+        "Type": {
+          "type": "string",
+          "example": "foodProcessor",
+          "description": "The building name (not Ticker)"
+        },
+        "Id": {
+          "type": "string",
+          "example": "CR-409e-foodProcessor-D018E07B",
+          "description": "The right-hand side hash is the first 8 characters of the Production id"
+        },
+        "Completed": {
+          "type": "number",
+          "example": 0.3699975014,
+          "description": "Percentage complete of this production line"
+        },
+        "Remaining": {
+          "type": "integer",
+          "example": 1685859,
+          "description": "The amount of time remaining until production completion in milliseconds"
+        }
+      }
+    },
+    "Rain_PlanetProductionInput": {
+      "type": "object",
+      "properties": {
+        "OrderId": {
+          "type": "string",
+          "example": "CR-409e-farm-40C19008",
+          "description": "The right-hand side hash is the first 8 characters of the Production id"
+        },
+        "Material": {
+          "type": "string",
+          "example": "H2O"
+        },
+        "Count": {
+          "type": "integer",
+          "example": 6
+        }
+      }
+    },
+    "Rain_PlanetProductionOutput": {
+      "type": "object",
+      "properties": {
+        "OrderId": {
+          "type": "string",
+          "example": "CR-409e-farm-40C19008",
+          "description": "The right-hand side hash is the first 8 characters of the Production id"
+        },
+        "Material": {
+          "type": "string",
+          "example": "BEA"
+        },
+        "Count": {
+          "type": "integer",
+          "example": 4
+        }
+      }
+    },
+    "Rain_PlanetWorkforce": {
+      "type": "object",
+      "properties": {
+        "NaturalId": {
+          "type": "string",
+          "example": "CR-409e"
+        },
+        "Workforce": {
+          "type": "string",
+          "example": "PIONEER"
+        },
+        "Population": {
+          "type": "integer",
+          "example": 120
+        },
+        "Capacity": {
+          "type": "integer",
+          "example": 200
+        },
+        "Required": {
+          "type": "integer",
+          "example": 120
+        },
+        "Satisfaction": {
+          "type": "number",
+          "example": 0.8666666746
+        }
+      }
+    },
+    "Rain_Storage": {
+      "type": "object",
+      "properties": {
+        "NaturalId": {
+          "type": "string",
+          "example": "CR-409e"
+        },
+        "Name": {
+          "type": "string",
+          "example": "Promitor"
+        },
+        "Type": {
+          "type": "string",
+          "example": "STORE"
+        },
+        "Ticker": {
+          "type": "string",
+          "example": "H2O"
+        },
+        "Amount": {
+          "type": "integer",
+          "example": 225
+        }
+      }
+    },
+    "Recipe_MinimalRecipe": {
+      "type": "object",
+      "properties": {
+        "BuildingTicker": {
+          "type": "string",
+          "example": "FP"
+        },
+        "RecipeName": {
+          "type": "string",
+          "example": "1xGRN 1xBEA 1xNUT = 10xRAT"
+        },
+        "Inputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Recipe_MinimalInput"
+          }
+        },
+        "Outputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Recipe_MinimalOutput"
+          }
+        },
+        "TimeMs": {
+          "type": "integer",
+          "example": 21600000,
+          "description": "Time in milliseconds"
+        }
+      }
+    },
+    "Recipe_MinimalInput": {
+      "type": "object",
+      "properties": {
+        "Ticker": {
+          "type": "string",
+          "example": "GRN"
+        },
+        "Amount": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "Recipe_MinimalOutput": {
+      "properties": {
+        "Ticker": {
+          "type": "string",
+          "example": "RAT"
+        },
+        "Amount": {
+          "type": "integer",
+          "example": 10
+        }
+      }
+    },
+    "SystemStars_JumpRoute": {
+      "type": "object",
+      "properties": {
+        "SourceSystemId": {
+          "type": "string",
+          "example": "cf135f115b2b0f268b19ce3626637248"
+        },
+        "SourceSystemName": {
+          "type": "string",
+          "example": "Daikoku"
+        },
+        "SourceSystemNaturalId": {
+          "type": "string",
+          "example": "WN-506"
+        },
+        "DestinationSystemId": {
+          "type": "string",
+          "example": "bb0450c417f7623f5bac4bd779b9a8b9"
+        },
+        "DestinationSystemName": {
+          "type": "string",
+          "example": "WN-428"
+        },
+        "DestinationSystemNaturalId": {
+          "type": "string",
+          "example": "WN-428"
+        },
+        "Distance": {
+          "type": "number",
+          "example": 50.95398174301303,
+          "description": "Distance is in parsecs"
+        }
+      }
+    },
+    "UserSettings_BurnRate_Exclusion": {
+      "type": "object",
+      "properties": {
+        "PlanetNaturalId": {
+          "type": "string",
+          "example": "XK-745b"
+        },
+        "MaterialTicker": {
+          "type": "string",
+          "example": "COF"
+        }
+      }
+    }
+  }
+}
