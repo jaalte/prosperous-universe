@@ -1,6 +1,7 @@
 import json
 import math
 from fio_api import fio
+from pathfinding import jump_distance
 
 # Constants
 EXTRACTORS = {
@@ -24,39 +25,6 @@ EXTRACTORS = {
     },
 }
 
-EXCHANGES = {
-    'AI1': {
-        'ticker': 'AI1',
-        'systemId': 'ZV-307',
-        'systemName': 'Antares',
-    },
-    'CI1': {
-        'ticker': 'CI1',
-        'systemId': 'UV-351',
-        'systemName': 'Benten',
-    },
-    'CI2': {
-        'ticker': 'CI2',
-        'systemId': 'AM-783',
-        'systemName': 'Arclight',
-    },
-    'IC1': {
-        'ticker': 'IC1',
-        'systemId': 'VH-331',
-        'systemName': 'Hortus',
-    },
-    'NC1': {
-        'ticker': 'NC1',
-        'systemId': 'OT-580',
-        'systemName': 'Moria',
-    },
-    'NC2': {
-        'ticker': 'NC2',
-        'systemId': 'TD-203',
-        'systemName': 'Hubur',
-    },
-}
-
 # Create a lookup dictionary for all materials by MaterialId
 allmaterials = fio.request("GET", "/material/allmaterials", cache=60*60*24)
 material_lookup = {material['MaterialId']: material for material in allmaterials}
@@ -65,16 +33,20 @@ material_lookup = {material['MaterialId']: material for material in allmaterials
 allplanets = fio.request("GET", f"/planet/allplanets/full", cache=-1)
 planet_lookup = {planet['PlanetId']: planet for planet in allplanets}
 
+# Create a lookup dictionary for all exchanges by exchange ticker (ComexCode)
+rawexchanges = fio.request("GET", "/exchange/station", cache='forever')
+exchanges = {exchange['ComexCode']: exchange for exchange in rawexchanges}
+
 class Planet:
     def __init__(self, planet_id):
-        #self.rawdata = fio.request("GET", f"/planet/{planet_id}")
-        # Rather than doing a separate request, use the full planet list to get the raw data
-        # Find the planet whose planetIdentifier matches the given planet_id
         self.rawdata = planet_lookup.get(planet_id)
         self.name = self.rawdata.get('PlanetName')
         self.id = self.rawdata.get('PlanetId')
-        self.identifier = self.rawdata.get('PlanetIdentifier')
+        self.natural_id = self.rawdata.get('PlanetNaturalId')
+        self.system_natural_id = self.rawdata.get('PlanetNaturalId')[:-1]
         self.resources = {}
+        self.exchange = self.get_nearest_exchange()
+        print(json.dumps(self.exchange, indent=2))
 
         # Process the resources in rawdata
         for resource in self.rawdata.get('Resources', []):
@@ -130,13 +102,14 @@ class Planet:
     def get_nearest_exchange(self):
         nearest_distance = 99999999
         nearest_exchange = None
-        for ticker in EXCHANGES:
-            exchange = EXCHANGES[ticker]
-            distance = jump_distance(EXCHANGES['ticker']['systemId'], self.id)
+        for ticker, exchange in exchanges.items():
+            distance = jump_distance(exchange['SystemNaturalId'], self.system_natural_id)
             if distance < nearest_distance:
                 nearest_exchange = exchange
                 nearest_distance = distance
-        return nearest_exchange, nearest_distance
+        nearest_exchange['ticker'] = ticker
+        nearest_exchange['distance'] = nearest_distance
+        return nearest_exchange
 
     #def is_colonized(self):
 
