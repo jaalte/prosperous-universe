@@ -43,7 +43,8 @@ def main():
         print(f"\n{ticker} ({groups[ticker][0]['resource']['name']})")
         for hit in groups[ticker]:
             colonized = 'Colonized' if hit['planet'].rawdata['HasAdministrationCenter'] else 'Uncolonized'
-            print(f"  {hit['resource']['factor']*100:<5.2f} {hit['planet'].name:<15} {colonized:<10}")
+            exchange = hit['planet'].get_nearest_exchange()
+            print(f"  {hit['resource']['factor']*100:<5.2f} {hit['planet'].name:<15} {colonized:<11}: {exchange['Distance']:<2} jumps from {exchange['Ticker']}")
     
 if __name__ == "__main__":
     main()
