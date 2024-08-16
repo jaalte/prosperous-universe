@@ -1,0 +1,126 @@
+### Reactor usage 31%
+
+0	TO	Moria - Montem (orbit)	5m 38s	4,463 km		
+39 units STL fuel
+1	DEP	Moria (orbit)	2h 27m	73,879,434 km	0.025%	
+54 units STL fuel
+18 units FTL fuel
+2	JMP	TO-392 (orbit)	4h 38m	8 parsecs	0.008%	
+3	CHRG	TO-392 (orbit)	2m 16s		0.000%	
+24 units FTL fuel
+4	JMP	Midway (orbit)	6h 9m	11 parsecs	0.011%	
+5	CHRG	Midway (orbit)	2m 16s		0.000%	
+17 units FTL fuel
+6	JMP	YI-059 (orbit)	4h 28m	8 parsecs	0.008%	
+7	CHRG	YI-059 (orbit)	2m 16s		0.000%	
+24 units FTL fuel
+8	JMP	YI-280 (orbit)	6h 16m	11 parsecs	0.011%	
+9	CHRG	YI-280 (orbit)	2m 16s		0.000%	
+8 units FTL fuel
+10	JMP	YI-715 (orbit)	2h 14m	4 parsecs	0.004%	
+11	CHRG	YI-715 (orbit)	2m 16s		0.000%	
+12 units FTL fuel
+12	JMP	YI-683 (orbit)	3h 6m	6 parsecs	0.006%	
+13	CHRG	YI-683 (orbit)	2m 16s		0.000%	
+15 units FTL fuel
+14	JMP	YI-705 (orbit)	4h 1m	7 parsecs	0.007%	
+15	CHRG	YI-705 (orbit)	2m 16s		0.000%	
+8 units FTL fuel
+16	JMP	YI-209 (orbit)	2h 5m	4 parsecs	0.004%	
+17	CHRG	YI-209 (orbit)	2m 16s		0.000%	
+8 units FTL fuel
+18	JMP	YI-265 (orbit)	2h 8m	4 parsecs	0.004%	
+19	CHRG	YI-265 (orbit)	2m 16s		0.000%	
+25 units FTL fuel
+20	JMP	OY-799 (orbit)	6h 24m	12 parsecs	0.012%	
+21	CHRG	OY-799 (orbit)	2m 16s		0.000%	
+16 units FTL fuel
+22	JMP	UP-170 (orbit)	4h 15m	8 parsecs	0.008%	
+23	CHRG	UP-170 (orbit)	2m 16s		0.000%	
+7 units FTL fuel
+24	JMP	UP-305 (orbit)	1h 49m	3 parsecs	0.003%	
+25	CHRG	UP-305 (orbit)	2m 16s		0.000%	
+21 units FTL fuel
+26	JMP	UP-102 (orbit)	5h 33m	10 parsecs	0.010%	
+27	APP	UP-102 a (orbit)	7h 33m	115,113,570 km	0.166%	
+27 units STL fuel
+28	LND	UP-102 a	5m 32s	4,317 km	0.002%	
+38 units STL fuel
+
+### Reactor usage 43%
+0	TO	Moria - Montem (orbit)	5m 38s	4,463 km		
+39 units STL fuel
+1	DEP	Moria (orbit)	11h 53m	73,898,087 km	0.031%	
+11 units STL fuel
+26 units FTL fuel
+2	JMP	TO-392 (orbit)	4h 0m	8 parsecs	0.008%	
+3	CHRG	TO-392 (orbit)	3m 15s		0.007%	
+34 units FTL fuel
+4	JMP	Midway (orbit)	5h 19m	11 parsecs	0.011%	
+5	CHRG	Midway (orbit)	3m 15s		0.007%	
+25 units FTL fuel
+6	JMP	YI-059 (orbit)	3h 51m	8 parsecs	0.008%	
+7	CHRG	YI-059 (orbit)	3m 15s		0.007%	
+35 units FTL fuel
+8	JMP	YI-280 (orbit)	5h 25m	11 parsecs	0.011%	
+9	CHRG	YI-280 (orbit)	3m 15s		0.007%	
+12 units FTL fuel
+10	JMP	YI-715 (orbit)	1h 56m	4 parsecs	0.004%	
+11	CHRG	YI-715 (orbit)	3m 15s		0.007%	
+17 units FTL fuel
+12	JMP	YI-683 (orbit)	2h 40m	6 parsecs	0.006%	
+13	CHRG	YI-683 (orbit)	3m 15s		0.007%	
+22 units FTL fuel
+14	JMP	YI-705 (orbit)	3h 28m	7 parsecs	0.007%	
+15	CHRG	YI-705 (orbit)	3m 15s		0.007%	
+11 units FTL fuel
+16	JMP	YI-209 (orbit)	1h 47m	4 parsecs	0.004%	
+17	CHRG	YI-209 (orbit)	3m 15s		0.007%	
+12 units FTL fuel
+18	JMP	YI-265 (orbit)	1h 50m	4 parsecs	0.004%	
+19	CHRG	YI-265 (orbit)	3m 15s		0.007%	
+36 units FTL fuel
+20	JMP	OY-799 (orbit)	5h 31m	12 parsecs	0.012%	
+21	CHRG	OY-799 (orbit)	3m 15s		0.007%	
+24 units FTL fuel
+22	JMP	UP-170 (orbit)	3h 40m	8 parsecs	0.008%	
+23	CHRG	UP-170 (orbit)	3m 15s		0.007%	
+10 units FTL fuel
+24	JMP	UP-305 (orbit)	1h 34m	3 parsecs	0.003%	
+25	CHRG	UP-305 (orbit)	3m 15s		0.007%	
+31 units FTL fuel
+26	JMP	UP-102 (orbit)	4h 47m	10 parsecs	0.010%	
+27	APP	UP-102 a (orbit)	11h 37m	85,322,253 km	0.124%	
+13 units STL fuel
+28	LND	UP-102 a	5m 32s	4,317 km	0.002%	
+38 units STL fuel
+
+### Reactor usage 36%
+0	TO	Moria - Montem (orbit)	5m 38s	4,463 km		
+39 units STL fuel
+1	DEP	Moria (orbit)	4h 44m	32,111,170 km	0.011%	
+12 units STL fuel
+13 units FTL fuel
+2	JMP	Gundabad (orbit)	3h 31m	6 parsecs	0.006%	
+3	APP	Gundabad - Danakil (orbit)	5h 54m	33,335,804 km	0.039%	
+10 units STL fuel
+4	LND	Gundabad - Danakil	6m 15s	5,500 km	0.022%	
+43 units STL fuel
+
+### Reactor usage 100%
+0	TO	Moria - Montem (orbit)	5m 38s	4,463 km		
+39 units STL fuel
+1	DEP	Moria (orbit)	5h 10m	32,111,954 km	0.046%	
+11 units STL fuel
+45 units FTL fuel
+2	JMP	Gundabad (orbit)	1h 36m	6 parsecs	0.006%	
+3	CHRG	Gundabad (orbit)	7m 30s		0.035%	
+53 units FTL fuel
+4	JMP	LB-428 (orbit)	1h 52m	7 parsecs	0.007%	
+5	CHRG	LB-428 (orbit)	7m 30s		0.035%	
+56 units FTL fuel
+6	JMP	LB-056 (orbit)	1h 59m	8 parsecs	0.008%	
+7	APP	LB-056 a (orbit)	1 day 3h	203,366,261 km	0.332%	
+13 units STL fuel
+8	LND	LB-056 a	3m 59s	2,238 km	0.239%	
+27 units STL fuel
