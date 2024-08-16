@@ -63,14 +63,16 @@ def distance(pos1, pos2):
     return math.sqrt((pos1['x'] - pos2['x'])**2 + (pos1['y'] - pos2['y'])**2 + (pos1['z'] - pos2['z'])**2)
 
 def main():
-    rawsystems = fio.request("GET", f"/systemstars", cache=-1)
 
-    id_lookup = {system["SystemId"]: system["NaturalId"] for system in rawsystems}
+    rawsystemstars = fio.request("GET", f"/systemstars", cache=-1)
+    systemstars_lookup = {system["SystemId"]: system["NaturalId"] for system in rawsystemstars}
+
+    
 
     systems = {}
-    for rawsystem in rawsystems:
+    for rawsystem in rawsystemstars:
         for connection in rawsystem["Connections"]:
-            connection["NaturalId"] = id_lookup[connection["ConnectingId"]]
+            connection["NaturalId"] = systemstars_lookup[connection["ConnectingId"]]
         systems[rawsystem["NaturalId"]] = System(rawsystem)
 
 
@@ -87,6 +89,8 @@ def main():
         del system.rawdata
 
     print(systems)
+
+    # Fetch from the actual allsystems endpoint (instead of systemstars) to get more info
 
 
 
