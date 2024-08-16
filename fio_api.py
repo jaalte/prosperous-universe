@@ -41,7 +41,7 @@ class FIOAPI:
         # Handle caching
         if cache == 0 or cache == False or str(cache).lower() == 'never':
             pass
-        elif cache == -1 or cache == True or str(cache).lower() == 'always':
+        elif cache == -1 or cache == True or str(cache).lower() == 'always' or str(cache).lower() == 'forever':
             #print("Serving from cache (once-and-for-all cache).")
             return self._load_cached_file(cache_path, response_format)
         elif cache >= 0:
