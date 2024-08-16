@@ -38,17 +38,18 @@ class FIOAPI:
         cache_filename = self._generate_cache_filename(url, method, data)
         cache_path = os.path.join(self.cache_dir, cache_filename)
 
-        # Handle caching
-        if cache == 0 or cache == False or str(cache).lower() == 'never':
-            pass
-        elif cache == -1 or cache == True or str(cache).lower() == 'always' or str(cache).lower() == 'forever':
-            #print("Serving from cache (once-and-for-all cache).")
-            return self._load_cached_file(cache_path, response_format)
-        elif cache >= 0:
-            cache_age = datetime.now() - datetime.fromtimestamp(os.path.getmtime(cache_path))
-            if cache_age.total_seconds() < cache:
-                #print("Serving from cache (within time limit).")
+        # Handle cache loading
+        if os.path.exists(cache_path):
+            if cache == 0 or cache == False or str(cache).lower() == 'never':
+                pass
+            elif cache == -1 or cache == True or str(cache).lower() == 'always' or str(cache).lower() == 'forever':
+                #print("Serving from cache (once-and-for-all cache).")
                 return self._load_cached_file(cache_path, response_format)
+            elif cache >= 0:
+                cache_age = datetime.now() - datetime.fromtimestamp(os.path.getmtime(cache_path))
+                if cache_age.total_seconds() < cache:
+                    #print("Serving from cache (within time limit).")
+                    return self._load_cached_file(cache_path, response_format)
 
         # Fetch the data from the API
         try:
