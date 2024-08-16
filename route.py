@@ -3,6 +3,7 @@
 import json
 import math
 from fio_api import fio
+import fio_utils as utils
 
 """ rawsystem example:
   {
@@ -30,38 +31,6 @@ from fio_api import fio
   },
 """
 
-
-class System:
-    def __init__(self, rawdata):
-        self.rawdata = rawdata
-        self.name = rawdata.get('Name')
-        self.id = rawdata.get('NaturalId')
-        self.hash = rawdata.get('SystemId')
-        self.pos = {
-            'x': rawdata.get('PositionX'),
-            'y': rawdata.get('PositionY'),
-            'z': rawdata.get('PositionZ'),
-        }
-        
-        #self.connections = []
-        #for connection in rawdata.get('Connections', []):
-
-    def init_connections(self):
-        pass
-
-    def __repr__(self):
-        return json.dumps({
-            "name": self.name,
-            "id": self.id,
-            "hash": self.hash,
-            "pos": self.pos,
-            "connections": getattr(self, 'connections', [])
-        }, indent=2)
-
-
-def distance(pos1, pos2):
-    return math.sqrt((pos1['x'] - pos2['x'])**2 + (pos1['y'] - pos2['y'])**2 + (pos1['z'] - pos2['z'])**2)
-
 def main():
 
     rawsystemstars = fio.request("GET", f"/systemstars", cache=-1)
@@ -82,7 +51,7 @@ def main():
             new_connections = []
             new_connection = {
                 "system": connection["NaturalId"],
-                "distance": distance(system.pos, systems[connection["NaturalId"]].pos)
+                "distance": utils.distance(system.pos, systems[connection["NaturalId"]].pos)
             }
             new_connections.append(new_connection)
         system.connections = new_connections
