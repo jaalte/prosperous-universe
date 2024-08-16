@@ -119,11 +119,12 @@ class Planet:
         nearest_distance = 99999999
         nearest_exchange = None
         for ticker, exchange in exchanges.items():
-            distance = jump_distance(exchange['SystemNaturalId'], self.system_natural_id)
+            distance = jump_distance(exchange.system_natural_id, self.system_natural_id)
             if distance < nearest_distance:
                 nearest_exchange = exchange
                 nearest_distance = distance
-        nearest_exchange['Distance'] = nearest_distance
+        self.exchange = nearest_exchange
+        self.exchange_distance = nearest_distance
         return nearest_exchange
 
     # Make Planet printable
@@ -322,6 +323,10 @@ def get_all_exchanges():
     for rawexchange in rawexchanges:
         exchanges[rawexchange['ComexCode']] = Exchange(rawexchange)
     return exchanges
+
+# Initialize global lists
+exchanges = get_all_exchanges()
+
 
 def main():
     #planets = get_all_planets()
