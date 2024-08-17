@@ -107,6 +107,7 @@ class Planet:
         self.environment['temperature'] = threshold_round(self.rawdata.get('Temperature'))
         self.environment['pressure'] = threshold_round(self.rawdata.get('Pressure'))
         self.environment['gravity'] = threshold_round(self.rawdata.get('Gravity'))
+        self.environment['fertility'] = threshold_round(self.rawdata.get('Fertility'))
         
         self.environment_class = {}
         for prop in ['temperature', 'pressure', 'gravity']:
@@ -177,21 +178,22 @@ class Planet:
             'temperature': 'T',
             'pressure': 'P',
             'gravity': 'G',
-            'surface': '^'
         }
 
         # Loop through each property and build the string
         for prop in property_mapping.keys():
-            if prop != 'surface':  # Handle surface separately as it's a boolean
-                if self.environment_class[prop] == 'high':
-                    text += property_mapping[prop]
-                elif self.environment_class[prop] == 'low':
-                    text += property_mapping[prop].lower()
-                else:
-                    text += ' '  # For normal values, add a space
+            if self.environment_class[prop] == 'high':
+                text += property_mapping[prop]
+            elif self.environment_class[prop] == 'low':
+                text += property_mapping[prop].lower()
             else:
-                # Add s if surface is true, otherwise add space
-                text += property_mapping[prop] if not self.environment_class['surface'] else ' '
+                text += ' '  # For normal values, add a space
+
+        # Add ^ if surface is false, otherwise add space
+        text += '^' if not self.environment_class['surface'] else ' '
+
+        text += 'i' if self.environment.fertility == -1.0 else 'F'
+        
 
         return text
 
