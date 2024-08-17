@@ -25,6 +25,12 @@ EXTRACTORS = {
     },
 }
 
+PLANET_THRESHOLDS = {
+    'temperature': (-25, 75),
+    'pressure': (0.25, 2),
+    'gravity': (0.25, 2.5),
+}
+
 # Create a lookup dictionary for all materials by MaterialId
 allmaterials = fio.request("GET", "/material/allmaterials", cache=60*60*24)
 material_lookup = {material['MaterialId']: material for material in allmaterials}
@@ -95,6 +101,25 @@ class Planet:
                     'process_amount': process_amount,
                     'process_hours': process_hours
                 }
+        
+        # Process environmental properties
+        self.environment = {}
+        self.environment['temperature'] = threshold_round(self.rawdata.get('Temperature'))
+        self.environment['pressure'] = threshold_round(self.rawdata.get('Pressure'))
+        self.environment['gravity'] = threshold_round(self.rawdata.get('Gravity'))
+        
+        self.environment_class = {}
+        for prop in ['temperature', 'pressure', 'gravity']:
+            if self.environment[prop] < PLANET_THRESHOLDS[prop][0]:
+                self.environment_class[prop] = 'low'
+            elif self.environment[prop] > PLANET_THRESHOLDS[prop][1]:
+                self.environment_class[prop] = 'high'
+            else:
+                self.environment_class[prop] = 'normal'
+        self.environment_class['surface'] = threshold_round(self.rawdata.get('Surface'))
+
+
+
 
     def calculate_process_time_and_amount(self, extractor_building, daily_amount):
         """Calculate the process hours and process amount based on the extractor type."""
@@ -126,6 +151,51 @@ class Planet:
         self.exchange = nearest_exchange
         self.exchange_distance = nearest_distance
         return nearest_exchange
+
+    def get_sites(self):
+        sites = fio.request("GET", f"/planet/sites/{self.natural_id}", cache=60*60*24*7)
+        self.sites = sites
+        return sites
+
+    def has_infrastructure(self):
+        keys = [
+            'HasLocalMarket',
+            'HasChamberOfCommerce',
+            'HasWarehouse',
+            'HasAdministrationCenter',
+            'HasShipyard'
+        ]
+        
+        # If any of these keys in self.rawdata are True, return True
+        return any([self.rawdata[key] for key in keys])
+
+    def get_environment_string(self):
+        text = ""
+
+        # Define the mapping for each property
+        property_mapping = {
+            'temperature': 'T',
+            'pressure': 'P',
+            'gravity': 'G',
+            'surface': '^'
+        }
+
+        # Loop through each property and build the string
+        for prop in property_mapping.keys():
+            if prop != 'surface':  # Handle surface separately as it's a boolean
+                if self.environment_class[prop] == 'high':
+                    text += property_mapping[prop]
+                elif self.environment_class[prop] == 'low':
+                    text += property_mapping[prop].lower()
+                else:
+                    text += ' '  # For normal values, add a space
+            else:
+                # Add s if surface is true, otherwise add space
+                text += property_mapping[prop] if not self.environment_class['surface'] else ' '
+
+        return text
+
+
 
     # Make Planet printable
     def __str__(self):
@@ -329,15 +399,16 @@ exchanges = get_all_exchanges()
 
 
 def main():
-    #planets = get_all_planets()
-    #print(planets['Montem'])
+    planets = get_all_planets()
+    print(json.dumps(planets['Montem'].rawdata, indent=2))
     #print(json.dumps(planets['Montem'].rawdata, indent=2))
 
     #exchanges = get_all_exchanges()
     #print(json.dumps(exchanges['NC1'].get_good('AMM'), indent=2))
 
-    systems = get_all_systems()
+    #systems = get_all_systems()
     
+
 
 if __name__ == "__main__":
     main()
