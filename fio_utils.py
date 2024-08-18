@@ -413,18 +413,17 @@ class ResourceList:
             self.resources = rawdata
         elif isinstance(rawdata, list):
 
-            ticker_key = 'Ticker'
-            amount_key = 'Amount'
+            key_mapping = {
+                'Ticker': 'Ticker',
+                'CommodityTicker': 'Ticker',
+                'MaterialTicker': 'Ticker',
+                'Amount': 'Amount',
+                'MaterialAmount': 'Amount',
+            }
 
-            if 'CommodityTicker' in rawdata[0]:
-                ticker_key = 'CommodityTicker'
-            elif 'MaterialTicker' in rawdata[0]:
-                ticker_key = 'MaterialTicker'
-
-            if 'Amount' in rawdata[0]:
-                amount_key = 'Amount'
-            if 'MaterialAmount' in rawdata[0]:
-                amount_key = 'MaterialAmount'
+            # Find the correct keys
+            ticker_key = next((key_mapping[key] for key in key_mapping if key in rawdata[0] and key_mapping[key] == 'Ticker'), 'Ticker')
+            amount_key = next((key_mapping[key] for key in key_mapping if key in rawdata[0] and key_mapping[key] == 'Amount'), 'Amount')
 
             self.resources = {}
             for resource in rawdata:
