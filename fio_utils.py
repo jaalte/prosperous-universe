@@ -25,6 +25,15 @@ EXTRACTORS = {
     },
 }
 
+BASE_CORE_MIN_RESOURCES = {
+    'LSE': 4,
+    'TRU': 8,
+    'PSL': 12,
+    'LDE': 4,
+    'LTA': 4,
+    'MCG': 100,
+}
+
 PLANET_THRESHOLDS = {
     'temperature': (-25, 75),
     'pressure': (0.25, 2),
@@ -191,8 +200,7 @@ class Planet:
 
         # Add ^ if surface is false, otherwise add space
         text += '^' if not self.environment_class['surface'] else ' '
-
-        text += 'i' if self.environment.fertility == -1.0 else 'F'
+        text += ' ' if self.environment['fertility'] == -1.0 else 'F'
         
 
         return text
@@ -355,6 +363,40 @@ class Exchange:
         if buy_or_sell == "Buy":
             pass
 
+class ResourceList:
+    def __init__(self, rawdata):
+        if type (rawdata) == dict:
+            self.resources = rawdata
+        elif type (rawdata) == list:
+
+            ticker_key = 'Ticker'
+            amount_key = 'Amount'
+
+            if 'CommodityTicker' in rawdata[0]:
+                ticker_key = 'CommodityTicker'
+            elif 'MaterialTicker' in rawdata[0]:
+                ticker_key = 'MaterialTicker'
+
+            if 'Amount' in rawdata[0]:
+                ticker_key = 'Amount'
+            if 'MaterialAmount' in rawdata[0]:
+                amount_key = 'MaterialAmount'
+
+            self.resources = {}
+            for resource in rawdata:
+                ticker = resource[ticker_key]
+                amount = resource[amount_key]
+                self.resources[ticker] = amount
+
+    def get_total_buy_cost(self, exchange):
+        pass
+
+    def get_total_sell_cost(self, exchange):
+        pass
+
+    def __str__(self):
+        return ', '.join([f"{count} {name}" for name, count in self.resources.items()])
+
 
 # Rounds a given value to a specified threshold.
 def threshold_round(val, threshold=1e-5):
@@ -374,8 +416,8 @@ def get_all_planets():
     for i, planet in enumerate(allplanets):
         planet_class = Planet(planet_id=planet.get('PlanetId'))
         planets[planet_class.name] = planet_class
-        print(f"\rLoading all planets: {i+1}/{total}", end="")
-    print("\n")
+        #print(f"\rLoading all planets: {i+1}/{total}", end="")
+    #print("\n")
     return planets
 
 # Get a dict of all systems in the game keyed by name
@@ -403,10 +445,11 @@ exchanges = get_all_exchanges()
 def main():
     planets = get_all_planets()
     print(json.dumps(planets['Montem'].rawdata, indent=2))
-    #print(json.dumps(planets['Montem'].rawdata, indent=2))
+
+    print(ResourceList(BASE_CORE_MIN_RESOURCES))
 
     #exchanges = get_all_exchanges()
-    #print(json.dumps(exchanges['NC1'].get_good('AMM'), indent=2))
+    #print(json.dumps(exchanges['NC1'].goods['AMM'], indent=2))
 
     #systems = get_all_systems()
     
