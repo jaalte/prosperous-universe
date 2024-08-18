@@ -1,5 +1,6 @@
 import json
 import math
+import re
 from fio_api import fio
 from pathfinding import jump_distance
 
@@ -43,6 +44,7 @@ PLANET_THRESHOLDS = {
 # Create a lookup dictionary for all materials by MaterialId
 allmaterials = fio.request("GET", "/material/allmaterials", cache=60*60*24)
 material_lookup = {material['MaterialId']: material for material in allmaterials}
+#material_id_to_ticker = {material['MaterialId']: material['Ticker'] for material in allmaterials}
 materials = {material['Ticker']: material for material in allmaterials}
 
 # Create a lookup dictionary for all planets by PlanetId
@@ -204,7 +206,7 @@ class Planet:
         previous_report = infrastructure["InfrastructureReports"][-2]
         
         # Function to generate the cleaned-up report
-        def generate_population_data(prefix):
+        def _generate_population_data(prefix):
             return {
                 "count": previous_report[f"NextPopulation{prefix}"],
                 "next": latest_report[f"NextPopulation{prefix}"],
@@ -219,10 +221,36 @@ class Planet:
         categories = ["Pioneer", "Settler", "Technician", "Engineer", "Scientist"]
 
         # Create the new structure
-        population = {category.lower(): generate_population_data(category) for category in categories}
+        population = {category.lower(): _generate_population_data(category) for category in categories}
 
         # Return the new structure
         return population
+
+    def get_building_environment_cost(self, area):
+        cost = ResourceList({})
+
+        if self.environment_class['temperature'] == 'low':
+            cost += ResourceList({'INS': 10*area})
+        elif self.environment_class['temperature'] == 'high':
+            cost += ResourceList({'TSH': 1})
+
+        if self.environment_class['pressure'] == 'low':
+            cost += ResourceList({'SEA': area})
+        elif self.environment_class['pressure'] == 'high':
+            cost += ResourceList({'HSE': 1})
+
+        if self.environment_class['gravity'] == 'low':
+            cost += ResourceList({'MGC': 1})
+        elif self.environment_class['gravity'] == 'high':
+            cost += ResourceList({'BL': 1})
+
+        if self.environment_class['surface']:
+            cost += ResourceList({'MCG': 4*area})
+        else: 
+            cost += ResourceList({'ASF': math.ceil(area/3)})
+
+        return cost
+
 
     def get_environment_string(self):
         text = ""
@@ -414,23 +442,42 @@ class Exchange:
         if buy_or_sell == "Buy":
             pass
 
+    def __str__(self):
+        return f"[Exchange {self.ticker}]"
+
 class ResourceList:
     def __init__(self, rawdata):
+        if len(rawdata) == 0:
+            self.resources = {}
+            return
+
         if isinstance(rawdata, dict):
             self.resources = rawdata
         elif isinstance(rawdata, list):
 
             key_mapping = {
-                'Ticker': 'Ticker',
                 'CommodityTicker': 'Ticker',
                 'MaterialTicker': 'Ticker',
-                'Amount': 'Amount',
+                'Ticker': 'Ticker',
                 'MaterialAmount': 'Amount',
+                'Amount': 'Amount',
             }
 
+            # Initialize ticker_key and amount_key with None
+            ticker_key = None
+            amount_key = None
+
             # Find the correct keys
-            ticker_key = next((key_mapping[key] for key in key_mapping if key in rawdata[0] and key_mapping[key] == 'Ticker'), 'Ticker')
-            amount_key = next((key_mapping[key] for key in key_mapping if key in rawdata[0] and key_mapping[key] == 'Amount'), 'Amount')
+            for key in key_mapping:
+                if key in rawdata[0]:
+                    if key_mapping[key] == 'Ticker' and ticker_key is None:
+                        ticker_key = key
+                    elif key_mapping[key] == 'Amount' and amount_key is None:
+                        amount_key = key
+
+            # Default to 'Ticker' and 'Amount' if no specific key found
+            ticker_key = ticker_key or 'Ticker'
+            amount_key = amount_key or 'Amount'
 
             self.resources = {}
             for resource in rawdata:
@@ -454,6 +501,9 @@ class ResourceList:
             self.resources = {ticker: int(quantity) for quantity, ticker in matches}
         else:
             raise TypeError("Unsupported data type for ResourceList initialization")
+        
+        self.resources = dict(sorted(self.resources.items()))
+        self.removed_resources = {}
 
     def get_material_properties(self):
         return {ticker: materials[ticker] for ticker in self.resources}
@@ -473,12 +523,19 @@ class ResourceList:
         if not isinstance(other, ResourceList):
             return NotImplemented
         new_resources = self.resources.copy()
+
         for ticker, amount in other.resources.items():
             if ticker in new_resources:
                 new_resources[ticker] -= amount
+                # If zero, move to removed_resources
+                if new_resources[ticker] == 0:
+                    self.removed_resources[ticker] = 0
+                    del new_resources[ticker]
             else:
                 new_resources[ticker] = -amount
+
         return ResourceList(new_resources)
+
 
     def __mul__(self, multiplier):
         if not isinstance(multiplier, int):
@@ -492,13 +549,39 @@ class ResourceList:
     def __str__(self):
         return ', '.join([f"{count} {name}" for name, count in self.resources.items()])
 
-    def get_total_buy_cost(self, exchange):
+    def get_total_value(self, exchange="NC1", trade_type="buy"):
+        if isinstance(exchange, str):
+            exchange = Exchange(exchange)
 
-        pass
+        if not isinstance(trade_type, str):
+            return NotImplemented
+        trade_type = trade_type.lower()
 
-    def get_total_sell_cost(self, exchange):
-        pass
+        total = 0
+        for ticker, amount in self.resources.items():
+            if trade_type == "buy":
+                if ticker not in exchange.goods:
+                    total += float('inf')
+                    continue
+                if exchange.goods[ticker]['Ask']:
+                    total += exchange.goods[ticker]['Ask'] * amount
+                else:
+                    total += float('inf')
+            else: # trade_type == "sell" or other:
+                if ticker not in exchange.goods:
+                    total += 0
+                    continue
+                if exchange.goods[ticker]['Bid']:
+                    total += exchange.goods[ticker]['Bid'] * amount
+                else:
+                    total += 0
+        return total
 
+    def split(self):
+        single_resources = []
+        for ticker, amount in self.resources.items():
+            single_resources.append(ResourceList({ticker: amount}))
+        return single_resources
 
 
 # Rounds a given value to a specified threshold.
@@ -541,13 +624,17 @@ def get_all_exchanges():
         exchanges[rawexchange['ComexCode']] = Exchange(rawexchange)
     return exchanges
 
+# Make this public for importing scripts cause it's very fast
+exchanges = get_all_exchanges()
 
 def main():
-    #planets = get_all_planets()
-    #print(json.dumps(planets['Montem'].rawdata, indent=2))
-
-    #print(json.dumps(planets['Montem'].rawdata, indent=2))
+    planets = get_all_planets()
+    print(json.dumps(planets['Montem'].rawdata, indent=2))
     #print(json.dumps(planets['EM-929b'].get_population(), indent=2))
+
+    for name, planet in planets.items():
+        if planet.environment_class['gravity'] == 'low':
+            print(name)
 
     #print(ResourceList(BASE_CORE_MIN_RESOURCES))
 
@@ -556,10 +643,12 @@ def main():
 
     #systems = get_all_systems()
 
-    print(ResourceList({'BSE': 10, 'AMM': 10})-ResourceList({'BSE': 5, 'AMM': 17}))
+    #print(ResourceList({'BSE': 10, 'AMM': 10})-ResourceList({'BSE': 5, 'AMM': 17}))
     
-    
-
+    # buildings = fio.request("GET", "/building/allbuildings", cache='forever')
+    # buildings_sorted = sorted(buildings, key=lambda x: x.get('AreaCost', 0), reverse=True)
+    # for building in buildings_sorted:
+    #     print(f"{building['Ticker']}: {building['AreaCost']}")
 
 if __name__ == "__main__":
     main()
