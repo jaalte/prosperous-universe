@@ -89,8 +89,12 @@ def main():
         for hit in groups[ticker]:
             if hit['price'] == 0: continue
             if hit['demand'] < 10000: continue
-            if hit['planet'].exchange_distance > 10: continue
-            #if hit['resource']['factor'] < 0.1: continue
+            if hit['planet'].exchange_distance > 4: continue
+            if hit['daily_income'] < 4000: continue
+
+            hit['pioneers_available'] = hit['planet'].get_population()['pioneer']['unemployment_amount']
+            if hit['pioneers_available'] < 1000: continue
+
             all_hits.append(hit)
 
     # Sort all hits by daily profit
