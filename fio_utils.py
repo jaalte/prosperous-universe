@@ -450,10 +450,8 @@ class ResourceList:
         for ticker, amount in other.resources.items():
             if ticker in new_resources:
                 new_resources[ticker] -= amount
-                if new_resources[ticker] < 0:
-                    raise ValueError(f"Subtraction resulted in negative amount for {ticker}")
             else:
-                raise ValueError(f"{ticker} not found in resource list")
+                new_resources[ticker] = -amount
         return ResourceList(new_resources)
 
     def __mul__(self, multiplier):
@@ -534,7 +532,7 @@ def main():
 
     #systems = get_all_systems()
 
-    print(ResourceList({'BSE': 10, 'AMM': 10})+ResourceList({'BSE': 5, 'AMM': 7}))
+    print(ResourceList({'BSE': 10, 'AMM': 10})-ResourceList({'BSE': 5, 'AMM': 17}))
     
     
 
