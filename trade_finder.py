@@ -14,6 +14,10 @@ base_cost = 1000
 cost_per_jump = 750
 liquid_assets = 60000
 
+min_demand = 500
+# Expected trade volume in n weeks
+min_volume_demand_ratio = 1
+
 ship_specs = {
     "weight": 500,
     "volume": 500,
@@ -76,6 +80,8 @@ ship_specs = {
 """
 
 def main():
+    find_outgoing_trades
+
     exchanges = utils.get_all_exchanges()
 
     allmaterials = fio.request("GET", "/material/allmaterials", cache=60*60*24)
@@ -102,6 +108,8 @@ def main():
             
             if og['Ask'] is None or og['Ask'] == 0: continue
             if dg['Bid'] is None or dg['Bid'] == 0: continue
+            if dg['Demand'] < min_demand: continue
+            if dg['Demand'] < dg['Traded']*min_volume_demand_ratio: continue
 
             route = {
                 "origin": oex,
@@ -144,6 +152,12 @@ def main():
 
             for sellable_order in sellable_orders:
                 sellable_order['material'] = route['material']
+
+            # Pop off orders with too low buy volume to be reliable
+            if sellable_orders:
+                while route['destination_good']['Traded']*min_volume_demand_ratio < (sellable_orders[0]['ItemCount'] or 0):
+                    sellable_orders.pop(0)
+                    if not sellable_orders: break
 
             # loop until either is empty
             while len(buyable_orders) > 0 and len(sellable_orders) > 0:
@@ -231,13 +245,7 @@ def main():
             total_profit_ratio = (trade_job['adjusted_profit']+trade_job['cost']) / trade_job['cost']
             print(f"{origin}->{dex.ticker}: {trade_job['adjusted_profit']:.0f}c ({total_profit_ratio*100:.2f}%) profit, ({trade_job['distance']} jumps, {trade_job['cost']:.0f}c, {trade_job['weight']:.2f} kg, {trade_job['volume']:.2f} m3)")
             for trade in trade_job['trades']:
-                trade_volume = dex.goods[trade['material']]['Traded']
-                trades_available = trade['sell']['ItemCount']
-                warn = ""
-                if trade_volume > trade['amount']:
-                    warn = f" (Warning: Trade volume ({trade_volume}) > trades available ({trades_available})!)"
-                    warn = ""
-                print(f"{trade['amount']:>5} {trade['material']:<3}: {trade['buy']['ItemCost']:.2f} - {trade['sell']['ItemCost']:.2f} -> {trade['profit_per_unit']:.2f} ({trade['profit_ratio']*100:.2f}%) {warn}")
+                print(f"{trade['amount']:>5} {trade['material']:<3}: {trade['buy']['ItemCost']:.2f} - {trade['sell']['ItemCost']:.2f} -> {trade['profit_per_unit']:.2f} ({trade['profit_ratio']*100:.2f}% profit, {dex.goods[trade['material']]['Demand']} demand, {dex.goods[trade['material']]['Traded']} volume)")
             print()
 
         
