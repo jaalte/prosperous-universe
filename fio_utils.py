@@ -395,6 +395,12 @@ class Base:
 
 class Exchange:
     def __init__(self, rawdata):
+        if isinstance(rawdata, str):
+            rawexchanges = fio.request("GET", "/exchange/station", cache='forever')
+            for rawexchange in rawexchanges:
+                if rawexchange['ComexCode'] == rawdata:
+                    rawdata = rawexchange 
+
         self.rawdata = rawdata
         self.ticker = rawdata.get('ComexCode')
         self.name = rawdata.get('ComexName')
@@ -487,6 +493,7 @@ class ResourceList:
         return ', '.join([f"{count} {name}" for name, count in self.resources.items()])
 
     def get_total_buy_cost(self, exchange):
+
         pass
 
     def get_total_sell_cost(self, exchange):
@@ -533,9 +540,6 @@ def get_all_exchanges():
     for rawexchange in rawexchanges:
         exchanges[rawexchange['ComexCode']] = Exchange(rawexchange)
     return exchanges
-
-# Initialize global lists
-exchanges = get_all_exchanges()
 
 
 def main():
