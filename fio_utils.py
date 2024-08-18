@@ -43,6 +43,7 @@ PLANET_THRESHOLDS = {
 # Create a lookup dictionary for all materials by MaterialId
 allmaterials = fio.request("GET", "/material/allmaterials", cache=60*60*24)
 material_lookup = {material['MaterialId']: material for material in allmaterials}
+materials = {material['Ticker']: material for material in allmaterials}
 
 # Create a lookup dictionary for all planets by PlanetId
 allplanets = fio.request("GET", f"/planet/allplanets/full", cache=-1)
@@ -430,6 +431,26 @@ class ResourceList:
                 ticker = resource[ticker_key]
                 amount = resource[amount_key]
                 self.resources[ticker] = amount
+        elif isinstance(rawdata, str):
+            tickers = sorted(materials.keys())
+
+            pattern = r'\b(\d+)\s*x?\s*({})\b'.format('|'.join(re.escape(ticker) for ticker in tickers))
+            matches = re.findall(pattern, rawdata)
+            recognized_tickers = {ticker for _, ticker in matches}
+
+            # Check for unrecognized tickers
+            unrecognized = re.findall(r'(\d+\s*x?\s*[A-Z0-9]+)', rawdata)
+            for item in unrecognized:
+                quantity, ticker = re.findall(r'(\d+)\s*x?\s*([A-Z0-9]+)', item)[0]
+                if ticker not in recognized_tickers:
+                    print(f"Unrecognized material ticker: {ticker}")
+
+            self.resources = {ticker: int(quantity) for quantity, ticker in matches}
+        else:
+            raise TypeError("Unsupported data type for ResourceList initialization")
+
+    def get_material_properties(self):
+        return {ticker: materials[ticker] for ticker in self.resources}
 
     def __add__(self, other):
         if not isinstance(other, ResourceList):
