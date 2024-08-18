@@ -409,9 +409,9 @@ class Exchange:
 
 class ResourceList:
     def __init__(self, rawdata):
-        if type (rawdata) == dict:
+        if isinstance(rawdata, dict):
             self.resources = rawdata
-        elif type (rawdata) == list:
+        elif isinstance(rawdata, list):
 
             ticker_key = 'Ticker'
             amount_key = 'Amount'
@@ -422,7 +422,7 @@ class ResourceList:
                 ticker_key = 'MaterialTicker'
 
             if 'Amount' in rawdata[0]:
-                ticker_key = 'Amount'
+                amount_key = 'Amount'
             if 'MaterialAmount' in rawdata[0]:
                 amount_key = 'MaterialAmount'
 
@@ -432,14 +432,48 @@ class ResourceList:
                 amount = resource[amount_key]
                 self.resources[ticker] = amount
 
+    def __add__(self, other):
+        if not isinstance(other, ResourceList):
+            return NotImplemented
+        new_resources = self.resources.copy()
+        for ticker, amount in other.resources.items():
+            if ticker in new_resources:
+                new_resources[ticker] += amount
+            else:
+                new_resources[ticker] = amount
+        return ResourceList(new_resources)
+
+    def __sub__(self, other):
+        if not isinstance(other, ResourceList):
+            return NotImplemented
+        new_resources = self.resources.copy()
+        for ticker, amount in other.resources.items():
+            if ticker in new_resources:
+                new_resources[ticker] -= amount
+                if new_resources[ticker] < 0:
+                    raise ValueError(f"Subtraction resulted in negative amount for {ticker}")
+            else:
+                raise ValueError(f"{ticker} not found in resource list")
+        return ResourceList(new_resources)
+
+    def __mul__(self, multiplier):
+        if not isinstance(multiplier, int):
+            return NotImplemented
+        new_resources = {ticker: amount * multiplier for ticker, amount in self.resources.items()}
+        return ResourceList(new_resources)
+
+    def __rmul__(self, multiplier):
+        return self.__mul__(multiplier)
+
+    def __str__(self):
+        return ', '.join([f"{count} {name}" for name, count in self.resources.items()])
+
     def get_total_buy_cost(self, exchange):
         pass
 
     def get_total_sell_cost(self, exchange):
         pass
 
-    def __str__(self):
-        return ', '.join([f"{count} {name}" for name, count in self.resources.items()])
 
 
 # Rounds a given value to a specified threshold.
@@ -487,7 +521,7 @@ exchanges = get_all_exchanges()
 
 
 def main():
-    planets = get_all_planets()
+    #planets = get_all_planets()
     #print(json.dumps(planets['Montem'].rawdata, indent=2))
 
     #print(json.dumps(planets['Montem'].rawdata, indent=2))
@@ -499,6 +533,9 @@ def main():
     #print(json.dumps(exchanges['NC1'].goods['AMM'], indent=2))
 
     #systems = get_all_systems()
+
+    print(ResourceList({'BSE': 10, 'AMM': 10})+ResourceList({'BSE': 5, 'AMM': 7}))
+    
     
 
 
