@@ -179,6 +179,50 @@ class Planet:
         # If any of these keys in self.rawdata are True, return True
         return any([self.rawdata[key] for key in keys])
 
+    def get_population(self):
+        infrastructure = fio.request("GET", f"/infrastructure/{self.natural_id}", cache=60*60*24)
+
+        if len(infrastructure["InfrastructureReports"]) < 2:
+            # Generate an empty population dict
+            categories = ["pioneer", "settler", "technician", "engineer", "scientist"]
+            keys = [
+                "count",
+                "next",
+                "difference",
+                "average_happiness",
+                "unemployment_rate",
+                "unemployment_amount",
+                "open_jobs",
+            ]
+
+            population = {category: {key: 0 for key in keys} for category in categories}
+            return population
+
+
+        latest_report = infrastructure["InfrastructureReports"][-1]
+        previous_report = infrastructure["InfrastructureReports"][-2]
+        
+        # Function to generate the cleaned-up report
+        def generate_population_data(prefix):
+            return {
+                "count": previous_report[f"NextPopulation{prefix}"],
+                "next": latest_report[f"NextPopulation{prefix}"],
+                "difference": latest_report[f"PopulationDifference{prefix}"],
+                "average_happiness": latest_report[f"AverageHappiness{prefix}"],
+                "unemployment_rate": latest_report[f"UnemploymentRate{prefix}"],
+                "unemployment_amount": math.floor(previous_report[f"NextPopulation{prefix}"] * latest_report[f"UnemploymentRate{prefix}"]),
+                "open_jobs": int(latest_report[f"OpenJobs{prefix}"])
+            }
+
+        # Population categories
+        categories = ["Pioneer", "Settler", "Technician", "Engineer", "Scientist"]
+
+        # Create the new structure
+        population = {category.lower(): generate_population_data(category) for category in categories}
+
+        # Return the new structure
+        return population
+
     def get_environment_string(self):
         text = ""
 
@@ -444,9 +488,12 @@ exchanges = get_all_exchanges()
 
 def main():
     planets = get_all_planets()
-    print(json.dumps(planets['Montem'].rawdata, indent=2))
+    #print(json.dumps(planets['Montem'].rawdata, indent=2))
 
-    print(ResourceList(BASE_CORE_MIN_RESOURCES))
+    #print(json.dumps(planets['Montem'].rawdata, indent=2))
+    #print(json.dumps(planets['EM-929b'].get_population(), indent=2))
+
+    #print(ResourceList(BASE_CORE_MIN_RESOURCES))
 
     #exchanges = get_all_exchanges()
     #print(json.dumps(exchanges['NC1'].goods['AMM'], indent=2))
