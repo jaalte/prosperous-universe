@@ -41,6 +41,8 @@ PLANET_THRESHOLDS = {
     'gravity': (0.25, 2.5),
 }
 
+DEMOGRAPHICS: ["pioneers", "settlers", "technicians", "engineers", "scientists"]
+
 # Create a lookup dictionary for all materials by MaterialId
 allmaterials = fio.request("GET", "/material/allmaterials", cache=60*60*24)
 material_lookup = {material['MaterialId']: material for material in allmaterials}
@@ -53,6 +55,8 @@ planet_lookup = {planet['PlanetNaturalId']: planet for planet in allplanets}
 
 # Lookup dictionary for population reports
 all_population_reports = None
+
+allbuildings = None
 
 # Create a lookup dictionary keyed by SystemId each equal a list of PlanetName
 system_planet_lookup = {}
@@ -223,7 +227,7 @@ class Planet:
         if not self.natural_id in all_population_reports \
         or len(all_population_reports[self.natural_id]) < 2:
             # Generate an empty population dict
-            categories = ["pioneer", "settler", "technician", "engineer", "scientist"]
+            categories = ["pioneers", "settlers", "technicians", "engineers", "scientists"]
             keys = [
                 "count",
                 "next",
@@ -260,7 +264,7 @@ class Planet:
         categories = ["Pioneer", "Settler", "Technician", "Engineer", "Scientist"]
 
         # Create the new structure
-        population = {category.lower(): _generate_population_data(category) for category in categories}
+        population = {category.lower()+'s': _generate_population_data(category) for category in categories}
 
         # Return the new structure
         return population
@@ -364,7 +368,7 @@ class Base:
     # Constructor. Either:
     # - a planet_natural_id and building counts
     # - a site object from FIO /sites/{username}
-    def __init__(self, planet_natural_id, building_counts, rawdata):
+    def __init__(self, planet_natural_id, building_counts, rawdata=None):
 
         if rawdata:               
             if planet_natural_id and planet_natural_id != rawdata.get('PlanetNaturalId'):
@@ -386,40 +390,77 @@ class Base:
 
         self.building_counts['CM'] = 1 # Add core module
 
-        # Now we need to aggregate building recipes
-        available_recipes = []
-        for building_ticker in list(self.building_counts.keys()):
-            # Extractors will need to be handled separately based on the planet resources
-            if building_ticker == 'COL' or building_ticker == 'RIG' or building_ticker == 'EXT':
-                available_recipes += self.get_extractor_recipes(building_ticker)
-            else:
-                available_recipes += self.get_crafter_recipes(building_ticker)
+        self.update_buildings()
 
-        for recipe in available_recipes:
-            print(recipe)
+    # Update the list of buildings based on the building counts
+    def update_buildings(self):
+        self.buildings = []
+        for ticker, count in self.building_counts.items():
+            for _ in range(count):
+                self.buildings.append(Building(ticker, self.planet))
+        
+        self.available_recipes = [building.recipes for building in self.buildings]
+
+    def add_building(self, ticker):
+        self.building_counts[ticker] += 1
+        self.buildings.append(Building(ticker, self.planet))
+        self.update_buildings()
+
+    def remove_building(self, ticker):
+        if ticker not in self.building_counts:
+            print(f"Tried to remove {ticker} from {self} but it is not there!")
+        self.building_counts[ticker] -= 1
+
+        self.update_buildings()
+
+    def get_construction_materials(self):
+        materials = ResourceList()
+        for building in self.buildings:
+            materials += building.construction_materials
+        return materials
+
+    def get_area(self):
+        return sum([building.area for building in self.buildings])
+    
+    def get_population_needs(self):
+        population = self.buildings[0].population_needs
+        for building in self.buildings[1:]:
+            for key in DEMOGRAPHICS:
+                population[key] += building.population_needs[key]
+
+        return population
             
-                 
+    def optimize_housing(mode="cost"): # cost or space
+        pass
+
+
 
     def __str__(self):
         buildings_str = ', '.join([f"{count} {name}" for name, count in self.building_counts.items()])
-        resources_str = ', '.join(self.planet.resources.keys())
-        return f"Base ({self.planet.name}):\n  Buildings: {buildings_str}\n  Resources: {resources_str}"
+        return f"[Base ({self.planet.name}):\n  Buildings: {buildings_str}]"
 
 # A single building of a particular ticker. Not a particular one though.
 class Building:
     def __init__(self, ticker, planet):
+        global allbuildings
+        if not allbuildings:
+            allbuildings = fio.request("GET", f"/building/allbuildings", cache=-1)
+
         self.ticker = ticker
         if isinstance(planet, str):
             self.planet = Planet(natural_id=planet)
-        
-        allbuildings = fio.request("GET", f"/building/allbuildings", cache=-1)
+        elif isinstance(planet, Planet):
+            self.planet = planet
+        else:
+            raise Exception(f"Invalid planet type: {type(planet)}")
+
         for building in allbuildings:
             if building['Ticker'] == ticker:
                 self.rawdata = building
                 break
 
         self.area = self.rawdata.get('AreaCost')
-        self.worker_needs = {
+        self.population_needs = {
             'pioneers': self.rawdata.get('Pioneers'),
             'colonists': self.rawdata.get('Colonists'),
             'technicians': self.rawdata.get('Technicians'),
@@ -430,19 +471,19 @@ class Building:
         is_extractor = self.ticker in ['COL', 'RIG', 'EXT']
         self.type = 'extractor' if is_extractor else 'crafter'
         if self.type == 'extractor':
-            return self._init_extractor_recipes(self.ticker)
+            self._init_extractor_recipes(self.ticker)
         else:
-            return self._init_crafter_recipes(self.ticker)
+            self._init_crafter_recipes(self.ticker)
 
         if len(self.recipes) == 0:
             self.type = 'other'
 
-        self.raw_construction_materials = ResourceList(self.rawdata.get('BuildingCosts'))
+        self.min_construction_materials = ResourceList(self.rawdata.get('BuildingCosts'))
         extra_materials = self.planet.get_building_environment_cost(self.area)
-        self.construction_materials = self.raw_construction_materials + extra_materials
+        self.construction_materials = self.min_construction_materials + extra_materials
     
     def _init_crafter_recipes(self, building_ticker):
-        allbuildings = fio.request("GET", f"/building/allbuildings", cache=-1)
+        global allbuildings
         for building in allbuildings:
             if building['Ticker'] == building_ticker:
                 rawrecipes = building.get('Recipes', [])
@@ -528,7 +569,7 @@ class Exchange:
         return f"[Exchange {self.ticker}]"
 
 class ResourceList:
-    def __init__(self, rawdata):
+    def __init__(self, rawdata=""):
         if len(rawdata) == 0:
             self.resources = {}
             return

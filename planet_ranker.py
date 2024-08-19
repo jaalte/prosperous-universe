@@ -15,31 +15,10 @@ MIN_DAILY_INCOME = 4000
 MAX_COLONIZATION_COST = float('inf')
 MIN_PIONEERS = 1000
 
-INITIAL_BASES = {
-    'COL':
-        {
-            # Core, 2 HB1, 4 COL
-            'materials': '8 BBH, 4 BDE, 68 BSE, 1 BTA, 4 LDE, 4 LSE, 4 LTA, 12 PSL, 8 TRU',
-            'area': 105,
-            'building_count': 7,
-            'population': 200,
-        },
-    'RIG':
-        {
-            # Core, 2 HB1, 6 RIG
-            'materials': '8 BBH, 4 BDE, 76 BSE, 2 BTA, 4 LDE, 4 LSE, 4 LTA, 12 PSL, 8 TRU',
-            'area': 105,
-            'building_count': 9,
-            'population': 180,
-        },
-    'EXT':
-        {
-            # Core, 2 HB1, 3 EXT
-            'materials': '8 BBH, 4 BDE, 52 BSE, 2 BTA, 4 LDE, 4 LSE, 4 LTA, 12 PSL, 8 TRU',
-            'area': 120,
-            'building_count': 6,
-            'population': 180
-        },
+INITIAL_BASE_BUILDINGS = {
+    'COL': {'HB1': 2,'COL': 4,},
+    'RIG': {'HB1': 2,'RIG': 6,},
+    'EXT': {'HB1': 2,'EXT': 3,},
 }
 
 def fetch_sites(name, planet):
@@ -94,7 +73,7 @@ def main():
     for ticker in groups:
         #print(f"\n{ticker} ({groups[ticker][0]['resource']['name']})")
         for hit in groups[ticker]:
-            hit['colonized'] = 'Colonized' if hit['planet'].has_infrastructure() else ''
+            #hit['colonized'] = hit['planet'].get_population()['pioneers']['count'] > 0
             
             exchange = hit['planet'].get_nearest_exchange()
 
@@ -108,13 +87,8 @@ def main():
             #base_resources = utils.ResourceList(hit['planet'].rawdata['BuildRequirements'])
             #extra_resources = base_resources - normal_base_resources
 
-            initial_base = INITIAL_BASES[hit['resource']['extractor_building']]
-            colony_resource_cost = utils.ResourceList(initial_base['materials'])
-
-            colony_resource_cost += hit['planet'].get_building_environment_cost(initial_base['area'])
-            for i in range(1, initial_base['building_count']-1):
-                colony_resource_cost += hit['planet'].get_building_environment_cost(0)
-
+            initial_base = utils.Base(hit['planet'].natural_id,INITIAL_BASE_BUILDINGS[hit['resource']['extractor_building']])
+            colony_resource_cost = initial_base.get_construction_materials()
             hit['colonization_cost'] = colony_resource_cost.get_total_value(exchange,'buy')
             hit['roi'] = hit['colonization_cost'] / hit['daily_income']
 
@@ -129,7 +103,7 @@ def main():
             if hit['colonization_cost'] >= MAX_COLONIZATION_COST: continue
 
             # Done after filtering to reduce api calls
-            hit['pioneers_available'] = hit['planet'].get_population()['pioneer']['unemployment_amount']
+            hit['pioneers_available'] = hit['planet'].get_population()['pioneers']['unemployment_amount']
             if hit['pioneers_available'] < MIN_PIONEERS: continue
 
             all_hits.append(hit)
@@ -158,7 +132,7 @@ def main():
         env_section = '['+f"{hit['planet'].get_environment_string():<4}"+']'
 
         message = (
-            f"{color(hit['resource']['factor'], factor_range[0], factor_range[1], '<2.1f', value_override=hit['resource']['daily_amount'])} "
+            f"{color(hit['resource']['factor'], factor_range[0], factor_range[1], '>4.1f', value_override=hit['resource']['daily_amount'])} "
             f"{hit['resource']['ticker']:<3}/d/e @ "
             f"{format(hit['planet'].name,'<'+str(longest_name))} "
             f"{color(env_complications,0,4,'',value_override=env_section,inverse=True)} "
@@ -172,8 +146,6 @@ def main():
             f"{color(hit['roi'],1,4,'>4.1f', logarithmic=True, inverse=True)}d ROI"
         )
         print(message)
-
-        #print(f"{hit['resource']['daily_amount']:<2.1f} {hit['resource']['ticker']:<3}/d @ {hit['planet'].name:<15} {hit['colonized']:<10} {hit['planet'].get_environment_string():<7} {hit['planet'].exchange_distance:>2} jumps from {exchange.ticker} with {hit['price']:>3.0f} {exchange.currency} bid price ({hit['demand']:>7} demand), {hit['daily_income']:>5.0f} {exchange.currency}/day/{hit['resource']['extractor_building']}. {hit["colonization_cost"]:>5.0f} {exchange.currency} investment, {hit['roi']:>4.1f}d ROI")
 
 def color(value, min_value, max_value, format_spec, value_override=None, inverse=False, logarithmic=False):
     """
@@ -254,7 +226,43 @@ def color(value, min_value, max_value, format_spec, value_override=None, inverse
     
     return colored_value
 
+def abbreviate(value):
+    suffixes = {
+        3: 'K',
+        6: 'M',
+        9: 'B',
+        12: 'T',
+        15: 'Q'
+    }
+    
+    # Handle the case for values less than 1000
+    if value < 1000:
+        return str(value)
+    
+    magnitude = len(str(value)) - 1
+    base_magnitude = (magnitude // 3) * 3
+    suffix = suffixes.get(base_magnitude, '')
+
+    scaled_value = value / 10**base_magnitude
+    
+    #print(f"Value: {value}, Magnitude: {magnitude}, Base Magnitude: {base_magnitude}, Suffix: {suffix}, Scaled Value: {scaled_value}")
+
+    # Determine the correct format based on the magnitude
+    if magnitude % 3 == 0:
+        return f"{int(scaled_value)}{suffix}"
+    elif magnitude % 3 == 1:
+        return f"{scaled_value:.1f}{suffix}".rstrip('0').rstrip('.')
+    else:
+        return f"{int(scaled_value)}{suffix}"
+
 if __name__ == "__main__":
+
+    print(abbreviate(106292))      # "106K"
+    print(abbreviate(1251))        # "1.2K"
+    print(abbreviate(151))         # "151"
+    print(abbreviate(123456789))   # "123M"
+    print(abbreviate(23456789))    # "23M"
+    print(abbreviate(3456789))     # "3.4M"
     main()
 
     # span = (0, 50)
