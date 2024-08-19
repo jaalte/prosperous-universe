@@ -4,6 +4,8 @@ import re
 from fio_api import fio
 from pathfinding import jump_distance
 
+USERNAME: 'fishmodem'
+
 # Constants
 EXTRACTORS = {
     'COL': {
@@ -40,6 +42,8 @@ PLANET_THRESHOLDS = {
     'pressure': (0.25, 2),
     'gravity': (0.25, 2.5),
 }
+
+DISTANCE_PER_PARSEC = 12
 
 DEMOGRAPHICS: ["pioneers", "settlers", "technicians", "engineers", "scientists"]
 
@@ -356,7 +360,7 @@ class System:
             }
             self.connections[connection_name] = {
                 'system': connection_name,
-                'distance': distance(self.pos, connection_pos),
+                'distance': distance(self.pos, connection_pos)/DISTANCE_PER_PARSEC,
             }
         
         self.planets = system_planet_lookup.get(hashid, [])  
@@ -542,6 +546,10 @@ class Recipe:
 
     def __str__(self):
         return f"{self.name} {self.duration}h"
+
+class Ship:
+    def __init__(self, name):
+        ships = fio.request("GET", f"/ship/ships/{USERNAME}", cache=60*60*24)
 
 
 class Exchange:
