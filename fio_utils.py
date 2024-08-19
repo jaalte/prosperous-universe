@@ -596,14 +596,32 @@ def distance(pos1, pos2):
     return math.sqrt((pos1['x'] - pos2['x'])**2 + (pos1['y'] - pos2['y'])**2 + (pos1['z'] - pos2['z'])**2)
 
 # Get a dict of all planets in the game keyed by name
+# Also adds extra data that requires all planets to be loaded
 def get_all_planets():
     planets = {}
     total = len(allplanets)
     for i, planet in enumerate(allplanets):
         planet_class = Planet(planet_id=planet.get('PlanetId'))
         planets[planet_class.name] = planet_class
-        #print(f"\rLoading all planets: {i+1}/{total}", end="")
-    #print("\n")
+        print(f"\rLoading all planets: {i+1}/{total}", end="")
+    print("\n")
+
+    factor_ranges = {}
+    # Determine range of factors for all resources
+    for name, planet in planets.items():
+        for ticker, resource in planet.factor_ranges.items():
+            if ticker not in factor_ranges:
+                factor_ranges[ticker] = (resource['factor'],resource['factor'])
+            else:
+                if resource['factor'] < factor_ranges[ticker][0]:
+                    factor_ranges[ticker] = (resource['factor'],factor_ranges[ticker][1])
+                if resource['factor'] > factor_ranges[ticker][1]:
+                    factor_ranges[ticker] = (factor_ranges[ticker][0],resource['factor'])
+    
+    for name, planet in planets.items():
+        for ticker, resource in planet.factor_ranges.items():
+            resource.factor_range = factor_ranges[ticker]
+
     return planets
 
 # Get a dict of all systems in the game keyed by name
@@ -632,9 +650,9 @@ def main():
     print(json.dumps(planets['Montem'].rawdata, indent=2))
     #print(json.dumps(planets['EM-929b'].get_population(), indent=2))
 
-    for name, planet in planets.items():
-        if planet.environment_class['gravity'] == 'low':
-            print(name)
+    # for name, planet in planets.items():
+    #     if planet.environment_class['gravity'] == 'low':
+    #         print(name)
 
     #print(ResourceList(BASE_CORE_MIN_RESOURCES))
 
@@ -649,6 +667,8 @@ def main():
     # buildings_sorted = sorted(buildings, key=lambda x: x.get('AreaCost', 0), reverse=True)
     # for building in buildings_sorted:
     #     print(f"{building['Ticker']}: {building['AreaCost']}")
+
+    print(json.dumps(resources, indent=2))
 
 if __name__ == "__main__":
     main()
