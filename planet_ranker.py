@@ -25,12 +25,12 @@ def fetch_sites(name, planet):
     return name, planet.get_sites()
 
 def main():
+    gasses = ['AMM', 'AR', 'F', 'H', 'HE', 'HE3', 'N', 'NE', 'O']
+    planets = utils.get_all_planets()
 
     
-    gasses = ['AMM', 'AR', 'F', 'H', 'HE', 'HE3', 'N', 'NE', 'O']
 
-    hits = []
-    planets = utils.get_all_planets()
+    #hits = []
     #print(json.dumps(planets["Montem"].rawdata, indent=2))
 
     # Fetch all planet sites to get colony count
@@ -82,10 +82,6 @@ def main():
 
             hit['daily_income'] = hit['resource']['daily_amount'] * hit['price']
             if hit['daily_income'] <= 0: continue
-
-            #normal_base_resources = utils.ResourceList(utils.BASE_CORE_MIN_RESOURCES)
-            #base_resources = utils.ResourceList(hit['planet'].rawdata['BuildRequirements'])
-            #extra_resources = base_resources - normal_base_resources
 
             initial_base = utils.Base(hit['planet'].natural_id,INITIAL_BASE_BUILDINGS[hit['resource']['extractor_building']])
             colony_resource_cost = initial_base.get_construction_materials()
