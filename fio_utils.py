@@ -402,28 +402,22 @@ class Base:
                 print("Base constructor called with conflicting planet_natural_id")
             else:
                 self.planet = Planet(planet_id=self.rawdata.get('PlanetId'))
+                # Extract and count buildings by their ticker
+                self.buildingCounts = {}
+                for building in rawdata.get('Buildings', []):
+                    ticker = building.get('BuildingTicker')
+                    if ticker:
+                        if ticker in self.buildingCounts:
+                            self.buildingCounts[ticker] += 1
+                        else:
+                            self.buildingCounts[ticker] = 1
         else: # If there is no rawdata (and in most cases can't be)
-            self.planet = Planet(planet_natural_id=planet_natural_id)
+            self.planet = Planet(natural_id=planet_natural_id)
             self.building_counts = building_counts
 
-        # Store the raw JSON data
-        self.rawdata = rawdata
+        self.buildingCounts['CM'] = 1 #Add core module
 
-        # Create a Planet object
-        self.planet = Planet(planet_id=self.rawdata.get('PlanetId'))
-    
-        # Extract and count buildings by their ticker
-        self.buildingCounts = {}
-        for building in rawdata.get('Buildings', []):
-            ticker = building.get('BuildingTicker')
-            if ticker:
-                if ticker in self.buildingCounts:
-                    self.buildingCounts[ticker] += 1
-                else:
-                    self.buildingCounts[ticker] = 1
-        
         # Now we need to aggregate building recipes
-        
         available_recipes = []
         for building_ticker in list(self.buildingCounts.keys()):
             # Extractors will need to be handled separately based on the planet resources
