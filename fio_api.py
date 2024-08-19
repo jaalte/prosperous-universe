@@ -9,6 +9,8 @@ from io import StringIO
 from urllib.parse import urlencode, urlparse, quote_plus
 from datetime import datetime, timedelta
 
+MAX_RETRIES = 3
+
 class FIOAPI:
     def __init__(self, api_key_file='./apikey.txt'):
         self.api_key = self._read_api_key(api_key_file)
@@ -43,47 +45,46 @@ class FIOAPI:
             if cache == 0 or cache == False or str(cache).lower() == 'never':
                 pass
             elif cache == -1 or cache == True or str(cache).lower() == 'always' or str(cache).lower() == 'forever':
-                #print("Serving from cache (once-and-for-all cache).")
                 return self._load_cached_file(cache_path, response_format)
             elif cache >= 0:
                 cache_age = datetime.now() - datetime.fromtimestamp(os.path.getmtime(cache_path))
                 if cache_age.total_seconds() < cache:
-                    #print("Serving from cache (within time limit).")
                     return self._load_cached_file(cache_path, response_format)
 
         # Fetch the data from the API
 
-        # If message is a string, print the string.
-        # If it's None, do nothing.
-        # If it's anything else, print a default message.
         if type(message) is str:
             print(message)
         elif message is not None:
             print(f"Fetching {url}...")
 
-        
-        try:
-            if method.upper() == 'GET':
-                response = requests.get(url, headers=self.headers)
-            elif method.upper() == 'POST':
-                response = requests.post(url, headers=self.headers, json=data)
-            else:
-                raise ValueError("Unsupported HTTP method.")
+        for attempt in range(MAX_RETRIES):
+            try:
+                if method.upper() == 'GET':
+                    response = requests.get(url, headers=self.headers)
+                elif method.upper() == 'POST':
+                    response = requests.post(url, headers=self.headers, json=data)
+                else:
+                    raise ValueError("Unsupported HTTP method.")
 
-            response.raise_for_status()  # Raise HTTPError for bad responses
+                response.raise_for_status()  # Raise HTTPError for bad responses
 
-            # Save response to cache if caching is enabled
-            if cache != 0:
-                self._save_to_cache(cache_path, response, response_format)
+                # Save response to cache if caching is enabled
+                if cache != 0:
+                    self._save_to_cache(cache_path, response, response_format)
 
-            if response_format == 'json':
-                return response.json()
-            elif response_format == 'csv':
-                return self._parse_csv(response.text)
-            else:
-                raise ValueError("Unsupported response format.")
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Failed to fetch data: {str(e)}")
+                if response_format == 'json':
+                    return response.json()
+                elif response_format == 'csv':
+                    return self._parse_csv(response.text)
+                else:
+                    raise ValueError("Unsupported response format.")
+
+            except requests.exceptions.RequestException as e:
+                if response.status_code == 522 and attempt < MAX_RETRIES - 1:
+                    print(f"Fetching {endpoint} attempt {attempt + 1}/{MAX_RETRIES} failed with a 522 error. Retrying...")
+                else:
+                    raise Exception(f"Failed to fetch data: {str(e)}")
 
     def _generate_cache_filename(self, url, method, data):
         """Generate a human-readable cache filename based on the request."""
