@@ -65,20 +65,6 @@ def main():
     #             # Do something with the result, e.g., storing the sites
     #             pbar.update(1)
 
-    for name in planets:
-        planet = planets[name]
-        for ticker in planet.resources:
-            resource = planet.resources[ticker]
-            if ticker in gasses:
-                if resource['type'] == 'LIQUID':
-                    if resource['factor'] > 0:
-                        hit = {
-                            'planet': planet,
-                            'resource': resource,
-                        }
-                        #print(f"Liquid {hit['resource']['ticker']:<3} at {hit['resource']['factor']*100:<5.2f} on {hit['planet'].name}")
-                        hits.append(hit)
-
     hits = []
     for name in planets:
         planet = planets[name]
@@ -137,7 +123,7 @@ def main():
         for hit in groups[ticker]:
             if hit['price'] == 0: continue
             if hit['demand'] <= MIN_DEMAND: continue
-            if hit['planet'].exchange_distance >= MAX_JUMPS: continue
+            if hit['planet'].exchange_distance > MAX_JUMPS: continue
             if hit['daily_income'] <= MIN_DAILY_INCOME: continue
             if hit['colonization_cost'] >= MAX_COLONIZATION_COST: continue
 
@@ -155,9 +141,10 @@ def main():
 
         message = (
             f"{color(hit['resource']['daily_amount'], 0, 50, '<2.1f')} "
-            f"{hit['resource']['ticker']:<3}/d @ "
-            f"{hit['planet'].name:<15} {hit['colonized']:<10} {hit['planet'].get_environment_string():<7} "
-            f"{hit['planet'].exchange_distance:>2} jumps from {exchange.ticker} with "
+            f"{hit['resource']['ticker']:<3}/d @ {hit['planet'].name:<15} "
+            f"{hit['colonized']:<10} {hit['planet'].get_environment_string():<7} "
+            f"{color(hit['planet'].exchange_distance,)} "
+            f"jumps from {exchange.ticker} with "
             f"{hit['price']:>3.0f} {exchange.currency} bid price ({hit['demand']:>7} demand), "
             f"{hit['daily_income']:>5.0f} {exchange.currency}/day/{hit['resource']['extractor_building']}. "
             f"{hit['colonization_cost']:>5.0f} {exchange.currency} investment, {hit['roi']:>4.1f}d ROI"
@@ -166,7 +153,7 @@ def main():
 
         #print(f"{hit['resource']['daily_amount']:<2.1f} {hit['resource']['ticker']:<3}/d @ {hit['planet'].name:<15} {hit['colonized']:<10} {hit['planet'].get_environment_string():<7} {hit['planet'].exchange_distance:>2} jumps from {exchange.ticker} with {hit['price']:>3.0f} {exchange.currency} bid price ({hit['demand']:>7} demand), {hit['daily_income']:>5.0f} {exchange.currency}/day/{hit['resource']['extractor_building']}. {hit["colonization_cost"]:>5.0f} {exchange.currency} investment, {hit['roi']:>4.1f}d ROI")
 
-def color(value, min_value, max_value, format_spec):
+def color(value, min_value, max_value, format_spec, value_override=None):
     """
     Applies color to the formatted value based on the given range and color map.
     Supports coloration for values outside the min and max range.
@@ -212,6 +199,9 @@ def color(value, min_value, max_value, format_spec):
         r = int(lower_color[0] + (upper_color[0] - lower_color[0]) * segment_ratio)
         g = int(lower_color[1] + (upper_color[1] - lower_color[1]) * segment_ratio)
         b = int(lower_color[2] + (upper_color[2] - lower_color[2]) * segment_ratio)
+
+    if value_override is not None:
+        value = value_override
 
     # Format the value using the specified format
     formatted_value = format(value, format_spec)
