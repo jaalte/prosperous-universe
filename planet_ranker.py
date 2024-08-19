@@ -106,7 +106,7 @@ def main():
     # Print groups
     for ticker in groups:
         #print(f"\n{ticker} ({groups[ticker][0]['resource']['name']})")
-        for hit in groups[ticker]:MIN_PIONEERS
+        for hit in groups[ticker]:
             hit['colonized'] = 'Colonized' if hit['planet'].has_infrastructure() else ''
             
             exchange = hit['planet'].get_nearest_exchange()
