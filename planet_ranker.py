@@ -146,7 +146,7 @@ def main():
     for hit in all_hits:
         exchange = hit['planet'].get_nearest_exchange()
 
-        print(f"  {hit['resource']['factor']*100:<5.2f} {hit['resource']['ticker']:<3} @ {hit['planet'].name:<15} {hit['colonized']:<10} {hit['planet'].get_environment_string():<7} {hit['planet'].exchange_distance:>2} jumps from {exchange.ticker} with {hit['price']:>3.0f} {exchange.currency} bid price ({hit['demand']:>7} demand), {hit['daily_income']:>5.0f} {exchange.currency}/day/{hit['resource']['extractor_building']}. {hit["colonization_cost"]:>5.0f} {exchange.currency} investment, {hit['roi']:>4.1f}d ROI")
+        print(f"{hit['resource']['daily_amount']:<2.1f} {hit['resource']['ticker']:<3}/d @ {hit['planet'].name:<15} {hit['colonized']:<10} {hit['planet'].get_environment_string():<7} {hit['planet'].exchange_distance:>2} jumps from {exchange.ticker} with {hit['price']:>3.0f} {exchange.currency} bid price ({hit['demand']:>7} demand), {hit['daily_income']:>5.0f} {exchange.currency}/day/{hit['resource']['extractor_building']}. {hit["colonization_cost"]:>5.0f} {exchange.currency} investment, {hit['roi']:>4.1f}d ROI")
 
 if __name__ == "__main__":
     main()
