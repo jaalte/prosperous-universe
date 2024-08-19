@@ -154,23 +154,28 @@ def main():
 
         factor_range = hit['resource']['factor_range']
 
+        env_complications = len(hit['planet'].get_environment_string().replace(" ", ""))
+        env_section = '['+f"{hit['planet'].get_environment_string():<4}"+']'
+
         message = (
             f"{color(hit['resource']['factor'], factor_range[0], factor_range[1], '<2.1f', value_override=hit['resource']['daily_amount'])} "
             f"{hit['resource']['ticker']:<3}/d/e @ "
             f"{format(hit['planet'].name,'<'+str(longest_name))} "
-            f"[{hit['planet'].get_environment_string():<7}] "
+            f"{color(env_complications,0,4,'',value_override=env_section,inverse=True)} "
             f"{color(hit['planet'].exchange_distance,0,6,'>2.0f', inverse=True)}j"
-            f"->{exchange.ticker} @ "
-            f"{color(hit['price'], price_range[0], price_range[1], '>3.0f')} {exchange.currency}/u"
-            f"({hit['demand']:>7} demand), "
-            f"{hit['daily_income']:>5.0f} {exchange.currency}/day/{hit['resource']['extractor_building']}. "
-            f"{hit['colonization_cost']:>5.0f} {exchange.currency} investment, {hit['roi']:>4.1f}d ROI"
+            f"->{exchange.ticker} "
+            f"{color(hit['price'], price_range[0], price_range[1], '>3.0f')}{exchange.currency}/u"
+            f" ({color(hit['demand'],3,5,'>5.0f', logarithmic=True)} demand), "
+            f"{color(hit['daily_income'],0,5000,'>5.0f')}"
+            f"{exchange.currency}/day/{hit['resource']['extractor_building']}. "
+            f"{color(hit['colonization_cost'],200000,500000, '>5.0f', inverse=True)}{exchange.currency} investment, "
+            f"{color(hit['roi'],1,4,'>4.1f', logarithmic=True, inverse=True)}d ROI"
         )
         print(message)
 
         #print(f"{hit['resource']['daily_amount']:<2.1f} {hit['resource']['ticker']:<3}/d @ {hit['planet'].name:<15} {hit['colonized']:<10} {hit['planet'].get_environment_string():<7} {hit['planet'].exchange_distance:>2} jumps from {exchange.ticker} with {hit['price']:>3.0f} {exchange.currency} bid price ({hit['demand']:>7} demand), {hit['daily_income']:>5.0f} {exchange.currency}/day/{hit['resource']['extractor_building']}. {hit["colonization_cost"]:>5.0f} {exchange.currency} investment, {hit['roi']:>4.1f}d ROI")
 
-def color(value, min_value, max_value, format_spec, value_override=None, inverse=False):
+def color(value, min_value, max_value, format_spec, value_override=None, inverse=False, logarithmic=False):
     """
     Applies color to the formatted value based on the given range and color map.
     Supports coloration for values outside the min and max range.
@@ -202,9 +207,14 @@ def color(value, min_value, max_value, format_spec, value_override=None, inverse
             2: color_map[-1],     
         }
     
+    # Apply logarithmic scaling if requested
+    placement_value = value
+    if logarithmic:
+        placement_value = math.log10(value)
+    
     # Calculate the span and normalized value key
     span = max_value - min_value
-    normalized_value = (value - min_value) / span
+    normalized_value = (placement_value - min_value) / span
 
     # Clamp normalized_value to the min and max keys in color_map
     min_key = min(color_map.keys())
