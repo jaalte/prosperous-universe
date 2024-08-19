@@ -51,6 +51,9 @@ materials = {material['Ticker']: material for material in allmaterials}
 allplanets = fio.request("GET", f"/planet/allplanets/full", cache=-1)
 planet_lookup = {planet['PlanetId']: planet for planet in allplanets}
 
+# Lookup dictionary for population reports
+all_population_reports = None
+
 # Create a lookup dictionary keyed by SystemId each equal a list of PlanetName
 system_planet_lookup = {}
 for planet in allplanets:
@@ -71,6 +74,20 @@ for good in rawexchangedata:
     exchange_goods[good['ExchangeCode']][good['MaterialTicker']] = good
 
 #print(json.dumps(exchange_goods, indent=4))
+
+class DataManager:
+    def __init__(self):
+        self.planet_lookup
+        self.population_reports
+        self.system_planets
+        self.planet_systems
+
+        # Planet natural IDs
+        self.planetids = {
+            'by_name': {},
+            'by_hash': {},
+        }
+        
 
 class Planet:
     def __init__(self, planet_id):
@@ -183,9 +200,25 @@ class Planet:
         return any([self.rawdata[key] for key in keys])
 
     def get_population(self):
-        infrastructure = fio.request("GET", f"/infrastructure/{self.natural_id}", cache=60*60*24)
+        global all_population_reports
 
-        if len(infrastructure["InfrastructureReports"]) < 2:
+        if not all_population_reports:
+            all_population_reports_raw = fio.request("GET", "/csv/infrastructure/allreports", cache=60*60*24)
+            
+            all_population_reports = {}
+            
+            for report in all_population_reports_raw:
+                planet_id = report["PlanetNaturalId"]
+                
+                # Initialize the list for this planet if it doesn't exist
+                if planet_id not in all_population_reports:
+                    all_population_reports[planet_id] = []
+                
+                all_population_reports[planet_id].append(report)
+                
+
+        if not self.natural_id in all_population_reports \
+        or len(all_population_reports[self.natural_id]) < 2:
             # Generate an empty population dict
             categories = ["pioneer", "settler", "technician", "engineer", "scientist"]
             keys = [
@@ -201,15 +234,18 @@ class Planet:
             population = {category: {key: 0 for key in keys} for category in categories}
             return population
 
+        reports = all_population_reports[self.natural_id]
 
-        latest_report = infrastructure["InfrastructureReports"][-1]
-        previous_report = infrastructure["InfrastructureReports"][-2]
+
+        latest_report = reports[-1]
+        previous_report = reports[-2]
         
         # Function to generate the cleaned-up report
         def _generate_population_data(prefix):
             return {
                 "count": previous_report[f"NextPopulation{prefix}"],
-                "next": latest_report[f"NextPopulation{prefix}"],
+                # Oddly next is always "2" for pioneers on unpopulated planets
+                "next": latest_report[f"NextPopulation{prefix}"] if latest_report[f"NextPopulation{prefix}"] >= 10 else 0,
                 "difference": latest_report[f"PopulationDifference{prefix}"],
                 "average_happiness": latest_report[f"AverageHappiness{prefix}"],
                 "unemployment_rate": latest_report[f"UnemploymentRate{prefix}"],
@@ -273,7 +309,7 @@ class Planet:
 
         # Add ^ if surface is false, otherwise add space
         text += '^' if not self.environment_class['surface'] else ' '
-        text += ' ' if self.environment['fertility'] == -1.0 else 'F'
+        #text += ' ' if self.environment['fertility'] == -1.0 else 'F'
         
 
         return text
