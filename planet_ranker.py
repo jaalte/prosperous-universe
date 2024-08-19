@@ -54,7 +54,8 @@ def main():
     planets = utils.get_all_planets()
     #print(json.dumps(planets["Montem"].rawdata, indent=2))
 
-    # Fetch all planet sites
+    # Fetch all planet sites to get colony count
+    # note: caused heavy rate limiting, parallel fetching not possible :(
     # threads = 1
     # with ThreadPoolExecutor(max_workers=threads) as executor:
     #     futures = {executor.submit(fetch_sites, name, planet): name for name, planet in planets.items()}
@@ -136,16 +137,32 @@ def main():
     # Sort all hits by daily profit
     all_hits.sort(key=lambda x: x['roi'])
 
+    longest_name = max([len(hit['planet'].name) for hit in all_hits])
+
     for hit in all_hits:
         exchange = hit['planet'].get_nearest_exchange()
 
+        price_range = [0,0]
+        for code, exchange in utils.get_all_exchanges().items():
+            if hit['resource']['ticker'] in exchange.goods:
+                bid = exchange.goods[hit['resource']['ticker']]['Bid']
+                if not bid or bid == 0: continue
+                if bid < price_range[0]:
+                    price_range[0] = bid
+                if bid > price_range[1]:
+                    price_range[1] = bid
+
+        factor_range = hit['resource']['factor_range']
+
         message = (
-            f"{color(hit['resource']['daily_amount'], 0, 50, '<2.1f')} "
-            f"{hit['resource']['ticker']:<3}/d @ {hit['planet'].name:<15} "
-            f"{hit['colonized']:<10} {hit['planet'].get_environment_string():<7} "
-            f"{color(hit['planet'].exchange_distance,)} "
-            f"jumps from {exchange.ticker} with "
-            f"{hit['price']:>3.0f} {exchange.currency} bid price ({hit['demand']:>7} demand), "
+            f"{color(hit['resource']['factor'], factor_range[0], factor_range[1], '<2.1f', value_override=hit['resource']['daily_amount'])} "
+            f"{hit['resource']['ticker']:<3}/d/e @ "
+            f"{format(hit['planet'].name,'<'+str(longest_name))} "
+            f"[{hit['planet'].get_environment_string():<7}] "
+            f"{color(hit['planet'].exchange_distance,0,6,'>2.0f', inverse=True)}j"
+            f"->{exchange.ticker} @ "
+            f"{color(hit['price'], price_range[0], price_range[1], '>3.0f')} {exchange.currency}/u"
+            f"({hit['demand']:>7} demand), "
             f"{hit['daily_income']:>5.0f} {exchange.currency}/day/{hit['resource']['extractor_building']}. "
             f"{hit['colonization_cost']:>5.0f} {exchange.currency} investment, {hit['roi']:>4.1f}d ROI"
         )
@@ -153,10 +170,11 @@ def main():
 
         #print(f"{hit['resource']['daily_amount']:<2.1f} {hit['resource']['ticker']:<3}/d @ {hit['planet'].name:<15} {hit['colonized']:<10} {hit['planet'].get_environment_string():<7} {hit['planet'].exchange_distance:>2} jumps from {exchange.ticker} with {hit['price']:>3.0f} {exchange.currency} bid price ({hit['demand']:>7} demand), {hit['daily_income']:>5.0f} {exchange.currency}/day/{hit['resource']['extractor_building']}. {hit["colonization_cost"]:>5.0f} {exchange.currency} investment, {hit['roi']:>4.1f}d ROI")
 
-def color(value, min_value, max_value, format_spec, value_override=None):
+def color(value, min_value, max_value, format_spec, value_override=None, inverse=False):
     """
     Applies color to the formatted value based on the given range and color map.
     Supports coloration for values outside the min and max range.
+    If 'inverse' is True or if min_value > max_value, the colors are applied in reverse.
     """
     # Define the color map with positions and corresponding colors
     color_map = {
@@ -169,6 +187,21 @@ def color(value, min_value, max_value, format_spec, value_override=None):
         2: (255, 0, 255),           # Magenta for values far above max
     }
 
+    # Handle inverse logic by reversing the mapping
+    if min_value > max_value:
+        inverse = not inverse
+    if inverse:
+        min_value, max_value = min(max_value, min_value), max(max_value, min_value)
+        color_map = {
+            -1: color_map[2],     
+            0: color_map[1],      
+            0.25: color_map[0.75],
+            0.5: color_map[0.5],  
+            0.75: color_map[0.25],
+            1: color_map[0],      
+            2: color_map[-1],     
+        }
+    
     # Calculate the span and normalized value key
     span = max_value - min_value
     normalized_value = (value - min_value) / span

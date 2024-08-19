@@ -609,7 +609,7 @@ def get_all_planets():
     factor_ranges = {}
     # Determine range of factors for all resources
     for name, planet in planets.items():
-        for ticker, resource in planet.factor_ranges.items():
+        for ticker, resource in planet.resources.items():
             if ticker not in factor_ranges:
                 factor_ranges[ticker] = (resource['factor'],resource['factor'])
             else:
@@ -619,8 +619,8 @@ def get_all_planets():
                     factor_ranges[ticker] = (factor_ranges[ticker][0],resource['factor'])
     
     for name, planet in planets.items():
-        for ticker, resource in planet.factor_ranges.items():
-            resource.factor_range = factor_ranges[ticker]
+        for ticker, resource in planet.resources.items():
+            resource['factor_range'] = factor_ranges[ticker]
 
     return planets
 
@@ -667,8 +667,6 @@ def main():
     # buildings_sorted = sorted(buildings, key=lambda x: x.get('AreaCost', 0), reverse=True)
     # for building in buildings_sorted:
     #     print(f"{building['Ticker']}: {building['AreaCost']}")
-
-    print(json.dumps(resources, indent=2))
 
 if __name__ == "__main__":
     main()
