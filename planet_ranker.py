@@ -131,8 +131,6 @@ def main():
             hit['colonization_cost'] = colony_resource_cost.get_total_value(exchange,'buy')
             hit['roi'] = hit['colonization_cost'] / hit['daily_income']
 
-            hit['pioneers_available'] = hit['planet'].get_population()['pioneer']['unemployment_amount']
-
     # Merge all groups items into a single list
     all_hits = []
     for ticker in groups:
@@ -142,6 +140,9 @@ def main():
             if hit['planet'].exchange_distance >= MAX_JUMPS: continue
             if hit['daily_income'] <= MIN_DAILY_INCOME: continue
             if hit['colonization_cost'] >= MAX_COLONIZATION_COST: continue
+
+            # Done after filtering to reduce api calls
+            hit['pioneers_available'] = hit['planet'].get_population()['pioneer']['unemployment_amount']
             if hit['pioneers_available'] < MIN_PIONEERS: continue
 
             all_hits.append(hit)
