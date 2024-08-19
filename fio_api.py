@@ -2,7 +2,7 @@
 
 import requests
 import json
-import csv
+import pandas as pd
 import re
 import os
 from io import StringIO
@@ -130,18 +130,13 @@ class FIOAPI:
             raise ValueError(f"Malformed URL detected: {endpoint}")
 
     def _parse_csv(self, csv_text):
-        csv_data = []
-        f = StringIO(csv_text)
-        reader = csv.reader(f, delimiter=',')
-        headers = next(reader)
-        for row in reader:
-            csv_data.append(dict(zip(headers, row)))
-        return csv_data
+        # Use pandas to read the CSV text
+        df = pd.read_csv(StringIO(csv_text))
+        # Convert DataFrame to list of dictionaries
+        return df.to_dict(orient='records')
 
 # Simplify usage: Auto-initialize FIOAPI instance
 fio = FIOAPI()
-
-
 
 # Example usage
 if __name__ == "__main__":
