@@ -360,6 +360,117 @@ class System:
     def __str__(self):
         return f"[System {self.name} ({self.natural_id}), {len(self.connections)} connections, {len(self.planets)} planets]"
 
+class Base:
+    # Constructor. Either:
+    # - a planet_natural_id and building counts
+    # - a site object from FIO /sites/{username}
+    def __init__(self, planet_natural_id, building_counts, rawdata):
+
+        if rawdata:               
+            if planet_natural_id and planet_natural_id != rawdata.get('PlanetNaturalId'):
+                print("Base constructor called with conflicting planet_natural_id")
+            else:
+                self.planet = Planet(planet_id=self.rawdata.get('PlanetId'))
+                # Extract and count buildings by their ticker
+                self.building_counts = {}
+                for building in rawdata.get('Buildings', []):
+                    ticker = building.get('BuildingTicker')
+                    if ticker:
+                        if ticker in self.building_counts:
+                            self.building_counts[ticker] += 1
+                        else:
+                            self.building_counts[ticker] = 1
+        else: # If there is no rawdata (and in most cases can't be)
+            self.planet = Planet(natural_id=planet_natural_id)
+            self.building_counts = building_counts
+
+        self.building_counts['CM'] = 1 # Add core module
+
+        # Now we need to aggregate building recipes
+        available_recipes = []
+        for building_ticker in list(self.building_counts.keys()):
+            # Extractors will need to be handled separately based on the planet resources
+            if building_ticker == 'COL' or building_ticker == 'RIG' or building_ticker == 'EXT':
+                available_recipes += self.get_extractor_recipes(building_ticker)
+            else:
+                available_recipes += self.get_crafter_recipes(building_ticker)
+
+        for recipe in available_recipes:
+            print(recipe)
+            
+                 
+
+    def __str__(self):
+        buildings_str = ', '.join([f"{count} {name}" for name, count in self.building_counts.items()])
+        resources_str = ', '.join(self.planet.resources.keys())
+        return f"Base ({self.planet.name}):\n  Buildings: {buildings_str}\n  Resources: {resources_str}"
+
+# A single building of a particular ticker. Not a particular one though.
+class Building:
+    def __init__(self, ticker, planet):
+        self.ticker = ticker
+        if isinstance(planet, str):
+            self.planet = Planet(natural_id=planet)
+        
+        allbuildings = fio.request("GET", f"/building/allbuildings", cache=-1)
+        for building in allbuildings:
+            if building['Ticker'] == ticker:
+                self.rawdata = building
+                break
+
+        self.area = self.rawdata.get('AreaCost')
+        self.worker_needs = {
+            'pioneers': self.rawdata.get('Pioneers'),
+            'colonists': self.rawdata.get('Colonists'),
+            'technicians': self.rawdata.get('Technicians'),
+            'engineers': self.rawdata.get('Engineers'),
+            'researchers': self.rawdata.get('Researchers'),
+        }
+
+        is_extractor = self.ticker in ['COL', 'RIG', 'EXT']
+        self.type = 'extractor' if is_extractor else 'crafter'
+        if self.type == 'extractor':
+            return self._init_extractor_recipes(self.ticker)
+        else:
+            return self._init_crafter_recipes(self.ticker)
+
+        if len(self.recipes) == 0:
+            self.type = 'other'
+
+        self.raw_construction_materials = ResourceList(self.rawdata.get('BuildingCosts'))
+        extra_materials = self.planet.get_building_environment_cost(self.area)
+        self.construction_materials = self.raw_construction_materials + extra_materials
+    
+    def _init_crafter_recipes(self, building_ticker):
+        allbuildings = fio.request("GET", f"/building/allbuildings", cache=-1)
+        for building in allbuildings:
+            if building['Ticker'] == building_ticker:
+                rawrecipes = building.get('Recipes', [])
+                self.recipes = []
+                for rawrecipe in rawrecipes:
+                    recipe = Recipe(rawrecipe)
+                    self.recipes.append(recipe)
+
+    def _init_extractor_recipes(self, building_ticker):
+        self.recipes = []
+        for ticker in self.planet.resources:
+            resource = self.planet.resources[ticker]
+
+            # Skip resources that aren't for this extractor
+            if resource["extractor_building"] == building_ticker:
+                recipedata = {
+                    'building': building_ticker,
+                    'name': f"@{building_ticker}=>{resource["process_amount"]}x{ticker}",
+                    'duration': resource["process_hours"],
+                    'inputs': {},
+                    'outputs': {
+                        ticker: resource["process_amount"]
+                    }
+                }
+                self.recipes.append(Recipe(recipedata))
+
+    def __str__(self):
+        return f"{self.ticker}"
 
 class Recipe:
     def __init__(self, rawdata):
@@ -391,81 +502,6 @@ class Recipe:
     def __str__(self):
         return f"{self.name} {self.duration}h"
 
-class Base:
-    # Constructor. Either:
-    # - a planet_natural_id and building counts
-    # - a site object from FIO /sites/{username}
-    def __init__(self, planet_natural_id, building_counts, rawdata):
-
-        if rawdata:               
-            if planet_natural_id and planet_natural_id != rawdata.get('PlanetNaturalId'):
-                print("Base constructor called with conflicting planet_natural_id")
-            else:
-                self.planet = Planet(planet_id=self.rawdata.get('PlanetId'))
-                # Extract and count buildings by their ticker
-                self.buildingCounts = {}
-                for building in rawdata.get('Buildings', []):
-                    ticker = building.get('BuildingTicker')
-                    if ticker:
-                        if ticker in self.buildingCounts:
-                            self.buildingCounts[ticker] += 1
-                        else:
-                            self.buildingCounts[ticker] = 1
-        else: # If there is no rawdata (and in most cases can't be)
-            self.planet = Planet(natural_id=planet_natural_id)
-            self.building_counts = building_counts
-
-        self.buildingCounts['CM'] = 1 #Add core module
-
-        # Now we need to aggregate building recipes
-        available_recipes = []
-        for building_ticker in list(self.buildingCounts.keys()):
-            # Extractors will need to be handled separately based on the planet resources
-            if building_ticker == 'COL' or building_ticker == 'RIG' or building_ticker == 'EXT':
-                available_recipes += self.get_extractor_recipes(building_ticker)
-            else:
-                available_recipes += self.get_crafter_recipes(building_ticker)
-
-        for recipe in available_recipes:
-            print(recipe)
-    
-    def get_crafter_recipes(self, building_ticker):
-        allbuildings = fio.request("GET", f"/building/allbuildings", cache=-1)
-        for building in allbuildings:
-            if building['Ticker'] == building_ticker:
-                rawrecipes = building.get('Recipes', [])
-                recipes = []
-                for rawrecipe in rawrecipes:
-                    recipe = Recipe(rawrecipe)
-                    recipes.append(recipe)
-                    #recipe["Building"] = building_ticker
-                    #recipe["BuildingCount"] = self.buildingCounts[building_ticker]
-                return recipes
-
-    def get_extractor_recipes(self, building_ticker):
-        recipes = []
-        for ticker in self.planet.resources:
-            resource = self.planet.resources[ticker]
-
-            # Skip resources that aren't for this extractor
-            if resource["extractor_building"] == building_ticker:
-                recipedata = {
-                    'building': building_ticker,
-                    'name': f"@{building_ticker}=>{resource["process_amount"]}x{ticker}",
-                    'duration': resource["process_hours"],
-                    'inputs': {},
-                    'outputs': {
-                        ticker: resource["process_amount"]
-                    }
-                }
-                recipes.append(Recipe(recipedata))
-        return recipes
-            
-
-    def __str__(self):
-        buildings_str = ', '.join([f"{count} {name}" for name, count in self.buildingCounts.items()])
-        resources_str = ', '.join(self.planet.resources.keys())
-        return f"Base ({self.planet.name}):\n  Buildings: {buildings_str}\n  Resources: {resources_str}"
 
 class Exchange:
     def __init__(self, rawdata):
@@ -693,7 +729,7 @@ exchanges = get_all_exchanges()
 
 def main():
     planets = get_all_planets()
-    print(json.dumps(planets['Montem'].rawdata, indent=2))
+    #print(json.dumps(planets['Montem'].rawdata, indent=2))
     #print(json.dumps(planets['EM-929b'].get_population(), indent=2))
 
     # for name, planet in planets.items():
@@ -713,6 +749,8 @@ def main():
     # buildings_sorted = sorted(buildings, key=lambda x: x.get('AreaCost', 0), reverse=True)
     # for building in buildings_sorted:
     #     print(f"{building['Ticker']}: {building['AreaCost']}")
+
+    building = Building('HB1','XG-326a')
 
 if __name__ == "__main__":
     main()
