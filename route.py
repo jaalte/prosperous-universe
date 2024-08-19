@@ -2,107 +2,85 @@
 
 import json
 import math
+import pandas as pd
+import numpy as np
 from fio_api import fio
 import fio_utils as utils
 
-""" rawsystem example:
-  {
-    "Connections": [
-      {
-        "SystemConnectionId": "01bfaf846e85228ea194e31272c83cf8-f7bf1dac70fc79c9b365accf54b6ef68",
-        "ConnectingId": "f7bf1dac70fc79c9b365accf54b6ef68"
-      },
-      {
-        "SystemConnectionId": "01bfaf846e85228ea194e31272c83cf8-3e3dcecc4b0a9a0f03df1d95587e1096",
-        "ConnectingId": "3e3dcecc4b0a9a0f03df1d95587e1096"
-      }
-    ],
-    "SystemId": "01bfaf846e85228ea194e31272c83cf8",
-    "Name": "CH-771",
-    "NaturalId": "CH-771",
-    "Type": "K",
-    "PositionX": 527.2559814453125,
-    "PositionY": 631.3751220703125,
-    "PositionZ": 98.09454345703125,
-    "SectorId": "sector-31",
-    "SubSectorId": "subsector-31-1",
-    "UserNameSubmitted": "SAGANAKI",
-    "Timestamp": "2024-08-13T16:42:19.074265"
-  },
-"""
-
 import csv
+from sklearn.linear_model import LinearRegression
 
-# Hardcoded CSV data
-data = """
-origin,destination,time (decimal hours),parsecs
-Moria,Gundabad,2.633,6
-Gundabad,LB-428,3.067,7
-LB-428,LB-599,3.85,9
-LB-599,OZ-189,2.95,7
-OZ-189,VH-778,4.867,12
-VH-778,Hortus,3.5,8
-Moria,Gundabad,2.3833333333333333,6
-Gundabad,LB-506,2.3166666666666664,6
-LB-506,QQ-082,4.15,11
-QQ-082,QQ-786,4.766666666666667,13
-QQ-786,OP-964,1.8333333333333335,5
-OP-964,OP-533,0.9,2
-OP-533,XD-436,2.35,6
-Moria,TO-392,4.0,8
-TO-392,Midway,5.316666666666666,11
-Midway,YI-059,3.85,8
-YI-059,YI-280,5.4,11
-YI-280,YI-715,1.9333333333333333,4
-YI-715,YI-683,2.6666666666666665,6
-YI-683,YI-705,3.466666666666667,7
-YI-705,YI-209,1.7833333333333332,4
-YI-209,YI-265,1.8333333333333335,4
-YI-265,OY-799,5.516666666666667,12
-OY-799,UP-170,3.6666666666666665,8
-UP-170,UP-305,1.5666666666666667,3
-UP-305,UP-102,4.783333333333333,10
-"""
 
 def main():
     systems = utils.get_all_systems()
 
-    reader = csv.DictReader(data.strip().splitlines())
+    # load jump_data.csv using pandas
+    df = pd.read_csv("jump-data.csv")
+    jump_data = df.to_dict(orient="records")
 
-    total_distance = 0
-    total_parsecs = 0
-    count = 0
+    reactor_data = {}
 
-    for row in reader:
-        origin = row['origin']
-        destination = row['destination']
-        time = float(row['time (decimal hours)'])
-        parsecs = int(row['parsecs'])
+    for row in jump_data:
+        origin = row["origin"]
+        destination = row["destination"]
+        hours = row["hours"]
+        fuel = row["fuel"]
+        reactor = row["reactor"]
 
         if origin in systems and destination in systems[origin].connections:
-            distance = systems[origin].connections[destination]['distance']
-            ratio_time_distance = time / distance
-            ratio_distance_parsecs = distance / parsecs
+            distance = systems[origin].connections[destination]["distance"]
+            fuel_ratio = fuel / distance  # Fuel per parsec
+            hours_ratio = distance / hours  # Parsecs per hour
 
-            total_distance += distance
-            total_parsecs += parsecs
-            count += 1
+            print(f"{origin} -> {destination}: {distance:.1f} parsecs ({fuel_ratio:.2f} fuel/parsec) in {hours} hours ({hours_ratio:.2f} parsecs/hour) at {reactor*100:.0f}% reactor")
 
-            print(f"{origin}, {destination}, {time}, {distance}, {parsecs}, {ratio_time_distance:.2f}, {ratio_distance_parsecs:.2f}")
+            # Accumulate data for averages
+            if reactor not in reactor_data:
+                reactor_data[reactor] = {
+                    "total_fuel": 0,
+                    "total_parsecs": 0,
+                    "total_hours": 0,
+                    "count": 0
+                }
+            reactor_data[reactor]["total_fuel"] += fuel
+            reactor_data[reactor]["total_parsecs"] += distance
+            reactor_data[reactor]["total_hours"] += hours
+            reactor_data[reactor]["count"] += 1
+
         else:
             print(f"Connection not found for {origin} -> {destination}")
 
-    if count > 0:
-        average_distance_parsecs = total_distance / total_parsecs
-        print(f"\nAverage distance per parsec: {average_distance_parsecs:.2f}")
-    else:
-        print("\nNo valid connections found.")
+    # Calculate and print averages
+    reactor_levels = []
+    avg_fuel_per_parsec_values = []
+    avg_parsecs_per_hour_values = []
 
-if __name__ == "__main__":
-    main()
+    for reactor, data in reactor_data.items():
+        avg_fuel_per_parsec = data["total_fuel"] / data["total_parsecs"]
+        avg_parsecs_per_hour = data["total_parsecs"] / data["total_hours"]
 
-    
+        reactor_levels.append(reactor * 100)
+        avg_fuel_per_parsec_values.append(avg_fuel_per_parsec)
+        avg_parsecs_per_hour_values.append(avg_parsecs_per_hour)
 
+        print(f"\nReactor {reactor*100:.0f}%:")
+        print(f"  Average: {avg_fuel_per_parsec:.2f} fuel per parsec")
+        print(f"  Average: {avg_parsecs_per_hour:.2f} parsecs per hour")
+
+    # Perform linear regression for fuel per parsec
+    reactor_levels_np = np.array(reactor_levels).reshape(-1, 1)
+    fuel_model = LinearRegression().fit(reactor_levels_np, avg_fuel_per_parsec_values)
+    fuel_slope = fuel_model.coef_[0]
+    fuel_intercept = fuel_model.intercept_
+
+    # Perform linear regression for parsecs per hour
+    speed_model = LinearRegression().fit(reactor_levels_np, avg_parsecs_per_hour_values)
+    speed_slope = speed_model.coef_[0]
+    speed_intercept = speed_model.intercept_
+
+    print("\nApproximate equations:")
+    print(f"Fuel per parsec = {fuel_slope:.4f} * Reactor Level + {fuel_intercept:.4f}")
+    print(f"Parsecs per hour = {speed_slope:.4f} * Reactor Level + {speed_intercept:.4f}")
 
 
 if __name__ == "__main__":
