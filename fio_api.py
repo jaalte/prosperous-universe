@@ -32,12 +32,16 @@ class FIOAPI:
             print(f"Error reading API key: {e}")
             return None
 
-    def request(self, method, endpoint, data=None, response_format='json', cache=0, message=None):
+    def request(self, method, endpoint, data=None, response_format=None, cache=0, message=None):
         endpoint = self._strip_base_url(endpoint)
         self._validate_url(endpoint)
 
+        # Automatically set response_format to 'csv' if the endpoint starts with 'csv'
+        if response_format is None:
+            response_format = 'csv' if endpoint.strip('/').split('/')[0] == 'csv' else 'json'
+
         url = f"{self.base_url}{endpoint}"
-        cache_filename = self._generate_cache_filename(url, method, data)
+        cache_filename = self._generate_cache_filename(url, method, data, response_format)
         cache_path = os.path.join(self.cache_dir, cache_filename)
 
         # Handle cache loading
@@ -76,7 +80,8 @@ class FIOAPI:
                 if response_format == 'json':
                     return response.json()
                 elif response_format == 'csv':
-                    return self._parse_csv(response.text)
+                    df = pd.read_csv(StringIO(response.text))
+                    return df.to_dict(orient='records')
                 else:
                     raise ValueError("Unsupported response format.")
 
@@ -86,7 +91,7 @@ class FIOAPI:
                 else:
                     raise Exception(f"Failed to fetch data: {str(e)}")
 
-    def _generate_cache_filename(self, url, method, data):
+    def _generate_cache_filename(self, url, method, data, response_format):
         """Generate a human-readable cache filename based on the request."""
         parsed_url = urlparse(url)
         # Use the path, method, and query parameters to create the filename
@@ -95,9 +100,9 @@ class FIOAPI:
             re.sub(r'\W+', '_', parsed_url.path.strip('/')),
             urlencode(data) if data else ''
         ]
-        # Join all parts, remove any trailing underscores, and add a .json or .csv extension
+        # Join all parts, remove any trailing underscores, and add the correct extension
         filename = '_'.join(filter(None, filename_parts)).strip('_')
-        extension = 'json' if 'json' in self.headers['accept'] else 'csv'
+        extension = 'json' if response_format == 'json' else 'csv'
         filename = f"{filename}.{extension}"
         return quote_plus(filename)  # Ensure the filename is safe for filesystems
 
@@ -107,7 +112,8 @@ class FIOAPI:
             if response_format == 'json':
                 return json.load(cache_file)
             elif response_format == 'csv':
-                return self._parse_csv(cache_file.read())
+                df = pd.read_csv(StringIO(cache_file.read()))
+                return df.to_dict(orient='records')
             else:
                 raise ValueError("Unsupported response format.")
 
@@ -128,12 +134,6 @@ class FIOAPI:
         # Basic validation: ensure no malformed characters are present, e.g., accidental quotes
         if re.search(r"['\"<>]", endpoint):
             raise ValueError(f"Malformed URL detected: {endpoint}")
-
-    def _parse_csv(self, csv_text):
-        # Use pandas to read the CSV text
-        df = pd.read_csv(StringIO(csv_text))
-        # Convert DataFrame to list of dictionaries
-        return df.to_dict(orient='records')
 
 # Simplify usage: Auto-initialize FIOAPI instance
 fio = FIOAPI()
