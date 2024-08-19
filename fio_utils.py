@@ -49,7 +49,7 @@ materials = {material['Ticker']: material for material in allmaterials}
 
 # Create a lookup dictionary for all planets by PlanetId
 allplanets = fio.request("GET", f"/planet/allplanets/full", cache=-1)
-planet_lookup = {planet['PlanetId']: planet for planet in allplanets}
+planet_lookup = {planet['PlanetNaturalId']: planet for planet in allplanets}
 
 # Lookup dictionary for population reports
 all_population_reports = None
@@ -90,8 +90,11 @@ class DataManager:
         
 
 class Planet:
-    def __init__(self, planet_id):
-        self.rawdata = planet_lookup.get(planet_id)
+    # Constructor
+    # CHOOSE ONE: id (hash), planet name, or planet natural id
+    def __init__(self, hash='', name='', natural_id=''):
+
+        self.rawdata = planet_lookup.get(natural_id)
         self.name = self.rawdata.get('PlanetName')
         self.id = self.rawdata.get('PlanetId')
         self.natural_id = self.rawdata.get('PlanetNaturalId')
@@ -309,7 +312,7 @@ class Planet:
 
         # Add ^ if surface is false, otherwise add space
         text += '^' if not self.environment_class['surface'] else ' '
-        #text += ' ' if self.environment['fertility'] == -1.0 else 'F'
+        text += ' ' if self.environment['fertility'] == -1.0 else 'F'
         
 
         return text
@@ -389,13 +392,26 @@ class Recipe:
         return f"{self.name} {self.duration}h"
 
 class Base:
-    def __init__(self, rawdata):
+    # Constructor. Either:
+    # - a planet_natural_id and building counts
+    # - a site object from FIO /sites/{username}
+    def __init__(self, planet_natural_id, building_counts, rawdata):
+
+        if rawdata:               
+            if planet_natural_id and planet_natural_id != rawdata.get('PlanetNaturalId'):
+                print("Base constructor called with conflicting planet_natural_id")
+            else:
+                self.planet = Planet(planet_id=self.rawdata.get('PlanetId'))
+        else: # If there is no rawdata (and in most cases can't be)
+            self.planet = Planet(planet_natural_id=planet_natural_id)
+            self.building_counts = building_counts
+
         # Store the raw JSON data
         self.rawdata = rawdata
 
         # Create a Planet object
         self.planet = Planet(planet_id=self.rawdata.get('PlanetId'))
-
+    
         # Extract and count buildings by their ticker
         self.buildingCounts = {}
         for building in rawdata.get('Buildings', []):
@@ -637,7 +653,7 @@ def get_all_planets():
     planets = {}
     total = len(allplanets)
     for i, planet in enumerate(allplanets):
-        planet_class = Planet(planet_id=planet.get('PlanetId'))
+        planet_class = Planet(natural_id=planet.get('PlanetNaturalId'))
         planets[planet_class.name] = planet_class
         print(f"\rLoading all planets: {i+1}/{total}", end="")
     print("\n")
