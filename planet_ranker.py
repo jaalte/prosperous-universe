@@ -9,6 +9,12 @@ import fio_utils as utils
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 
+MIN_DEMAND = 10000
+MAX_JUMPS = 4
+MIN_DAILY_INCOME = 4000
+MAX_COLONIZATION_COST = float('inf')
+MIN_PIONEERS = 1000
+
 INITIAL_BASES = {
     'COL':
         {
@@ -100,7 +106,7 @@ def main():
     # Print groups
     for ticker in groups:
         #print(f"\n{ticker} ({groups[ticker][0]['resource']['name']})")
-        for hit in groups[ticker]:
+        for hit in groups[ticker]:MIN_PIONEERS
             hit['colonized'] = 'Colonized' if hit['planet'].has_infrastructure() else ''
             
             exchange = hit['planet'].get_nearest_exchange()
@@ -109,7 +115,7 @@ def main():
             hit['demand'] = exchange.goods[hit['resource']['ticker']]['Demand'] or 0
 
             hit['daily_income'] = hit['resource']['daily_amount'] * hit['price']
-            if hit['daily_income'] == 0: continue
+            if hit['daily_income'] <= 0: continue
 
             #normal_base_resources = utils.ResourceList(utils.BASE_CORE_MIN_RESOURCES)
             #base_resources = utils.ResourceList(hit['planet'].rawdata['BuildRequirements'])
@@ -125,18 +131,18 @@ def main():
             hit['colonization_cost'] = colony_resource_cost.get_total_value(exchange,'buy')
             hit['roi'] = hit['colonization_cost'] / hit['daily_income']
 
+            hit['pioneers_available'] = hit['planet'].get_population()['pioneer']['unemployment_amount']
+
     # Merge all groups items into a single list
     all_hits = []
     for ticker in groups:
         for hit in groups[ticker]:
             if hit['price'] == 0: continue
-            if hit['demand'] < 10000: continue
-            if hit['planet'].exchange_distance > 4: continue
-            if hit['daily_income'] < 4000: continue
-            if hit['colonization_cost'] == float('inf'): continue
-
-            hit['pioneers_available'] = hit['planet'].get_population()['pioneer']['unemployment_amount']
-            if hit['pioneers_available'] < 1000: continue
+            if hit['demand'] <= MIN_DEMAND: continue
+            if hit['planet'].exchange_distance >= MAX_JUMPS: continue
+            if hit['daily_income'] <= MIN_DAILY_INCOME: continue
+            if hit['colonization_cost'] >= MAX_COLONIZATION_COST: continue
+            if hit['pioneers_available'] < MIN_PIONEERS: continue
 
             all_hits.append(hit)
 
