@@ -146,7 +146,79 @@ def main():
     for hit in all_hits:
         exchange = hit['planet'].get_nearest_exchange()
 
-        print(f"{hit['resource']['daily_amount']:<2.1f} {hit['resource']['ticker']:<3}/d @ {hit['planet'].name:<15} {hit['colonized']:<10} {hit['planet'].get_environment_string():<7} {hit['planet'].exchange_distance:>2} jumps from {exchange.ticker} with {hit['price']:>3.0f} {exchange.currency} bid price ({hit['demand']:>7} demand), {hit['daily_income']:>5.0f} {exchange.currency}/day/{hit['resource']['extractor_building']}. {hit["colonization_cost"]:>5.0f} {exchange.currency} investment, {hit['roi']:>4.1f}d ROI")
+        message = (
+            f"{color(hit['resource']['daily_amount'], 0, 50, '<2.1f')} "
+            f"{hit['resource']['ticker']:<3}/d @ "
+            f"{hit['planet'].name:<15} {hit['colonized']:<10} {hit['planet'].get_environment_string():<7} "
+            f"{hit['planet'].exchange_distance:>2} jumps from {exchange.ticker} with "
+            f"{hit['price']:>3.0f} {exchange.currency} bid price ({hit['demand']:>7} demand), "
+            f"{hit['daily_income']:>5.0f} {exchange.currency}/day/{hit['resource']['extractor_building']}. "
+            f"{hit['colonization_cost']:>5.0f} {exchange.currency} investment, {hit['roi']:>4.1f}d ROI"
+        )
+        print(message)
+
+        #print(f"{hit['resource']['daily_amount']:<2.1f} {hit['resource']['ticker']:<3}/d @ {hit['planet'].name:<15} {hit['colonized']:<10} {hit['planet'].get_environment_string():<7} {hit['planet'].exchange_distance:>2} jumps from {exchange.ticker} with {hit['price']:>3.0f} {exchange.currency} bid price ({hit['demand']:>7} demand), {hit['daily_income']:>5.0f} {exchange.currency}/day/{hit['resource']['extractor_building']}. {hit["colonization_cost"]:>5.0f} {exchange.currency} investment, {hit['roi']:>4.1f}d ROI")
+
+def color(value, min_value, max_value, format_spec):
+    """
+    Applies color to the formatted value based on the given range and color map.
+    Supports coloration for values outside the min and max range.
+    """
+    # Define the color map with positions and corresponding colors
+    color_map = {
+        -1: (40, 40, 40),           # Dark gray for values far below min
+        0: (255, 0, 0),             # Red at min
+        0.25: (255, 165, 0),        # Orange
+        0.5: (255, 255, 0),         # Yellow
+        0.75: (0, 255, 0),          # Green
+        1: (0, 255, 255),           # Cyan at max
+        2: (255, 0, 255),           # Magenta for values far above max
+    }
+
+    # Calculate the span and normalized value key
+    span = max_value - min_value
+    normalized_value = (value - min_value) / span
+
+    # Clamp normalized_value to the min and max keys in color_map
+    min_key = min(color_map.keys())
+    max_key = max(color_map.keys())
+
+    if normalized_value < min_key:
+        normalized_value = min_key
+    elif normalized_value > max_key:
+        normalized_value = max_key
+
+    # Get the two keys to interpolate between
+    sorted_keys = sorted(color_map.keys())
+    
+    lower_key = max(k for k in sorted_keys if k <= normalized_value)
+    upper_key = min(k for k in sorted_keys if k >= normalized_value)
+
+    if lower_key == upper_key:
+        r, g, b = color_map[lower_key]
+    else:
+        # Interpolate between the lower and upper color
+        lower_color = color_map[lower_key]
+        upper_color = color_map[upper_key]
+        segment_ratio = (normalized_value - lower_key) / (upper_key - lower_key)
+        
+        r = int(lower_color[0] + (upper_color[0] - lower_color[0]) * segment_ratio)
+        g = int(lower_color[1] + (upper_color[1] - lower_color[1]) * segment_ratio)
+        b = int(lower_color[2] + (upper_color[2] - lower_color[2]) * segment_ratio)
+
+    # Format the value using the specified format
+    formatted_value = format(value, format_spec)
+    
+    # Apply color using ANSI escape codes for RGB
+    colored_value = f"\033[38;2;{r};{g};{b}m{formatted_value}\033[0m"
+    
+    return colored_value
 
 if __name__ == "__main__":
     main()
+
+    # span = (0, 50)
+    # diff = span[1] - span[0]
+    # for i in range(span[0]-2*diff, span[1]+2*diff):
+    #     formatted_amount = color(i, span[0], span[1], '<2.1f')
+    #     print(formatted_amount)
