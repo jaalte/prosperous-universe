@@ -28,15 +28,6 @@ EXTRACTORS = {
     },
 }
 
-BASE_CORE_MIN_RESOURCES = {
-    'LSE': 4,
-    'TRU': 8,
-    'PSL': 12,
-    'LDE': 4,
-    'LTA': 4,
-    'MCG': 100,
-}
-
 PLANET_THRESHOLDS = {
     'temperature': (-25, 75),
     'pressure': (0.25, 2),
@@ -44,6 +35,9 @@ PLANET_THRESHOLDS = {
 }
 
 DISTANCE_PER_PARSEC = 12
+STL_FUEL_FLOW_RATE = 0.015 # Unknown what it means but it's from /ship/ships/fishmodem
+# Pretty sure its a factor of distance, not time:
+# - Cause even in close STL transfers in Montem, fuel cost is ~107
 
 DEMOGRAPHICS: ["pioneers", "settlers", "technicians", "engineers", "scientists"]
 
@@ -332,42 +326,6 @@ class Planet:
         # Note: Reimplement once Planet.system class is added
         return f"(Planet {self.name} ({self.natural_id}) in the {self.system_natural_id} system)"
 
-class System:
-    def __init__(self, hashid):
-        rawdata = systemstars_lookup[hashid]
-
-        self.name = rawdata.get('Name')
-        self.natural_id = rawdata.get('NaturalId')
-        self.id = rawdata.get('NaturalId')
-        self.hash = rawdata.get('SystemId')
-        self.pos = {
-            'x': rawdata.get('PositionX'),
-            'y': rawdata.get('PositionY'),
-            'z': rawdata.get('PositionZ'),
-        }
-        self.sectorid = rawdata.get('SectorId')
-        self.subsectorid = rawdata.get('SubSectorId')
-
-        self.connections = {}
-        for connection in rawdata.get('Connections', []):
-            system_hash = connection["ConnectingId"]
-            other_system = systemstars_lookup[system_hash]
-            connection_name = other_system.get('Name')
-            connection_pos = {
-                'x': other_system.get('PositionX'),
-                'y': other_system.get('PositionY'),
-                'z': other_system.get('PositionZ')
-            }
-            self.connections[connection_name] = {
-                'system': connection_name,
-                'distance': distance(self.pos, connection_pos)/DISTANCE_PER_PARSEC,
-            }
-        
-        self.planets = system_planet_lookup.get(hashid, [])  
-
-    def __str__(self):
-        return f"[System {self.name} ({self.natural_id}), {len(self.connections)} connections, {len(self.planets)} planets]"
-
 class Base:
     # Constructor. Either:
     # - a planet_natural_id and building counts
@@ -462,7 +420,7 @@ class Building:
             if building['Ticker'] == ticker:
                 self.rawdata = building
                 break
-
+        
         self.area = self.rawdata.get('AreaCost')
         self.population_needs = {
             'pioneers': self.rawdata.get('Pioneers'),
@@ -514,6 +472,10 @@ class Building:
                 }
                 self.recipes.append(Recipe(recipedata))
 
+    # function to get total cost of building by resourcelist
+    def get_cost(self, exchange='NC1'):
+        return self.construction_materials.get_total_value(exchange, "buy")
+
     def __str__(self):
         return f"{self.ticker}"
 
@@ -547,11 +509,6 @@ class Recipe:
     def __str__(self):
         return f"{self.name} {self.duration}h"
 
-class Ship:
-    def __init__(self, name):
-        ships = fio.request("GET", f"/ship/ships/{USERNAME}", cache=60*60*24)
-
-
 class Exchange:
     def __init__(self, rawdata):
         if isinstance(rawdata, str):
@@ -575,6 +532,69 @@ class Exchange:
 
     def __str__(self):
         return f"[Exchange {self.ticker}]"
+
+class System:
+    def __init__(self, hashid):
+        rawdata = systemstars_lookup[hashid]
+
+        self.name = rawdata.get('Name')
+        self.natural_id = rawdata.get('NaturalId')
+        self.id = rawdata.get('NaturalId')
+        self.hash = rawdata.get('SystemId')
+        self.pos = {
+            'x': rawdata.get('PositionX'),
+            'y': rawdata.get('PositionY'),
+            'z': rawdata.get('PositionZ'),
+        }
+        self.sectorid = rawdata.get('SectorId')
+        self.subsectorid = rawdata.get('SubSectorId')
+
+        self.connections = {}
+        for connection in rawdata.get('Connections', []):
+            system_hash = connection["ConnectingId"]
+            other_system = systemstars_lookup[system_hash]
+            connection_name = other_system.get('Name')
+            connection_pos = {
+                'x': other_system.get('PositionX'),
+                'y': other_system.get('PositionY'),
+                'z': other_system.get('PositionZ')
+            }
+            self.connections[connection_name] = {
+                'system': connection_name,
+                'distance': distance(self.pos, connection_pos)/DISTANCE_PER_PARSEC,
+            }
+        
+        self.planets = system_planet_lookup.get(hashid, [])  
+
+    def get_route_to(self, system_natural_id):
+        
+        # mockup, not init
+        route = {
+            'systems': [],
+            'total_parsecs': 0,
+            'total_jumps': 0,
+        }
+
+        distance = 0 # in parsecs
+        
+        
+        return route
+
+
+    def __str__(self):
+        return f"[System {self.name} ({self.natural_id}), {len(self.connections)} connections, {len(self.planets)} planets]"
+
+class Ship:
+    def __init__(self, name):
+        ships = fio.request("GET", f"/ship/ships/{USERNAME}", cache=60*60*24)
+
+    def get_time_to(self, system_natural_id, reactor):
+        distance = self.get_parsecs_to(system_natural_id)
+        hours = 0.0318*reactor+0.7763
+        
+    def get_fuel_to(self, system_natural_id, reactor):
+        distance = self.get_parsecs_to(system_natural_id)
+        fuel = 0.0721*reactor-0.0730
 
 class ResourceList:
     def __init__(self, rawdata=""):
@@ -778,6 +798,15 @@ exchanges = get_all_exchanges()
 
 def main():
     planets = get_all_planets()
+
+    montem = planets['Montem']
+
+    #print(montem)
+    #print(montem.get_population())
+
+    #print(json.dumps(montem.rawdata, indent=2))
+
+
     #print(json.dumps(planets['Montem'].rawdata, indent=2))
     #print(json.dumps(planets['EM-929b'].get_population(), indent=2))
 
@@ -785,14 +814,14 @@ def main():
     #     if planet.environment_class['gravity'] == 'low':
     #         print(name)
 
-    #print(ResourceList(BASE_CORE_MIN_RESOURCES))
-
     #exchanges = get_all_exchanges()
     #print(json.dumps(exchanges['NC1'].goods['AMM'], indent=2))
 
     #systems = get_all_systems()
 
     #print(ResourceList({'BSE': 10, 'AMM': 10})-ResourceList({'BSE': 5, 'AMM': 17}))
+
+    #print(ResourceList({'BSE': 10, 'AMM': 10})*ResourceList({'BSE': 5, 'AMM': 17}))
     
     # buildings = fio.request("GET", "/building/allbuildings", cache='forever')
     # buildings_sorted = sorted(buildings, key=lambda x: x.get('AreaCost', 0), reverse=True)
