@@ -120,7 +120,7 @@ class Planet:
                         break
                 
                 daily_amount = factor * 100 * EXTRACTORS[extractor_building]["multiplier"]
-                process_hours, process_amount = self.calculate_process_time_and_amount(extractor_building, daily_amount)
+                process_hours, process_amount = self._calculate_process_time_and_amount(extractor_building, daily_amount)
 
                 self.resources[ticker] = {
                     'name': material_data['Name'],
@@ -156,7 +156,7 @@ class Planet:
 
 
 
-    def calculate_process_time_and_amount(self, extractor_building, daily_amount):
+    def _calculate_process_time_and_amount(self, extractor_building, daily_amount):
         """Calculate the process hours and process amount based on the extractor type."""
         base_cycle_time = EXTRACTORS[extractor_building]["cycle_time"]
 
