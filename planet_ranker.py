@@ -12,8 +12,8 @@ from tqdm import tqdm
 MIN_DEMAND = 10000
 MAX_JUMPS = 4
 MIN_DAILY_INCOME = 4000
-MAX_COLONIZATION_COST = float('inf')
 MIN_PIONEERS = 1000
+MAX_COLONIZATION_COST = 999999999999 # Large but not infinite
 
 GASSES = ['AMM', 'AR', 'F', 'H', 'HE', 'HE3', 'N', 'NE', 'O']
 
@@ -31,8 +31,7 @@ def main():
 
     # First pass: filter to only profitable routes
     hits = []
-    for name in planets:
-        planet = planets[name]
+    for name, planet in planets.items():
         for ticker in planet.resources:
             resource = planet.resources[ticker]
             if resource['factor'] > 0:
@@ -42,44 +41,34 @@ def main():
                 }
                 hits.append(hit)
 
-    
-    # Sort hits into groups based on resource ticker
-    groups = {}
+    # Populate price-based properties
     for hit in hits:
-        if hit['resource']['ticker'] not in groups:
-            groups[hit['resource']['ticker']] = []
-        groups[hit['resource']['ticker']].append(hit)
+        #hit['colonized'] = hit['planet'].get_population()['pioneers']['count'] > 0
+        
+        exchange = hit['planet'].get_nearest_exchange()
 
-    # Sort groups by resource factor
-    for ticker in groups:
-        groups[ticker].sort(key=lambda x: x['resource']['factor'], reverse=True)
-    
-    count = len(hits)
-    print(count)
-    # Print groups
-    for ticker in groups:
-        #print(f"\n{ticker} ({groups[ticker][0]['resource']['name']})")
-        for hit in groups[ticker]:
-            #hit['colonized'] = hit['planet'].get_population()['pioneers']['count'] > 0
-            
-            exchange = hit['planet'].get_nearest_exchange()
+        hit['price'] = exchange.goods[hit['resource']['ticker']]['Bid'] or 0
+        hit['demand'] = exchange.goods[hit['resource']['ticker']]['Demand'] or 0
 
-            hit['price'] = exchange.goods[hit['resource']['ticker']]['Bid'] or 0
-            hit['demand'] = exchange.goods[hit['resource']['ticker']]['Demand'] or 0
 
-            hit['daily_income'] = hit['resource']['daily_amount'] * hit['price']
-            if hit['daily_income'] <= 0: continue
-
-            initial_base = utils.Base(hit['planet'].natural_id,INITIAL_BASE_BUILDINGS[hit['resource']['extractor_building']])
-            colony_resource_cost = initial_base.get_construction_materials()
-            hit['colonization_cost'] = colony_resource_cost.get_total_value(exchange,'buy')
+        initial_base = utils.Base(hit['planet'].natural_id,INITIAL_BASE_BUILDINGS[hit['resource']['extractor_building']])
+        
+        # Anything in initial_base.buildings (a list) with .is_extractor()
+        extractor_count = sum(1 for b in initial_base.buildings if b.is_extractor())
+        hit['daily_income_per_extractor'] = hit['resource']['daily_amount'] * hit['price']
+        hit['daily_income'] = hit['daily_income_per_extractor'] * extractor_count
+        
+        colony_resource_cost = initial_base.get_construction_materials()
+        hit['colonization_cost'] = colony_resource_cost.get_total_value(exchange,'buy')
+        if hit['daily_income'] <= 0:
+            hit['roi'] = float('inf')
+        else:
             hit['roi'] = hit['colonization_cost'] / hit['daily_income']
-    print(f"Removed {count-len(hits)} unprofitable planets")
 
     # Merge all groups items into a single list
-    all_hits = []
-    for ticker in groups:
-        for hit in groups[ticker]:
+    #hits = []
+    #for ticker in groups:
+        #for hit in groups[ticker]:
             #if hit['price'] == 0: continue
             #if hit['demand'] <= MIN_DEMAND: continue
             #if hit['planet'].exchange_distance > MAX_JUMPS: continue
@@ -90,46 +79,47 @@ def main():
             #hit['pioneers_available'] = hit['planet'].get_population()['pioneers']['unemployment_amount']
             #if hit['pioneers_available'] < MIN_PIONEERS: continue
 
-            all_hits.append(hit)
+            #hits.append(hit)
 
     # Sort all hits by daily profit
-    all_hits.sort(key=lambda x: x['roi'])
+    hits.sort(key=lambda x: x['roi'])
 
     # The great filtering
     # Price == 0
-    prior_count = len(all_hits)
-    all_hits = [hit for hit in all_hits if hit['price'] > 0]
-    print(f"Removed {prior_count-len(all_hits)} planets with unavailable build materials")
+    # (Should also include ones with 0 daily income and infinite roi)
+    prior_count = len(hits)
+    hits = [hit for hit in hits if hit['price'] > 0]
+    print(f"Removed {prior_count-len(hits)} hits with no sell orders for their resource")
     
     # Demand < min demand
-    prior_count = len(all_hits)
-    all_hits = [hit for hit in all_hits if hit['demand'] > MIN_DEMAND]
-    print(f"Removed {prior_count-len(all_hits)} planets with demand < {MIN_DEMAND}")
+    prior_count = len(hits)
+    hits = [hit for hit in hits if hit['demand'] > MIN_DEMAND]
+    print(f"Removed {prior_count-len(hits)} planets with demand < {MIN_DEMAND}")
     
     # Exchange distance > max jumps
-    prior_count = len(all_hits)
-    all_hits = [hit for hit in all_hits if hit['planet'].exchange_distance <= MAX_JUMPS]
-    print(f"Removed {prior_count-len(all_hits)} planets with exchange distance > {MAX_JUMPS}")
+    prior_count = len(hits)
+    hits = [hit for hit in hits if hit['planet'].exchange_distance <= MAX_JUMPS]
+    print(f"Removed {prior_count-len(hits)} planets with exchange distance > {MAX_JUMPS}")
     
     # Daily income < min daily income
-    prior_count = len(all_hits)
-    all_hits = [hit for hit in all_hits if hit['daily_income'] > MIN_DAILY_INCOME]
-    print(f"Removed {prior_count-len(all_hits)} planets with daily income < {MIN_DAILY_INCOME}")
+    prior_count = len(hits)
+    hits = [hit for hit in hits if hit['daily_income'] > MIN_DAILY_INCOME]
+    print(f"Removed {prior_count-len(hits)} planets with projected daily income < {MIN_DAILY_INCOME}")
     
     # Colonization cost > max colonization cost
-    prior_count = len(all_hits)
-    all_hits = [hit for hit in all_hits if hit['colonization_cost'] <= MAX_COLONIZATION_COST]
-    print(f"Removed {prior_count-len(all_hits)} planets with colonization cost > {MAX_COLONIZATION_COST}")
+    prior_count = len(hits)
+    hits = [hit for hit in hits if hit['colonization_cost'] <= MAX_COLONIZATION_COST]
+    print(f"Removed {prior_count-len(hits)} planets with colonization cost > {MAX_COLONIZATION_COST}")
 
     # No pioneers
-    prior_count = len(all_hits)
-    all_hits = [hit for hit in all_hits if hit['planet'].get_population()['pioneers']['count'] > 1000]
-    print(f"Removed {prior_count-len(all_hits)} planets with < {MIN_PIONEERS} pioneers")
+    prior_count = len(hits)
+    hits = [hit for hit in hits if hit['planet'].get_population_data()['pioneers']['count'] > 1000]
+    print(f"Removed {prior_count-len(hits)} planets with < {MIN_PIONEERS} pioneers")
     
 
-    longest_name = max([len(hit['planet'].name) for hit in all_hits])
+    longest_name = max([len(hit['planet'].name) for hit in hits])
 
-    for hit in all_hits:
+    for hit in hits:
         exchange = hit['planet'].get_nearest_exchange()
 
         price_range = [0,0]
@@ -149,7 +139,7 @@ def main():
 
         message = (
             f"{color(hit['resource']['factor'], factor_range[0], factor_range[1], '>4.1f', value_override=hit['resource']['daily_amount'])} "
-            f"{hit['resource']['ticker']:<3}/d/e @ "
+            f"{hit['resource']['ticker']:<3}/d/{hit['resource']['extractor_building']} @ "
             f"{format(hit['planet'].name,'<'+str(longest_name))} "
             f"{color(env_complications,0,4,'',value_override=env_section,inverse=True)} "
             f"{color(hit['planet'].exchange_distance,0,6,'>2.0f', inverse=True)}j"
@@ -157,7 +147,7 @@ def main():
             f"{color(hit['price'], price_range[0], price_range[1], '>3.0f')}{exchange.currency}/u"
             f" ({color(hit['demand'],3,5,'>5.0f', logarithmic=True)} demand), "
             f"{color(hit['daily_income'],0,5000,'>5.0f')}"
-            f"{exchange.currency}/day/{hit['resource']['extractor_building']}. "
+            f"{exchange.currency}/day. "
             f"{color(hit['colonization_cost'],200000,500000, '>5.0f', inverse=True)}{exchange.currency} investment, "
             f"{color(hit['roi'],1,4,'>4.1f', logarithmic=True, inverse=True)}d ROI"
         )
@@ -273,12 +263,12 @@ def abbreviate(value):
 
 if __name__ == "__main__":
 
-    print(abbreviate(106292))      # "106K"
-    print(abbreviate(1251))        # "1.2K"
-    print(abbreviate(151))         # "151"
-    print(abbreviate(123456789))   # "123M"
-    print(abbreviate(23456789))    # "23M"
-    print(abbreviate(3456789))     # "3.4M"
+    # print(abbreviate(106292))      # "106K"
+    # print(abbreviate(1251))        # "1.2K"
+    # print(abbreviate(151))         # "151"
+    # print(abbreviate(123456789))   # "123M"
+    # print(abbreviate(23456789))    # "23M"
+    # print(abbreviate(3456789))     # "3.4M"
     main()
 
     # span = (0, 50)

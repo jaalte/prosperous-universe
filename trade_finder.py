@@ -129,7 +129,7 @@ def find_trades(origin):
     for code, dex in destinations.items():
         trades = []
         for route in dex.profitable_routes:
-            material = utils.loader.material_lookup[route['material']]
+            material = utils.loader.materials_by_ticker[route['material']]
 
             buyable_orders = route['origin_good']['SellingOrders']
             sellable_orders = route['destination_good']['BuyingOrders']
@@ -192,7 +192,7 @@ def find_trades(origin):
         approved_trades = []
 
         for trade in trades:
-            material = utils.loader.material_lookup[trade['buy']['material']]
+            material = utils.loader.materials_by_ticker[trade['buy']['material']]
 
             max_units = get_max_space_remaining(trade, material, remaining_weight, remaining_volume, remaining_credits)
 

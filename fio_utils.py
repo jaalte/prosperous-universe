@@ -114,11 +114,20 @@ class DataLoader:
         return cached_data
 
     @property
-    def material_lookup(self):
-        cache_key = 'material_lookup'
+    def materials_by_ticker(self):
+        cache_key = 'materials_by_ticker'
         cached_data = self._get_cached_data(cache_key)
         if cached_data is None:
             cached_data = {material['Ticker']: material for material in self.allmaterials}
+            self._set_cache(cache_key, cached_data)
+        return cached_data
+
+    @property
+    def materials_by_hash(self):
+        cache_key = 'material_by_hash'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            cached_data = {material['MaterialId']: material for material in self.allmaterials}
             self._set_cache(cache_key, cached_data)
         return cached_data
 
@@ -154,6 +163,10 @@ class DataLoader:
         return cached_data
 
     @property
+    def exchanges(self):
+        return self.get_all_exchanges()
+
+    @property
     def all_population_reports(self):
         cache_key = 'all_population_reports'
         cached_data = self._get_cached_data(cache_key)
@@ -170,6 +183,14 @@ class DataLoader:
             cached_data = all_population_reports
             self._set_cache(cache_key, cached_data)
         return cached_data
+
+    @property
+    def planets(self):
+        return self.get_all_planets('name')
+
+    @property
+    def systems(self):
+        return self.get_all_systems()
 
     def get_all_planets(self, key='name'):
         if key in self.planet_dicts:
@@ -206,6 +227,7 @@ class DataLoader:
         self.planet_dicts[key] = planets
 
         return planets
+
 
     def get_all_systems(self):
         systems = {}
@@ -245,36 +267,39 @@ class Planet:
 
         # Process the resources in rawdata
         for resource in self.rawdata.get('Resources', []):
-            material_id = resource.get('MaterialId')
-            material_data = loader.material_lookup.get(material_id)
+            material_hash = resource.get('MaterialId')
+            material_data = loader.materials_by_hash[material_hash]
 
-            if material_data:
-                ticker = material_data['Ticker']
-                resource_type = resource.get('ResourceType')
-                factor = threshold_round(resource.get('Factor', 0))
-                
-                for building, info in EXTRACTORS.items():
-                    if info["type"] == resource_type:
-                        extractor_building = building
-                        break
-                
-                daily_amount = factor * 100 * EXTRACTORS[extractor_building]["multiplier"]
-                process_hours, process_amount = self._calculate_process_time_and_amount(extractor_building, daily_amount)
+            if not material_data:
+                print(f"Warning: Material {material_hash} not found in material lookup")
+                continue
 
-                self.resources[ticker] = {
-                    'name': material_data['Name'],
-                    'ticker': ticker,
-                    'category': material_data['CategoryName'],
-                    'weight': threshold_round(material_data['Weight']),
-                    'volume': threshold_round(material_data['Volume']),
-                    'type': resource_type,
-                    'factor': factor,
-                    'extractor_building': extractor_building,
-                    'daily_amount': daily_amount,
-                    'process_amount': process_amount,
-                    'process_hours': process_hours
-                }
-        
+            ticker = material_data['Ticker']
+            resource_type = resource.get('ResourceType')
+            factor = threshold_round(resource.get('Factor', 0))
+            
+            for building, info in EXTRACTORS.items():
+                if info["type"] == resource_type:
+                    extractor_building = building
+                    break
+            
+            daily_amount = factor * 100 * EXTRACTORS[extractor_building]["multiplier"]
+            process_hours, process_amount = self._calculate_process_time_and_amount(extractor_building, daily_amount)
+
+            self.resources[ticker] = {
+                'name': material_data['Name'],
+                'ticker': ticker,
+                'category': material_data['CategoryName'],
+                'weight': threshold_round(material_data['Weight']),
+                'volume': threshold_round(material_data['Volume']),
+                'type': resource_type,
+                'factor': factor,
+                'extractor_building': extractor_building,
+                'daily_amount': daily_amount,
+                'process_amount': process_amount,
+                'process_hours': process_hours
+            }
+    
         # Process environmental properties
         self.environment = {}
         self.environment['temperature'] = threshold_round(self.rawdata.get('Temperature'))
@@ -602,6 +627,9 @@ class Building:
     def get_cost(self, exchange='NC1'):
         return self.construction_materials.get_total_value(exchange, "buy")
 
+    def is_extractor(self):
+        return self.ticker in ['COL', 'RIG', 'EXT']
+
     def __str__(self):
         return f"{self.ticker}"
 
@@ -770,7 +798,7 @@ class ResourceList:
                 amount = resource[amount_key]
                 self.resources[ticker] = amount
         elif isinstance(rawdata, str):
-            tickers = sorted(loader.material_lookup.keys())
+            tickers = sorted(loader.materials_by_ticker.keys())
 
             pattern = r'\b(\d+)\s*x?\s*({})\b'.format('|'.join(re.escape(ticker) for ticker in tickers))
             matches = re.findall(pattern, rawdata)
@@ -791,7 +819,7 @@ class ResourceList:
         self.removed_resources = {}
 
     def get_material_properties(self):
-        return {ticker: loader.material_lookup[ticker] for ticker in self.resources}
+        return {ticker: loader.materials_by_ticker[ticker] for ticker in self.resources}
 
     def get_total_value(self, exchange="NC1", trade_type="buy"):
         if isinstance(exchange, str):
