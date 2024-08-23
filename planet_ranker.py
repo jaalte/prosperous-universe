@@ -43,13 +43,14 @@ def main():
 
     # Populate price-based properties
     for hit in hits:
-        #hit['colonized'] = hit['planet'].get_population()['pioneers']['count'] > 0
-        
         exchange = hit['planet'].get_nearest_exchange()
+
+        if hit['planet'].cogc == "ADVERTISING_RESOURCE_EXTRACTION":
+            hit['resource']['daily_amount'] *= 1.25
+            hit['resource']['daily_hours'] /= 1.25
 
         hit['price'] = exchange.goods[hit['resource']['ticker']]['Bid'] or 0
         hit['demand'] = exchange.goods[hit['resource']['ticker']]['Demand'] or 0
-
 
         initial_base = utils.Base(hit['planet'].natural_id,INITIAL_BASE_BUILDINGS[hit['resource']['extractor_building']])
         

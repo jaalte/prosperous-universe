@@ -265,6 +265,15 @@ class Planet:
         self.resources = {}
         #self.exchange = self.get_nearest_exchange()
 
+        # Set current COGC program
+        self.cogc = ""
+        if len(self.rawdata.get('COGCPrograms', [])) > 0 and self.rawdata.get("COGCProgramStatus") == "ACTIVE":
+            current_time = int(time.time() * 1000)
+            for period in self.rawdata.get("COGCPrograms", []):
+                if period["StartEpochMs"] <= current_time_ms <= period["EndEpochMs"]:
+                    self.cogc = period["ProgramType"]
+                    break 
+
         # Process the resources in rawdata
         for resource in self.rawdata.get('Resources', []):
             material_hash = resource.get('MaterialId')
@@ -992,24 +1001,25 @@ def get_all_exchanges():
 exchanges = get_all_exchanges()
 
 def main():
-    planets = get_all_planets()
-    hydron = planets['Hydron']
-    hbase = Base(hydron.natural_id,{'HB1': 2,'RIG': 6})
+    planets = loader.get_all_planets('name')
+    montem = planets['Montem']
+    tio_base = planets['XG-326a']
 
+    print(json.dumps(tio_base.rawdata, indent=2))
+
+    #hbase = Base(hydron.natural_id,{'HB1': 2,'RIG': 6})
 
 
     #print(montem)
-    #print(montem.get_population())
+    #print(montem.get_population()print(json.dumps(montem.rawdata, indent=2))
 
-    #print(json.dumps(montem.rawdata, indent=2))
+    # base = ResourceList({'MCG': 50.5, 'BSE': 12.33333})
+    # diff = base - ResourceList({'MCG': 12.77777, 'BSE': 3.33333})
+    # mult = 1.3 * base
 
-    base = ResourceList({'MCG': 50.5, 'BSE': 12.33333})
-    diff = base - ResourceList({'MCG': 12.77777, 'BSE': 3.33333})
-    mult = 1.3 * base
-
-    print(base)
-    print(diff)
-    print(mult)
+    # print(base)
+    # print(diff)
+    # print(mult)
 
 
     #print(json.dumps(planets['Montem'].rawdata, indent=2))
