@@ -7,9 +7,6 @@ from fio_api import fio
 import fio_utils as utils
 from pathfinding import jump_distance
 
-# Set origin to arg1 or "NC1"
-origin = sys.argv[1] if len(sys.argv) > 1 else "NC1"
-
 base_cost = 1000
 cost_per_jump = 750
 liquid_assets = 60000
@@ -79,8 +76,7 @@ ship_specs = {
 }
 """
 
-def main():
-    find_outgoing_trades
+def find_trades(origin):
 
     exchanges = utils.get_all_exchanges()
 
@@ -260,6 +256,14 @@ def get_max_space_remaining(trade, material, remaining_weight, remaining_volume,
 
 def get_fuel_cost(jumps):
     return base_cost + cost_per_jump * jumps
+
+
+def main():
+    #origin = sys.argv[1] if len(sys.argv) > 1 else "NC1"
+    
+    exchanges = utils.get_all_exchanges()
+    for code, exchange in exchanges.items():
+        find_trades(code)
 
 if __name__ == "__main__":
     main()
