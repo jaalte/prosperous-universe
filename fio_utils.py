@@ -1,6 +1,7 @@
 import json
 import math
 import re
+import time
 from fio_api import fio
 from pathfinding import jump_distance
 
@@ -268,7 +269,7 @@ class Planet:
         # Set current COGC program
         self.cogc = ""
         if len(self.rawdata.get('COGCPrograms', [])) > 0 and self.rawdata.get("COGCProgramStatus") == "ACTIVE":
-            current_time = int(time.time() * 1000)
+            current_time_ms = int(time.time() * 1000)
             for period in self.rawdata.get("COGCPrograms", []):
                 if period["StartEpochMs"] <= current_time_ms <= period["EndEpochMs"]:
                     self.cogc = period["ProgramType"]

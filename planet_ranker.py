@@ -47,7 +47,10 @@ def main():
 
         if hit['planet'].cogc == "ADVERTISING_RESOURCE_EXTRACTION":
             hit['resource']['daily_amount'] *= 1.25
-            hit['resource']['daily_hours'] /= 1.25
+            hit['resource']['process_hours'] /= 1.25
+            hit['cogc_boost'] = True
+        else:
+            hit['cogc_boost'] = False
 
         hit['price'] = exchange.goods[hit['resource']['ticker']]['Bid'] or 0
         hit['demand'] = exchange.goods[hit['resource']['ticker']]['Demand'] or 0
@@ -137,11 +140,13 @@ def main():
 
         env_complications = len(hit['planet'].get_environment_string().replace(" ", ""))
         env_section = '['+f"{hit['planet'].get_environment_string():<4}"+']'
+        cogc_string = 'E' if hit['cogc_boost'] else ''
 
         message = (
             f"{color(hit['resource']['factor'], factor_range[0], factor_range[1], '>4.1f', value_override=hit['resource']['daily_amount'])} "
             f"{hit['resource']['ticker']:<3}/d/{hit['resource']['extractor_building']} @ "
-            f"{format(hit['planet'].name,'<'+str(longest_name))} "
+            f"{format(hit['planet'].name,'<'+str(longest_name))}"
+            f"{color(1,0,1,'<1',value_override=cogc_string)} "
             f"{color(env_complications,0,4,'',value_override=env_section,inverse=True)} "
             f"{color(hit['planet'].exchange_distance,0,6,'>2.0f', inverse=True)}j"
             f"->{exchange.ticker} "
