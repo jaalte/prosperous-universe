@@ -672,7 +672,8 @@ class ResourceList:
         return self.resources.get(ticker, 0)
 
     def contains(self, ticker):
-        return ticker in self.resources.keys()
+        # Check if the ticker is in the resources and > 0
+        return ticker in self.resources.keys() and self.resources[ticker] > 0
 
     def __add__(self, other):
         if not isinstance(other, ResourceList):
