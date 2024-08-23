@@ -496,7 +496,7 @@ class Recipe:
             self.building = rawdata.get('building')
             self.name = rawdata.get('name')
             self.duration = rawdata.get('duration')
-            
+
             self.inputs = rawdata.get('inputs')
             if not isinstance(self.inputs, ResourceList):
                 self.inputs = ResourceList(self.inputs)
@@ -667,6 +667,12 @@ class ResourceList:
 
     def get_material_properties(self):
         return {ticker: materials[ticker] for ticker in self.resources}
+
+    def get_amount(self, ticker):
+        return self.resources.get(ticker, 0)
+
+    def contains(self, ticker):
+        return ticker in self.resources.keys()
 
     def __add__(self, other):
         if not isinstance(other, ResourceList):
