@@ -51,6 +51,8 @@ materials = {material['Ticker']: material for material in allmaterials}
 allplanets = fio.request("GET", f"/planet/allplanets/full", cache=-1)
 planet_lookup = {planet['PlanetNaturalId']: planet for planet in allplanets}
 
+planet_dicts = {}
+
 # Lookup dictionary for population reports
 all_population_reports = None
 
@@ -668,6 +670,34 @@ class ResourceList:
     def get_material_properties(self):
         return {ticker: materials[ticker] for ticker in self.resources}
 
+    def get_total_value(self, exchange="NC1", trade_type="buy"):
+        if isinstance(exchange, str):
+            exchange = Exchange(exchange)
+
+        if not isinstance(trade_type, str):
+            return NotImplemented
+        trade_type = trade_type.lower()
+
+        total = 0
+        for ticker, amount in self.resources.items():
+            if trade_type == "buy":
+                if ticker not in exchange.goods:
+                    total += float('inf')
+                    continue
+                if exchange.goods[ticker]['Ask']:
+                    total += exchange.goods[ticker]['Ask'] * amount
+                else:
+                    total += float('inf')
+            else: # trade_type == "sell" or other:
+                if ticker not in exchange.goods:
+                    total += 0
+                    continue
+                if exchange.goods[ticker]['Bid']:
+                    total += exchange.goods[ticker]['Bid'] * amount
+                else:
+                    total += 0
+        return total
+
     def get_amount(self, ticker):
         return self.resources.get(ticker, 0)
 
@@ -712,6 +742,12 @@ class ResourceList:
             self.resources[ticker] += amount
         else:
             self.resources[ticker] = amount
+
+    def split(self):
+        single_resources = []
+        for ticker, amount in self.resources.items():
+            single_resources.append(ResourceList({ticker: amount}))
+        return single_resources
 
     def __add__(self, other):
         if not isinstance(other, ResourceList):
@@ -760,41 +796,7 @@ class ResourceList:
 
         return ', '.join(formatted_resources)
 
-
-    def get_total_value(self, exchange="NC1", trade_type="buy"):
-        if isinstance(exchange, str):
-            exchange = Exchange(exchange)
-
-        if not isinstance(trade_type, str):
-            return NotImplemented
-        trade_type = trade_type.lower()
-
-        total = 0
-        for ticker, amount in self.resources.items():
-            if trade_type == "buy":
-                if ticker not in exchange.goods:
-                    total += float('inf')
-                    continue
-                if exchange.goods[ticker]['Ask']:
-                    total += exchange.goods[ticker]['Ask'] * amount
-                else:
-                    total += float('inf')
-            else: # trade_type == "sell" or other:
-                if ticker not in exchange.goods:
-                    total += 0
-                    continue
-                if exchange.goods[ticker]['Bid']:
-                    total += exchange.goods[ticker]['Bid'] * amount
-                else:
-                    total += 0
-        return total
-
-    def split(self):
-        single_resources = []
-        for ticker, amount in self.resources.items():
-            single_resources.append(ResourceList({ticker: amount}))
-        return single_resources
-
+# Global functions
 
 # Rounds a given value to a specified threshold.
 def threshold_round(val, threshold=1e-5):
@@ -810,6 +812,11 @@ def distance(pos1, pos2):
 # Get a dict of all planets in the game keyed by name
 # Also adds extra data that requires all planets to be loaded
 def get_all_planets(key='name'):
+    global planet_dicts
+
+    if key in planet_dicts:
+        return planet_dicts[key]
+
     planets = {}
     total = len(allplanets)
     for i, planet in enumerate(allplanets):
@@ -837,6 +844,8 @@ def get_all_planets(key='name'):
     for name, planet in planets.items():
         for ticker, resource in planet.resources.items():
             resource['factor_range'] = factor_ranges[ticker]
+
+    planet_dicts[key] = planets
 
     return planets
 
