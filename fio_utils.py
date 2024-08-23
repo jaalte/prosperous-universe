@@ -41,56 +41,193 @@ STL_FUEL_FLOW_RATE = 0.015 # Unknown what it means but it's from /ship/ships/fis
 
 DEMOGRAPHICS: ["pioneers", "settlers", "technicians", "engineers", "scientists"]
 
-# Create a lookup dictionary for all materials by MaterialId
-allmaterials = fio.request("GET", "/material/allmaterials", cache=60*60*24)
-material_lookup = {material['MaterialId']: material for material in allmaterials}
-#material_id_to_ticker = {material['MaterialId']: material['Ticker'] for material in allmaterials}
-materials = {material['Ticker']: material for material in allmaterials}
 
-# Create a lookup dictionary for all planets by PlanetId
-allplanets = fio.request("GET", f"/planet/allplanets/full", cache=-1)
-planet_lookup = {planet['PlanetNaturalId']: planet for planet in allplanets}
-
-planet_dicts = {}
-
-# Lookup dictionary for population reports
-all_population_reports = None
-
-allbuildings = None
-
-# Create a lookup dictionary keyed by SystemId each equal a list of PlanetName
-system_planet_lookup = {}
-for planet in allplanets:
-    if planet['SystemId'] not in system_planet_lookup:
-        system_planet_lookup[planet['SystemId']] = []
-    system_planet_lookup[planet['SystemId']].append(planet['PlanetName'])
-
-
-rawsystemstars = fio.request("GET", f"/systemstars", cache=-1)
-systemstars_lookup = {system["SystemId"]: system for system in rawsystemstars}
-
-rawexchangedata = fio.request("GET", f"/exchange/full", cache=60*15, message="Fetching exchange data...") # 15m
-# Split list into dicts by ExchangeCode
-exchange_goods = {}
-for good in rawexchangedata:
-    if good['ExchangeCode'] not in exchange_goods:
-        exchange_goods[good['ExchangeCode']] = {}
-    exchange_goods[good['ExchangeCode']][good['MaterialTicker']] = good
-
-#print(json.dumps(exchange_goods, indent=4))
-
-class DataManager:
+class DataLoader:
     def __init__(self):
-        self.planet_lookup
-        self.population_reports
-        self.system_planets
-        self.planet_systems
+        self._cache = {}
+        self.planet_dicts = {}
 
-        # Planet natural IDs
-        self.planetids = {
-            'by_name': {},
-            'by_hash': {},
-        }
+    def _get_cached_data(self, key):
+        """Retrieve data from cache if available."""
+        return self._cache.get(key)
+
+    def _set_cache(self, key, data):
+        """Store data in cache."""
+        self._cache[key] = data
+
+    @property
+    def allplanets(self):
+        cache_key = 'allplanets'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            cached_data = fio.request("GET", f"/planet/allplanets/full")
+            self._set_cache(cache_key, cached_data)
+        return cached_data
+
+    @property
+    def planet_lookup(self):
+        cache_key = 'planet_lookup'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            cached_data = {planet['PlanetNaturalId']: planet for planet in self.allplanets}
+            self._set_cache(cache_key, cached_data)
+        return cached_data
+
+    @property
+    def system_planet_lookup(self):
+        cache_key = 'system_planet_lookup'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            cached_data = {}
+            for planet in self.allplanets:
+                if planet['SystemId'] not in cached_data:
+                    cached_data[planet['SystemId']] = []
+                cached_data[planet['SystemId']].append(planet['PlanetName'])
+            self._set_cache(cache_key, cached_data)
+        return cached_data
+    
+    @property
+    def rawsystemstars(self):
+        cache_key = 'rawsystemstars'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            cached_data = fio.request("GET", f"/systemstars")
+            self._set_cache(cache_key, cached_data)
+        return cached_data
+
+    @property
+    def systemstars_lookup(self):
+        cache_key = 'systemstars_lookup'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            cached_data = {system["SystemId"]: system for system in self.rawsystemstars}
+            self._set_cache(cache_key, cached_data)
+        return cached_data
+    
+    @property
+    def allmaterials(self):
+        cache_key = 'allmaterials'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            cached_data = fio.request("GET", "/material/allmaterials")
+            self._set_cache(cache_key, cached_data)
+        return cached_data
+
+    @property
+    def material_lookup(self):
+        cache_key = 'material_lookup'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            cached_data = {material['Ticker']: material for material in self.allmaterials}
+            self._set_cache(cache_key, cached_data)
+        return cached_data
+
+    @property
+    def allbuildings(self):
+        cache_key = 'allbuildings'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            cached_data = fio.request("GET", f"/building/allbuildings", cache=-1)
+            self._set_cache(cache_key, cached_data)
+        return cached_data
+
+    @property
+    def rawexchangedata(self):
+        cache_key = 'rawexchangedata'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            cached_data = fio.request("GET", f"/exchange/full", message="Fetching exchange data...")
+            self._set_cache(cache_key, cached_data)
+        return cached_data
+
+    @property
+    def exchange_goods(self):
+        cache_key = 'exchange_goods'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            cached_data = {}
+            for good in self.rawexchangedata:
+                if good['ExchangeCode'] not in cached_data:
+                    cached_data[good['ExchangeCode']] = {}
+                cached_data[good['ExchangeCode']][good['MaterialTicker']] = good
+            self._set_cache(cache_key, cached_data)
+        return cached_data
+
+    @property
+    def all_population_reports(self):
+        cache_key = 'all_population_reports'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            all_population_reports_raw = fio.request("GET", "/csv/infrastructure/allreports", cache=60*60*24)
+            all_population_reports = {}
+            for report in all_population_reports_raw:
+                planet_id = report["PlanetNaturalId"]
+                # Initialize the list for this planet if it doesn't exist
+                if planet_id not in all_population_reports:
+                    all_population_reports[planet_id] = []
+                all_population_reports[planet_id].append(report)
+
+            cached_data = all_population_reports
+            self._set_cache(cache_key, cached_data)
+        return cached_data
+
+    def get_all_planets(self, key='name'):
+        if key in self.planet_dicts:
+            return self.planet_dicts[key]
+
+        planets = {}
+        total = len(self.allplanets)
+        for i, planet in enumerate(self.allplanets):
+            planet_class = Planet(natural_id=planet.get('PlanetNaturalId'))
+            planet_key_value = getattr(planet_class, key, None)
+            if planet_key_value is not None:
+                planets[planet_key_value] = planet_class
+            else:
+                print(f"Warning: Planet {planet_class.name} does not have the attribute '{key}'")
+            print(f"\rLoading all planets: {i+1}/{total}", end="")
+        print("\n")
+
+        factor_ranges = {}
+        # Determine range of factors for all resources
+        for name, planet in planets.items():
+            for ticker, resource in planet.resources.items():
+                if ticker not in factor_ranges:
+                    factor_ranges[ticker] = (resource['factor'],resource['factor'])
+                else:
+                    if resource['factor'] < factor_ranges[ticker][0]:
+                        factor_ranges[ticker] = (resource['factor'],factor_ranges[ticker][1])
+                    if resource['factor'] > factor_ranges[ticker][1]:
+                        factor_ranges[ticker] = (factor_ranges[ticker][0],resource['factor'])
+        
+        for name, planet in planets.items():
+            for ticker, resource in planet.resources.items():
+                resource['factor_range'] = factor_ranges[ticker]
+
+        self.planet_dicts[key] = planets
+
+        return planets
+
+    def get_all_systems(self):
+        systems = {}
+        total = len(self.systemstars_lookup)
+        for system_hash in self.systemstars_lookup.keys():
+            system_class = System(system_hash)
+            systems[system_class.name] = system_class
+        return systems
+
+    def get_all_exchanges(self):
+        cache_key = 'all_exchanges'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            rawexchanges = fio.request("GET", "/exchange/station", cache='forever')
+            exchanges = {}
+            for rawexchange in rawexchanges:
+                exchanges[rawexchange['ComexCode']] = Exchange(rawexchange)
+            self._set_cache(cache_key, exchanges)
+        return self._cache[cache_key]
+
+loader = DataLoader()
+
         
 
 class Planet:
@@ -98,7 +235,7 @@ class Planet:
     # CHOOSE ONE: id (hash), planet name, or planet natural id
     def __init__(self, hash='', name='', natural_id=''):
 
-        self.rawdata = planet_lookup.get(natural_id)
+        self.rawdata = loader.planet_lookup.get(natural_id)
         self.name = self.rawdata.get('PlanetName')
         self.id = self.rawdata.get('PlanetId')
         self.natural_id = self.rawdata.get('PlanetNaturalId')
@@ -109,7 +246,7 @@ class Planet:
         # Process the resources in rawdata
         for resource in self.rawdata.get('Resources', []):
             material_id = resource.get('MaterialId')
-            material_data = material_lookup.get(material_id)
+            material_data = loader.material_lookup.get(material_id)
 
             if material_data:
                 ticker = material_data['Ticker']
@@ -206,24 +343,8 @@ class Planet:
         # If any of these keys in self.rawdata are True, return True
         return any([self.rawdata[key] for key in keys])
 
-    def get_population(self):
-        global all_population_reports
-
-        if not all_population_reports:
-            all_population_reports_raw = fio.request("GET", "/csv/infrastructure/allreports", cache=60*60*24)
-            
-            all_population_reports = {}
-            
-            for report in all_population_reports_raw:
-                planet_id = report["PlanetNaturalId"]
-                
-                # Initialize the list for this planet if it doesn't exist
-                if planet_id not in all_population_reports:
-                    all_population_reports[planet_id] = []
-                
-                all_population_reports[planet_id].append(report)
-                
-
+    def get_population_data(self):
+        all_population_reports = loader.all_population_reports
         if not self.natural_id in all_population_reports \
         or len(all_population_reports[self.natural_id]) < 2:
             # Generate an empty population dict
@@ -242,7 +363,6 @@ class Planet:
             return population
 
         reports = all_population_reports[self.natural_id]
-
 
         latest_report = reports[-1]
         previous_report = reports[-2]
@@ -268,6 +388,14 @@ class Planet:
 
         # Return the new structure
         return population
+
+    def get_population_count(self):
+        # A dict of {demographic: count}
+        data = self.get_population_data()
+        counts = {key: value['count'] for key, value in data.items()}
+        return counts
+        
+
 
     def get_building_environment_cost(self, area):
         cost = ResourceList({})
@@ -384,12 +512,11 @@ class Base:
     def get_area(self):
         return sum([building.area for building in self.buildings])
     
-    def get_population_needs(self):
+    def get_population_requirements(self):
         population = self.buildings[0].population_needs
         for building in self.buildings[1:]:
             for key in DEMOGRAPHICS:
                 population[key] += building.population_needs[key]
-
         return population
             
     def optimize_housing(mode="cost"): # cost or space
@@ -407,9 +534,6 @@ class Base:
 # A single building of a particular ticker. Not a particular one though.
 class Building:
     def __init__(self, ticker, planet):
-        global allbuildings
-        if not allbuildings:
-            allbuildings = fio.request("GET", f"/building/allbuildings", cache=-1)
 
         self.ticker = ticker
         if isinstance(planet, str):
@@ -419,7 +543,7 @@ class Building:
         else:
             raise Exception(f"Invalid planet type: {type(planet)}")
 
-        for building in allbuildings:
+        for building in loader.allbuildings:
             if building['Ticker'] == ticker:
                 self.rawdata = building
                 break
@@ -448,8 +572,7 @@ class Building:
         self.construction_materials = self.min_construction_materials + extra_materials
     
     def _init_crafter_recipes(self, building_ticker):
-        global allbuildings
-        for building in allbuildings:
+        for building in loader.allbuildings:
             if building['Ticker'] == building_ticker:
                 rawrecipes = building.get('Recipes', [])
                 self.recipes = []
@@ -534,7 +657,7 @@ class Exchange:
         self.currency = rawdata.get('CurrencyCode')
         self.country = rawdata.get('CountryCode')
         self.system_natural_id = rawdata.get('SystemNaturalId')
-        self.goods = exchange_goods[self.ticker]
+        self.goods = loader.exchange_goods[self.ticker]
     
     def get_average_price(self, material, buy_or_sell, amount):
         good = self.goods[material]
@@ -546,7 +669,7 @@ class Exchange:
 
 class System:
     def __init__(self, hashid):
-        rawdata = systemstars_lookup[hashid]
+        rawdata = loader.systemstars_lookup[hashid]
 
         self.name = rawdata.get('Name')
         self.natural_id = rawdata.get('NaturalId')
@@ -563,7 +686,7 @@ class System:
         self.connections = {}
         for connection in rawdata.get('Connections', []):
             system_hash = connection["ConnectingId"]
-            other_system = systemstars_lookup[system_hash]
+            other_system = loader.systemstars_lookup[system_hash]
             connection_name = other_system.get('Name')
             connection_pos = {
                 'x': other_system.get('PositionX'),
@@ -575,7 +698,7 @@ class System:
                 'distance': distance(self.pos, connection_pos)/DISTANCE_PER_PARSEC,
             }
         
-        self.planets = system_planet_lookup.get(hashid, [])  
+        self.planets = loader.system_planet_lookup.get(hashid, [])  
 
     def get_route_to(self, system_natural_id):
         
@@ -608,7 +731,7 @@ class Ship:
         fuel = 0.0721*reactor-0.0730
 
 class ResourceList:
-    def __init__(self, rawdata=""):
+    def __init__(self, rawdata={}):
         if len(rawdata) == 0:
             self.resources = {}
             return
@@ -647,7 +770,7 @@ class ResourceList:
                 amount = resource[amount_key]
                 self.resources[ticker] = amount
         elif isinstance(rawdata, str):
-            tickers = sorted(materials.keys())
+            tickers = sorted(loader.material_lookup.keys())
 
             pattern = r'\b(\d+)\s*x?\s*({})\b'.format('|'.join(re.escape(ticker) for ticker in tickers))
             matches = re.findall(pattern, rawdata)
@@ -668,7 +791,7 @@ class ResourceList:
         self.removed_resources = {}
 
     def get_material_properties(self):
-        return {ticker: materials[ticker] for ticker in self.resources}
+        return {ticker: loader.material_lookup[ticker] for ticker in self.resources}
 
     def get_total_value(self, exchange="NC1", trade_type="buy"):
         if isinstance(exchange, str):
@@ -809,63 +932,33 @@ def threshold_round(val, threshold=1e-5):
 def distance(pos1, pos2):
     return math.sqrt((pos1['x'] - pos2['x'])**2 + (pos1['y'] - pos2['y'])**2 + (pos1['z'] - pos2['z'])**2)
 
+population_needs_per_100_per_day = {
+    'pioneers':    new ResourceList({'RAT': 4, 'DW': 4,   'OVE': 0.5,                         'PWO': 0.2, 'COF': 0.5}),
+    'settlers':    new ResourceList({'RAT': 6, 'DW': 5,   'EXO': 0.5, 'PT':  0.5,             'REP': 0.2, 'KOM': 1  }),
+    'technicians': new ResourceList({'RAT': 7, 'DW': 7.5, 'MED': 0.5, 'HMS': 0.5, 'SCN': 0.1, 'SC':  0.1, 'ALE': 1  }),
+    'engineers':   new ResourceList({'FIM': 7, 'DW': 10,  'MED': 0.5, 'HSS': 0.2, 'PDA': 0.1, 'VG':  0.2, 'GIN': 1  }),
+    'scientists':  new ResourceList({'MEA': 7, 'DW': 10,  'MED': 0.5, 'LC':  0.2, 'WS':  0.1, 'NS':  0.1, 'WIN': 1  }),
+}
+
+# Population is a dict of {demographic: amount}
+def get_population_needs(population):
+    needs = new ResourceList()
+    for demographic in population:
+        needs += population[demographic]/100 * population_needs_per_100_per_day[demographic]
+    return needs
+
 # Get a dict of all planets in the game keyed by name
-# Also adds extra data that requires all planets to be loaded
+# Also adds extra data that requires all planets to be loaded first
 def get_all_planets(key='name'):
-    global planet_dicts
-
-    if key in planet_dicts:
-        return planet_dicts[key]
-
-    planets = {}
-    total = len(allplanets)
-    for i, planet in enumerate(allplanets):
-        planet_class = Planet(natural_id=planet.get('PlanetNaturalId'))
-        planet_key = getattr(planet_class, key, None)
-        if planet_key is not None:
-            planets[planet_key] = planet_class
-        else:
-            print(f"Warning: Planet {planet_class.name} does not have the attribute '{key}'")
-        print(f"\rLoading all planets: {i+1}/{total}", end="")
-    print("\n")
-
-    factor_ranges = {}
-    # Determine range of factors for all resources
-    for name, planet in planets.items():
-        for ticker, resource in planet.resources.items():
-            if ticker not in factor_ranges:
-                factor_ranges[ticker] = (resource['factor'],resource['factor'])
-            else:
-                if resource['factor'] < factor_ranges[ticker][0]:
-                    factor_ranges[ticker] = (resource['factor'],factor_ranges[ticker][1])
-                if resource['factor'] > factor_ranges[ticker][1]:
-                    factor_ranges[ticker] = (factor_ranges[ticker][0],resource['factor'])
-    
-    for name, planet in planets.items():
-        for ticker, resource in planet.resources.items():
-            resource['factor_range'] = factor_ranges[ticker]
-
-    planet_dicts[key] = planets
-
-    return planets
+    return loader.get_all_planets(key)
 
 # Get a dict of all systems in the game keyed by name
 def get_all_systems():
-    systems = {}
-    total = len(systemstars_lookup)
-    for system_hash in systemstars_lookup.keys():
-        system_class = System(system_hash)
-        systems[system_class.name] = system_class
-    return systems
-
+    return loader.get_all_systems()
 
 # Get a dict of all exchanges in the game keyed by ticker
 def get_all_exchanges():
-    rawexchanges = fio.request("GET", "/exchange/station", cache='forever')
-    exchanges = {}
-    for rawexchange in rawexchanges:
-        exchanges[rawexchange['ComexCode']] = Exchange(rawexchange)
-    return exchanges
+    return loader.get_all_exchanges()
 
 # Make this public for importing scripts cause it's very fast
 exchanges = get_all_exchanges()

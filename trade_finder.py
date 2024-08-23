@@ -80,9 +80,6 @@ def find_trades(origin):
 
     exchanges = utils.get_all_exchanges()
 
-    allmaterials = fio.request("GET", "/material/allmaterials", cache=60*60*24)
-    material_lookup = {material['Ticker']: material for material in allmaterials}
-
     oex = exchanges[origin]
     destinations = {}
     for code, exchange in exchanges.items():
@@ -132,7 +129,7 @@ def find_trades(origin):
     for code, dex in destinations.items():
         trades = []
         for route in dex.profitable_routes:
-            material = material_lookup[route['material']]
+            material = utils.loader.material_lookup[route['material']]
 
             buyable_orders = route['origin_good']['SellingOrders']
             sellable_orders = route['destination_good']['BuyingOrders']
@@ -195,7 +192,7 @@ def find_trades(origin):
         approved_trades = []
 
         for trade in trades:
-            material = material_lookup[trade['buy']['material']]
+            material = utils.loader.material_lookup[trade['buy']['material']]
 
             max_units = get_max_space_remaining(trade, material, remaining_weight, remaining_volume, remaining_credits)
 

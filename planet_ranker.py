@@ -15,36 +15,21 @@ MIN_DAILY_INCOME = 4000
 MAX_COLONIZATION_COST = float('inf')
 MIN_PIONEERS = 1000
 
+GASSES = ['AMM', 'AR', 'F', 'H', 'HE', 'HE3', 'N', 'NE', 'O']
+
 INITIAL_BASE_BUILDINGS = {
-    'COL': {'HB1': 2,'COL': 4,},
-    'RIG': {'HB1': 2,'RIG': 6,},
-    'EXT': {'HB1': 2,'EXT': 3,},
+    'COL': {'HB1': 2,'COL': 4},
+    'RIG': {'HB1': 2,'RIG': 6},
+    'EXT': {'HB1': 2,'EXT': 3},
 }
 
 def fetch_sites(name, planet):
     return name, planet.get_sites()
 
 def main():
-    gasses = ['AMM', 'AR', 'F', 'H', 'HE', 'HE3', 'N', 'NE', 'O']
     planets = utils.get_all_planets()
 
-    
-
-    #hits = []
-    #print(json.dumps(planets["Montem"].rawdata, indent=2))
-
-    # Fetch all planet sites to get colony count
-    # note: caused heavy rate limiting, parallel fetching not possible :(
-    # threads = 1
-    # with ThreadPoolExecutor(max_workers=threads) as executor:
-    #     futures = {executor.submit(fetch_sites, name, planet): name for name, planet in planets.items()}
-        
-    #     with tqdm(total=len(futures), desc="Fetching planet sites") as pbar:
-    #         for future in as_completed(futures):
-    #             name, sites = future.result()
-    #             # Do something with the result, e.g., storing the sites
-    #             pbar.update(1)
-
+    # First pass: filter to only profitable routes
     hits = []
     for name in planets:
         planet = planets[name]
@@ -69,6 +54,8 @@ def main():
     for ticker in groups:
         groups[ticker].sort(key=lambda x: x['resource']['factor'], reverse=True)
     
+    count = len(hits)
+    print(count)
     # Print groups
     for ticker in groups:
         #print(f"\n{ticker} ({groups[ticker][0]['resource']['name']})")
@@ -87,25 +74,58 @@ def main():
             colony_resource_cost = initial_base.get_construction_materials()
             hit['colonization_cost'] = colony_resource_cost.get_total_value(exchange,'buy')
             hit['roi'] = hit['colonization_cost'] / hit['daily_income']
+    print(f"Removed {count-len(hits)} unprofitable planets")
 
     # Merge all groups items into a single list
     all_hits = []
     for ticker in groups:
         for hit in groups[ticker]:
-            if hit['price'] == 0: continue
-            if hit['demand'] <= MIN_DEMAND: continue
-            if hit['planet'].exchange_distance > MAX_JUMPS: continue
-            if hit['daily_income'] <= MIN_DAILY_INCOME: continue
-            if hit['colonization_cost'] >= MAX_COLONIZATION_COST: continue
+            #if hit['price'] == 0: continue
+            #if hit['demand'] <= MIN_DEMAND: continue
+            #if hit['planet'].exchange_distance > MAX_JUMPS: continue
+            #if hit['daily_income'] <= MIN_DAILY_INCOME: continue
+            #if hit['colonization_cost'] >= MAX_COLONIZATION_COST: continue
 
             # Done after filtering to reduce api calls
-            hit['pioneers_available'] = hit['planet'].get_population()['pioneers']['unemployment_amount']
-            if hit['pioneers_available'] < MIN_PIONEERS: continue
+            #hit['pioneers_available'] = hit['planet'].get_population()['pioneers']['unemployment_amount']
+            #if hit['pioneers_available'] < MIN_PIONEERS: continue
 
             all_hits.append(hit)
 
     # Sort all hits by daily profit
     all_hits.sort(key=lambda x: x['roi'])
+
+    # The great filtering
+    # Price == 0
+    prior_count = len(all_hits)
+    all_hits = [hit for hit in all_hits if hit['price'] > 0]
+    print(f"Removed {prior_count-len(all_hits)} planets with unavailable build materials")
+    
+    # Demand < min demand
+    prior_count = len(all_hits)
+    all_hits = [hit for hit in all_hits if hit['demand'] > MIN_DEMAND]
+    print(f"Removed {prior_count-len(all_hits)} planets with demand < {MIN_DEMAND}")
+    
+    # Exchange distance > max jumps
+    prior_count = len(all_hits)
+    all_hits = [hit for hit in all_hits if hit['planet'].exchange_distance <= MAX_JUMPS]
+    print(f"Removed {prior_count-len(all_hits)} planets with exchange distance > {MAX_JUMPS}")
+    
+    # Daily income < min daily income
+    prior_count = len(all_hits)
+    all_hits = [hit for hit in all_hits if hit['daily_income'] > MIN_DAILY_INCOME]
+    print(f"Removed {prior_count-len(all_hits)} planets with daily income < {MIN_DAILY_INCOME}")
+    
+    # Colonization cost > max colonization cost
+    prior_count = len(all_hits)
+    all_hits = [hit for hit in all_hits if hit['colonization_cost'] <= MAX_COLONIZATION_COST]
+    print(f"Removed {prior_count-len(all_hits)} planets with colonization cost > {MAX_COLONIZATION_COST}")
+
+    # No pioneers
+    prior_count = len(all_hits)
+    all_hits = [hit for hit in all_hits if hit['planet'].get_population()['pioneers']['count'] > 1000]
+    print(f"Removed {prior_count-len(all_hits)} planets with < {MIN_PIONEERS} pioneers")
+    
 
     longest_name = max([len(hit['planet'].name) for hit in all_hits])
 
