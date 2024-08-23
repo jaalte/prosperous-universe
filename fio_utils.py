@@ -360,8 +360,6 @@ class Base:
         for ticker, count in self.building_counts.items():
             for _ in range(count):
                 self.buildings.append(Building(ticker, self.planet))
-        
-        self.available_recipes = [building.recipes for building in self.buildings]
 
     def add_building(self, ticker):
         self.building_counts[ticker] += 1
@@ -395,7 +393,10 @@ class Base:
     def optimize_housing(mode="cost"): # cost or space
         pass
 
-
+    def get_available_recipes(self):
+        self.available_recipes = [building.recipes for building in self.buildings]
+        # Remove duplictes (same BuildingRecipeId)
+        self.available_recipes = list(set([item for sublist in self.available_recipes for item in sublist]))
 
     def __str__(self):
         buildings_str = ', '.join([f"{count} {name}" for name, count in self.building_counts.items()])
@@ -748,12 +749,16 @@ def distance(pos1, pos2):
 
 # Get a dict of all planets in the game keyed by name
 # Also adds extra data that requires all planets to be loaded
-def get_all_planets():
+def get_all_planets(key='name'):
     planets = {}
     total = len(allplanets)
     for i, planet in enumerate(allplanets):
         planet_class = Planet(natural_id=planet.get('PlanetNaturalId'))
-        planets[planet_class.name] = planet_class
+        planet_key = getattr(planet_class, key, None)
+        if planet_key is not None:
+            planets[planet_key] = planet_class
+        else:
+            print(f"Warning: Planet {planet_class.name} does not have the attribute '{key}'")
         print(f"\rLoading all planets: {i+1}/{total}", end="")
     print("\n")
 
@@ -798,8 +803,10 @@ exchanges = get_all_exchanges()
 
 def main():
     planets = get_all_planets()
+    hydron = planets['Hydron']
+    hbase = Base(hydron.natural_id,{'HB1': 2,'RIG': 6})
 
-    montem = planets['Montem']
+
 
     #print(montem)
     #print(montem.get_population())
@@ -828,7 +835,7 @@ def main():
     # for building in buildings_sorted:
     #     print(f"{building['Ticker']}: {building['AreaCost']}")
 
-    building = Building('HB1','XG-326a')
+    #building = Building('HB1','XG-326a')
 
 if __name__ == "__main__":
     main()
