@@ -672,8 +672,46 @@ class ResourceList:
         return self.resources.get(ticker, 0)
 
     def contains(self, ticker):
-        # Check if the ticker is in the resources and > 0
         return ticker in self.resources.keys() and self.resources[ticker] > 0
+
+    def remove(self, ticker):
+        if ticker in self.resources:
+            self.removed_resources[ticker] = self.resources[ticker]
+            del self.resources[ticker]
+    
+    def add(self, ticker, amount):
+        add_list = None
+        if isinstance(ticker, dict):
+            add_list = ResourceList(ticker)
+        if isinstance(ticker, ResourceList):
+            add_list = ticker
+        
+        if add_list is not None:
+            add_list = ResourceList(add_list)
+            self += add_list
+            return
+        
+        if ticker in self.resources:
+            self.resources[ticker] += amount
+        else:
+            self.resources[ticker] = amount
+
+    def subtract(self, ticker, amount):
+        sub_list = None
+        if isinstance(ticker, dict):
+            sub_list = ResourceList(ticker)
+        if isinstance(ticker, ResourceList):
+            sub_list = ticker
+        
+        if sub_list is not None:
+            sub_list = ResourceList(add_list)
+            self -= add_list
+            return
+        
+        if ticker in self.resources:
+            self.resources[ticker] += amount
+        else:
+            self.resources[ticker] = amount
 
     def __add__(self, other):
         if not isinstance(other, ResourceList):
@@ -703,9 +741,8 @@ class ResourceList:
 
         return ResourceList(new_resources)
 
-
     def __mul__(self, multiplier):
-        if not isinstance(multiplier, int):
+        if not isinstance(multiplier, int) and not isinstance(multiplier, float):
             return NotImplemented
         new_resources = {ticker: amount * multiplier for ticker, amount in self.resources.items()}
         return ResourceList(new_resources)
@@ -714,7 +751,15 @@ class ResourceList:
         return self.__mul__(multiplier)
 
     def __str__(self):
-        return ', '.join([f"{count} {name}" for name, count in self.resources.items()])
+        formatted_resources = []
+        for name, count in self.resources.items():
+            if abs(count - round(count)) < 0.0001:  # Check if count is within 4 decimal places of an integer
+                formatted_resources.append(f"{int(round(count))} {name}")  # Display as an integer
+            else:
+                formatted_resources.append(f"{count:.2f} {name}")  # Display with 2 decimal places
+
+        return ', '.join(formatted_resources)
+
 
     def get_total_value(self, exchange="NC1", trade_type="buy"):
         if isinstance(exchange, str):
@@ -827,6 +872,14 @@ def main():
     #print(montem.get_population())
 
     #print(json.dumps(montem.rawdata, indent=2))
+
+    base = ResourceList({'MCG': 50.5, 'BSE': 12.33333})
+    diff = base - ResourceList({'MCG': 12.77777, 'BSE': 3.33333})
+    mult = 1.3 * base
+
+    print(base)
+    print(diff)
+    print(mult)
 
 
     #print(json.dumps(planets['Montem'].rawdata, indent=2))
