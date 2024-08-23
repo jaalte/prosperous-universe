@@ -23,6 +23,12 @@ INITIAL_BASE_BUILDINGS = {
     'EXT': {'HB1': 2,'EXT': 3},
 }
 
+MAX_BASE_BUILDINGS = {
+    'COL': {'HB1': 12,'COL': 23},
+    'RIG': {'HB1': 11,'RIG': 36},
+    'EXT': {'HB1': 9,'EXT': 15},
+}
+
 def fetch_sites(name, planet):
     return name, planet.get_sites()
 
@@ -46,8 +52,8 @@ def main():
         exchange = hit['planet'].get_nearest_exchange()
 
         if hit['planet'].cogc == "ADVERTISING_RESOURCE_EXTRACTION":
-            hit['resource']['daily_amount'] *= 1.25
-            hit['resource']['process_hours'] /= 1.25
+            #hit['resource']['daily_amount'] *= 1.25
+            #hit['resource']['process_hours'] /= 1.25
             hit['cogc_boost'] = True
         else:
             hit['cogc_boost'] = False
@@ -61,6 +67,19 @@ def main():
         extractor_count = sum(1 for b in initial_base.buildings if b.is_extractor())
         hit['daily_income_per_extractor'] = hit['resource']['daily_amount'] * hit['price']
         hit['daily_income'] = hit['daily_income_per_extractor'] * extractor_count
+
+        extractor_count_max = sum(1 for b in initial_base.buildings if b.is_extractor())
+        max_base = utils.Base(hit['planet'].natural_id,MAX_BASE_BUILDINGS[hit['resource']['extractor_building']])
+        max_daily_units = hit['resource']['daily_amount']*extractor_count_max
+        hit['max_daily_income'] = max_daily_units * hit['price']
+
+        #material = utils.loader.materials_by_ticker[hit['resource']['ticker']]
+
+        ship_storage = utils.Container(500,500)
+        max_shipment_units = ship_storage.get_max_capacity_for(hit['resource']['ticker'])
+        appx_travel_time = hit['planet'].exchange_distance*2.5+7
+        max_throughput = max_shipment_units / appx_travel_time/2
+        hit['max_ship_saturation'] = max_daily_units / max_throughput
         
         colony_resource_cost = initial_base.get_construction_materials()
         hit['colonization_cost'] = colony_resource_cost.get_total_value(exchange,'buy')
@@ -69,21 +88,7 @@ def main():
         else:
             hit['roi'] = hit['colonization_cost'] / hit['daily_income']
 
-    # Merge all groups items into a single list
-    #hits = []
-    #for ticker in groups:
-        #for hit in groups[ticker]:
-            #if hit['price'] == 0: continue
-            #if hit['demand'] <= MIN_DEMAND: continue
-            #if hit['planet'].exchange_distance > MAX_JUMPS: continue
-            #if hit['daily_income'] <= MIN_DAILY_INCOME: continue
-            #if hit['colonization_cost'] >= MAX_COLONIZATION_COST: continue
-
-            # Done after filtering to reduce api calls
-            #hit['pioneers_available'] = hit['planet'].get_population()['pioneers']['unemployment_amount']
-            #if hit['pioneers_available'] < MIN_PIONEERS: continue
-
-            #hits.append(hit)
+        
 
     # Sort all hits by daily profit
     hits.sort(key=lambda x: x['roi'])
@@ -116,6 +121,7 @@ def main():
     print(f"Removed {prior_count-len(hits)} planets with colonization cost > {MAX_COLONIZATION_COST}")
 
     # No pioneers
+    # Do last cause it's sloooow
     prior_count = len(hits)
     hits = [hit for hit in hits if hit['planet'].get_population_data()['pioneers']['count'] > 1000]
     print(f"Removed {prior_count-len(hits)} planets with < {MIN_PIONEERS} pioneers")
@@ -151,11 +157,12 @@ def main():
             f"{color(hit['planet'].exchange_distance,0,6,'>2.0f', inverse=True)}j"
             f"->{exchange.ticker} "
             f"{color(hit['price'], price_range[0], price_range[1], '>3.0f')}{exchange.currency}/u"
-            f" ({color(hit['demand'],3,5,'>5.0f', logarithmic=True)} demand), "
+            f" ({color(hit['demand'],3,5,'>6.0f', logarithmic=True)} demand), "
             f"{color(hit['daily_income'],0,5000,'>5.0f')}"
             f"{exchange.currency}/day. "
             f"{color(hit['colonization_cost'],200000,500000, '>5.0f', inverse=True)}{exchange.currency} investment, "
-            f"{color(hit['roi'],1,4,'>4.1f', logarithmic=True, inverse=True)}d ROI"
+            f"{color(hit['roi'],1,4,'>4.1f', logarithmic=True, inverse=True)}d ROI "
+            f"{color(hit['max_ship_saturation'],0,2,'>2.1f', inverse=True)} max ship saturation"
         )
         print(message)
 

@@ -5,7 +5,7 @@ import time
 from fio_api import fio
 from pathfinding import jump_distance
 
-USERNAME: 'fishmodem'
+USERNAME = 'fishmodem'
 
 # Constants
 EXTRACTORS = {
@@ -756,9 +756,26 @@ class System:
     def __str__(self):
         return f"[System {self.name} ({self.natural_id}), {len(self.connections)} connections, {len(self.planets)} planets]"
 
+class Container:
+    def __init__(self, mass_capacity, volume_capacity):
+        self.mass_capacity = mass_capacity
+        self.volume_capacity = volume_capacity
+    
+    def get_max_capacity_for(self, resource_ticker):
+        material = loader.materials_by_ticker[resource_ticker]
+        #print(json.dumps(material, indent=4))
+        max_by_volume = int(self.volume_capacity / material['Volume'])
+        max_by_mass = int(self.mass_capacity / material['Weight'])
+
+        return min(max_by_volume, max_by_mass)
+
+
 class Ship:
-    def __init__(self, name):
+    def __init__(self, id):
         ships = fio.request("GET", f"/ship/ships/{USERNAME}", cache=60*60*24)
+        print(json.dumps(ships, indent=4))
+
+        self.rawdata = next((ship for ship in ships if ship.get('Registration') == id), None)
 
     def get_time_to(self, system_natural_id, reactor):
         distance = self.get_parsecs_to(system_natural_id)
@@ -1006,10 +1023,17 @@ def main():
     montem = planets['Montem']
     tio_base = planets['XG-326a']
 
-    print(json.dumps(tio_base.rawdata, indent=2))
+    #print(json.dumps(tio_base.rawdata, indent=2))
+
+    ship = Ship("AVI-054C4")
 
     #hbase = Base(hydron.natural_id,{'HB1': 2,'RIG': 6})
-
+    planet = tio_base
+    ship_storage = Container(500,500)
+    max_shipment_units = ship_storage.get_max_capacity_for('FE')
+    appx_travel_time = planet.exchange_distance*2.5+7
+    max_throughput = max_shipment_units / appx_travel_time/2
+    hit['max_ship_saturation'] = max_daily_units / max_throughput
 
     #print(montem)
     #print(montem.get_population()print(json.dumps(montem.rawdata, indent=2))
