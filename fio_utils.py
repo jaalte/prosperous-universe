@@ -488,24 +488,32 @@ class Recipe:
             self.name = rawdata.get('BuildingRecipeId')
             self.duration = rawdata.get('DurationMs')/1000/60/60
 
-            self.inputs = {}
-            for inputResource in rawdata.get('Inputs', []):
-                ticker = inputResource.get('CommodityTicker')
-                amount = inputResource.get('Amount')
-                self.inputs[ticker] = amount
-            
-            self.outputs = {}
-            for outputResource in rawdata.get('Outputs', []):
-                ticker = outputResource.get('CommodityTicker')
-                amount = outputResource.get('Amount')
-                self.outputs[ticker] = amount
+            self.inputs = ResourceList(rawdata.get('Inputs'))
+            self.outputs = ResourceList(rawdata.get('Outputs'))
+
         # Manually specified format
         else:
             self.building = rawdata.get('building')
             self.name = rawdata.get('name')
             self.duration = rawdata.get('duration')
+            
             self.inputs = rawdata.get('inputs')
+            if not isinstance(self.inputs, ResourceList):
+                self.inputs = ResourceList(self.inputs)
             self.outputs = rawdata.get('outputs')
+            if not isinstance(self.outputs, ResourceList):
+                self.outputs = ResourceList(self.outputs)
+
+    def get_profit_per_craft(self):
+        input_cost = self.inputs.get_total_value('NC1', 'buy')
+        output_cost = self.outputs.get_total_value('NC1', 'sell')
+        return output_cost - input_cost
+
+    def get_profit_per_hour(self):
+        return self.get_profit_per_craft() / self.duration
+
+    def get_profit_per_day(self):
+        return self.get_profit_per_hour() * 24
 
     def __str__(self):
         return f"{self.name} {self.duration}h"
