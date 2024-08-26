@@ -82,9 +82,12 @@ def main():
         # 3h per jump, 6h average STL, 4h for user availability
         appx_travel_time = hit['planet'].exchange_distance*3+6+4
         max_throughput_per_hour = max_shipment_units / appx_travel_time/2
-        hit['max_ship_saturation'] = max_daily_units / max_throughput_per_hour/24
-        hit['initial_ship_saturation'] = hit['resource']['daily_amount'] / max_throughput_per_hour/24
+        max_throughput_per_day = max_throughput_per_hour*24
+        hit['max_ship_saturation'] = max_daily_units / max_throughput_per_day
+        hit['initial_ship_saturation'] = hit['resource']['daily_amount']*extractor_count / max_throughput_per_day
         
+        #print(f"{hit['planet'].natural_id}-{hit['resource']['ticker']}: {max_shipment_units}, {appx_travel_time}, {max_throughput_per_hour}, {hit['max_ship_saturation']}, {hit['initial_ship_saturation']}")
+
         expandability = 1/hit['initial_ship_saturation']
         hit['max_extractors_per_ship'] = math.floor(expandability*extractor_count)
         hit['max_income_per_ship'] = hit['max_extractors_per_ship'] * hit['daily_income_per_extractor']
