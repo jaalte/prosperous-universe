@@ -52,8 +52,8 @@ def main():
         exchange = hit['planet'].get_nearest_exchange()
 
         if hit['planet'].cogc == "ADVERTISING_RESOURCE_EXTRACTION":
-            #hit['resource']['daily_amount'] *= 1.25
-            #hit['resource']['process_hours'] /= 1.25
+            hit['resource']['daily_amount'] *= 1.25
+            hit['resource']['process_hours'] /= 1.25
             hit['cogc_boost'] = True
         else:
             hit['cogc_boost'] = False
@@ -68,19 +68,28 @@ def main():
         hit['daily_income_per_extractor'] = hit['resource']['daily_amount'] * hit['price']
         hit['daily_income'] = hit['daily_income_per_extractor'] * extractor_count
 
-        extractor_count_max = sum(1 for b in initial_base.buildings if b.is_extractor())
         max_base = utils.Base(hit['planet'].natural_id,MAX_BASE_BUILDINGS[hit['resource']['extractor_building']])
+        extractor_count_max = sum(1 for b in max_base.buildings if b.is_extractor())
+        hit['extractor_count_max'] = extractor_count_max
         max_daily_units = hit['resource']['daily_amount']*extractor_count_max
+        hit['max_daily_units'] = max_daily_units
         hit['max_daily_income'] = max_daily_units * hit['price']
 
         #material = utils.loader.materials_by_ticker[hit['resource']['ticker']]
 
         ship_storage = utils.Container(500,500)
         max_shipment_units = ship_storage.get_max_capacity_for(hit['resource']['ticker'])
-        appx_travel_time = hit['planet'].exchange_distance*2.5+7
-        max_throughput = max_shipment_units / appx_travel_time/2
-        hit['max_ship_saturation'] = max_daily_units / max_throughput
+        # 3h per jump, 6h average STL, 4h for user availability
+        appx_travel_time = hit['planet'].exchange_distance*3+6+4
+        max_throughput_per_hour = max_shipment_units / appx_travel_time/2
+        hit['max_ship_saturation'] = max_daily_units / max_throughput_per_hour/24
+        hit['initial_ship_saturation'] = hit['resource']['daily_amount'] / max_throughput_per_hour/24
         
+        expandability = 1/hit['initial_ship_saturation']
+        hit['max_extractors_per_ship'] = math.floor(expandability*extractor_count)
+        hit['max_income_per_ship'] = hit['max_extractors_per_ship'] * hit['daily_income_per_extractor']
+        hit ['max_income_per_ship'] = min(hit['max_income_per_ship'],hit['max_daily_income'])
+
         colony_resource_cost = initial_base.get_construction_materials()
         hit['colonization_cost'] = colony_resource_cost.get_total_value(exchange,'buy')
         if hit['daily_income'] <= 0:
@@ -132,10 +141,22 @@ def main():
     for hit in hits:
         exchange = hit['planet'].get_nearest_exchange()
 
+        name_string = f"{hit['planet'].natural_id}"
+        shortened_name = ''
+        if hit['planet'].natural_id != hit['planet'].name:
+            MAX_NAME_LENGTH = 9
+            if len(hit['planet'].name) > MAX_NAME_LENGTH:
+                shortened_name = (hit['planet'].name+" "*MAX_NAME_LENGTH)[:MAX_NAME_LENGTH].strip()+'…'
+            else:
+                shortened_name = hit['planet'].name
+
+        if shortened_name:
+            name_string = f"{name_string} ({shortened_name+')':<10}"
+
         price_range = [0,0]
-        for code, exchange in utils.get_all_exchanges().items():
-            if hit['resource']['ticker'] in exchange.goods:
-                bid = exchange.goods[hit['resource']['ticker']]['Bid']
+        for code, exchange_object in utils.get_all_exchanges().items():
+            if hit['resource']['ticker'] in exchange_object.goods:
+                bid = exchange_object.goods[hit['resource']['ticker']]['Bid']
                 if not bid or bid == 0: continue
                 if bid < price_range[0]:
                     price_range[0] = bid
@@ -148,10 +169,14 @@ def main():
         env_section = '['+f"{hit['planet'].get_environment_string():<4}"+']'
         cogc_string = 'E' if hit['cogc_boost'] else ''
 
+
+        max_extractors = min(hit['max_extractors_per_ship'], hit['extractor_count_max'])
+        max_extractor_fulfilment = max_extractors / hit['extractor_count_max']
+
         message = (
             f"{color(hit['resource']['factor'], factor_range[0], factor_range[1], '>4.1f', value_override=hit['resource']['daily_amount'])} "
             f"{hit['resource']['ticker']:<3}/d/{hit['resource']['extractor_building']} @ "
-            f"{format(hit['planet'].name,'<'+str(longest_name))}"
+            f"{name_string:<21}"
             f"{color(1,0,1,'<1',value_override=cogc_string)} "
             f"{color(env_complications,0,4,'',value_override=env_section,inverse=True)} "
             f"{color(hit['planet'].exchange_distance,0,6,'>2.0f', inverse=True)}j"
@@ -160,9 +185,12 @@ def main():
             f" ({color(hit['demand'],3,5,'>6.0f', logarithmic=True)} demand), "
             f"{color(hit['daily_income'],0,5000,'>5.0f')}"
             f"{exchange.currency}/day. "
-            f"{color(hit['colonization_cost'],200000,500000, '>5.0f', inverse=True)}{exchange.currency} investment, "
-            f"{color(hit['roi'],1,4,'>4.1f', logarithmic=True, inverse=True)}d ROI "
-            f"{color(hit['max_ship_saturation'],0,2,'>2.1f', inverse=True)} max ship saturation"
+            f"{color(hit['colonization_cost'],200000,500000, '>5.0f', inverse=True)}{exchange.currency} investment,"
+            f"{color(hit['roi'],1,4,'>5.1f', logarithmic=True, inverse=True)}d ROI, "
+            #f"{color(hit['max_daily_units'],0,300,'>4.0f')} max units,"
+            f"{color(hit['initial_ship_saturation']*100,0,100,'>2.0f', inverse=True)}% ship saturation, "
+            f"max {color(max_extractor_fulfilment, 0,1,'>2.0f', value_override=max_extractors)}{hit['resource']['extractor_building']}"
+            f"@{color(hit['max_income_per_ship'],0,100000,'>6.0f')}{exchange.currency}/day/ship"
         )
         print(message)
 

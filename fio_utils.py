@@ -773,7 +773,7 @@ class Container:
 class Ship:
     def __init__(self, id):
         ships = fio.request("GET", f"/ship/ships/{USERNAME}", cache=60*60*24)
-        print(json.dumps(ships, indent=4))
+        #print(json.dumps(ships, indent=4))
 
         self.rawdata = next((ship for ship in ships if ship.get('Registration') == id), None)
 
@@ -1025,15 +1025,40 @@ def main():
 
     #print(json.dumps(tio_base.rawdata, indent=2))
 
-    ship = Ship("AVI-054C4")
+    # ship = Ship("AVI-054C4")
 
+    max_daily_units = 448
+    exchange = tio_base.get_nearest_exchange()
     #hbase = Base(hydron.natural_id,{'HB1': 2,'RIG': 6})
     planet = tio_base
     ship_storage = Container(500,500)
     max_shipment_units = ship_storage.get_max_capacity_for('FE')
     appx_travel_time = planet.exchange_distance*2.5+7
     max_throughput = max_shipment_units / appx_travel_time/2
-    hit['max_ship_saturation'] = max_daily_units / max_throughput
+    max_ship_saturation = max_daily_units / max_throughput
+    print(max_ship_saturation)
+
+    ship_storage = Container(500,500)
+    max_shipment_TIO = ship_storage.get_max_capacity_for('TIO')
+    max_shipment_TI  = ship_storage.get_max_capacity_for('TI')
+
+    max_throughput_TIO = max_shipment_TIO / appx_travel_time/2 *24
+    max_throughput_TI  = max_shipment_TI / appx_travel_time/2 *24
+
+    max_ship_saturation_TIO = max_daily_units / max_throughput_TIO
+    max_ship_saturation_TI  = max_daily_units / max_throughput_TI
+
+    revenue_TIO = ResourceList({'TIO': max_shipment_TIO}).get_total_value('NC1', "sell")
+    revenue_TI  = ResourceList({'TI':  max_shipment_TI}).get_total_value('NC1', "sell")
+
+
+    print(f"TIO max throughput {max_throughput_TIO} max shipment {max_shipment_TIO} saturation {max_ship_saturation_TIO} shipment revenue {revenue_TIO}")
+    print(f"TI  max throughput {max_throughput_TI}  max shipment {max_shipment_TI}  saturation {max_ship_saturation_TI}  shipment revenue {revenue_TI}")
+
+
+    print(montem.resources['LST']['daily_amount'])
+    #print(f"Max capacity TIO: {max_shipment_TIO}, TI: {max_shipment_TI}")
+    #print(f"Max throughput daily")
 
     #print(montem)
     #print(montem.get_population()print(json.dumps(montem.rawdata, indent=2))
