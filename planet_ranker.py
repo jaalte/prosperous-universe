@@ -103,7 +103,7 @@ def main():
         
 
     # Sort all hits by daily profit
-    hits.sort(key=lambda x: x['roi'])
+    hits.sort(key=lambda x: x['max_income_per_ship'], reverse=True)
 
     # The great filtering
     # Price == 0
@@ -193,7 +193,7 @@ def main():
             #f"{color(hit['max_daily_units'],0,300,'>4.0f')} max units,"
             f"{color(hit['initial_ship_saturation']*100,0,100,'>2.0f', inverse=True)}% ship saturation, "
             f"max {color(max_extractor_fulfilment, 0,1,'>2.0f', value_override=max_extractors)}{hit['resource']['extractor_building']}"
-            f"@{color(hit['max_income_per_ship'],0,100000,'>6.0f')}{exchange.currency}/day/ship"
+            f"@{color(hit['max_income_per_ship'],0,50000,'>6.0f')}{exchange.currency}/day/ship"
         )
         print(message)
 
