@@ -438,7 +438,7 @@ class Planet:
         # A dict of {demographic: count}
         data = self.get_population_data()
         counts = {key: value['count'] for key, value in data.items()}
-        return counts
+        return Population(counts)
         
 
 
@@ -557,12 +557,20 @@ class Base:
     def get_area(self):
         return sum([building.area for building in self.buildings])
     
-    def get_population_requirements(self):
+    @property
+    def population_demand(self):
         population = self.buildings[0].population_needs
         for building in self.buildings[1:]:
             for key in DEMOGRAPHICS:
                 population[key] += building.population_needs[key]
-        return population
+        return Population(population)
+
+    @property
+    def population_upkeep(self):
+        upkeep = ResourceList()
+        for building in self.buildings:
+            upkeep += building.population_upkeep
+        return upkeep
             
     def optimize_housing(mode="cost"): # cost or space
         pass
@@ -594,13 +602,13 @@ class Building:
                 break
         
         self.area = self.rawdata.get('AreaCost')
-        self.population_needs = {
+        self.population_demand = Population({
             'pioneers': self.rawdata.get('Pioneers'),
             'colonists': self.rawdata.get('Colonists'),
             'technicians': self.rawdata.get('Technicians'),
             'engineers': self.rawdata.get('Engineers'),
             'researchers': self.rawdata.get('Researchers'),
-        }
+        })
         self.cogc_type = self.rawdata.get('Expertise')
 
         is_extractor = self.ticker in ['COL', 'RIG', 'EXT']
@@ -658,7 +666,7 @@ class Building:
             return 1.25
 
         if cogc in ['PIONEERS', 'SETTLERS', 'TECHNICIANS', 'ENGINEERS', 'SCIENTISTS']:
-            if self.population_needs[cogc.lower()] > 0:
+            if self.population_demand[cogc.lower()] > 0:
                 return 1.1
             else:
                 return 1.0
@@ -705,6 +713,72 @@ class Recipe:
 
     def __str__(self):
         return f"{self.name} {self.duration}h"
+
+class Population:
+    def __init__(self, population_dict):
+        # TODO: Implement parsing of multiple rawdata types to clean up code elsewhere
+        self.population = population_dict
+
+    def get_upkeep(self):
+        # Population is a dict of {demographic: amount}
+        needs = ResourceList()
+        for demographic in self.population:
+            needs += self.population[demographic]/100 * POPULATION_UPKEEP_PER_100_PER_DAY[demographic]
+        return needs
+
+    @property
+    def pioneers(self):
+        return self.population.get('pioneers', 0)
+
+    @property
+    def settlers(self):
+        return self.population.get('settlers', 0)
+
+    @property
+    def technicians(self):
+        return self.population.get('technicians', 0)
+
+    @property
+    def engineers(self):
+        return self.population.get('engineers', 0)
+
+    @property
+    def scientists(self):
+        return self.population.get('scientists', 0)
+
+    def __getitem__(self, demographic):
+        return self.population.get(demographic.lower(), 0)
+
+    def __add__(self, other):
+        if not isinstance(other, Population):
+            return NotImplemented
+        result_population = {}
+        for demographic, amount in self.population.items():
+            result_population[demographic] = amount + other.population.get(demographic, 0)
+        for demographic, amount in other.population.items():
+            if demographic not in result_population:
+                result_population[demographic] = amount
+        return Population(result_population)
+
+    def __sub__(self, other):
+        if not isinstance(other, Population):
+            return NotImplemented
+        result_population = {}
+        for demographic, amount in self.population.items():
+            result_population[demographic] = amount - other.population.get(demographic, 0)
+        return Population(result_population)
+
+    def __mul__(self, factor):
+        if not isinstance(factor, (int, float)):
+            return NotImplemented
+        result_population = {demographic: amount * factor for demographic, amount in self.population.items()}
+        return Population(result_population)
+
+    __rmul__ = __mul__  # Allows multiplication with a float on the left-hand side
+
+    def __str__(self):
+        return str(self.population)
+
 
 class Exchange:
     def __init__(self, rawdata):
@@ -1012,20 +1086,13 @@ def threshold_round(val, threshold=1e-5):
 def distance(pos1, pos2):
     return math.sqrt((pos1['x'] - pos2['x'])**2 + (pos1['y'] - pos2['y'])**2 + (pos1['z'] - pos2['z'])**2)
 
-population_needs_per_100_per_day = {
+POPULATION_UPKEEP_PER_100_PER_DAY = {
     'pioneers':    ResourceList({'RAT': 4, 'DW': 4,   'OVE': 0.5,                         'PWO': 0.2, 'COF': 0.5}),
     'settlers':    ResourceList({'RAT': 6, 'DW': 5,   'EXO': 0.5, 'PT':  0.5,             'REP': 0.2, 'KOM': 1  }),
     'technicians': ResourceList({'RAT': 7, 'DW': 7.5, 'MED': 0.5, 'HMS': 0.5, 'SCN': 0.1, 'SC':  0.1, 'ALE': 1  }),
     'engineers':   ResourceList({'FIM': 7, 'DW': 10,  'MED': 0.5, 'HSS': 0.2, 'PDA': 0.1, 'VG':  0.2, 'GIN': 1  }),
     'scientists':  ResourceList({'MEA': 7, 'DW': 10,  'MED': 0.5, 'LC':  0.2, 'WS':  0.1, 'NS':  0.1, 'WIN': 1  }),
 }
-
-# Population is a dict of {demographic: amount}
-def get_population_needs(population):
-    needs = ResourceList()
-    for demographic in population:
-        needs += population[demographic]/100 * population_needs_per_100_per_day[demographic]
-    return needs
 
 # Get a dict of all planets in the game keyed by name
 # Also adds extra data that requires all planets to be loaded first
@@ -1064,11 +1131,18 @@ def main():
     #     cogcs[planet.cogc].append(planet.name)
     # print(json.dumps(cogcs, indent=4))
 
-    test_building = Building("TNP", "XG-326a")
-    print(test_building.get_cogc_bonus("CHEMISTRY"))
-    print(test_building.get_cogc_bonus("TECHNICIANS"))
-    print(test_building.get_cogc_bonus("RESOURCE_EXTRACTION"))
+    # test_building = Building("TNP", "XG-326a")
+    # print(test_building.get_cogc_bonus("CHEMISTRY"))
+    # print(test_building.get_cogc_bonus("TECHNICIANS"))
+    # print(test_building.get_cogc_bonus("RESOURCE_EXTRACTION"))
 
+    # print(Population({
+    #     'pioneers': 100,
+    #     'settlers': 100,
+    #     'technicians': 100,
+    #     'engineers': 100,
+    #     'scientists': 100
+    # }).get_upkeep())
 
     #print(json.dumps(planets['Montem'].rawdata, indent=2))
 

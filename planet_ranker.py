@@ -83,8 +83,9 @@ def main():
         appx_travel_time = hit['planet'].exchange_distance*3+6+4
         max_throughput_per_hour = max_shipment_units / appx_travel_time/2
         max_throughput_per_day = max_throughput_per_hour*24
-        hit['max_ship_saturation'] = max_daily_units / max_throughput_per_day
-        hit['initial_ship_saturation'] = hit['resource']['daily_amount']*extractor_count / max_throughput_per_day
+        hit['ship_saturation_per_extractor'] = hit['resource']['daily_amount'] / max_throughput_per_day
+        hit['max_ship_saturation'] = extractor_count_max * hit['ship_saturation_per_extractor']
+        hit['initial_ship_saturation'] = hit['ship_saturation_per_extractor'] *extractor_count
         
         #print(f"{hit['planet'].natural_id}-{hit['resource']['ticker']}: {max_shipment_units}, {appx_travel_time}, {max_throughput_per_hour}, {hit['max_ship_saturation']}, {hit['initial_ship_saturation']}")
 
@@ -186,12 +187,12 @@ def main():
             f"->{exchange.ticker} "
             f"{color(hit['price'], price_range[0], price_range[1], '>3.0f')}{exchange.currency}/u"
             f" ({color(hit['demand'],3,5,'>6.0f', logarithmic=True)} demand), "
-            f"{color(hit['daily_income'],0,5000,'>5.0f')}"
+            f"{color(hit['daily_income'],0,10000,'>5.0f')}"
             f"{exchange.currency}/day. "
             f"{color(hit['colonization_cost'],200000,500000, '>5.0f', inverse=True)}{exchange.currency} investment,"
             f"{color(hit['roi'],1,4,'>5.1f', logarithmic=True, inverse=True)}d ROI, "
             #f"{color(hit['max_daily_units'],0,300,'>4.0f')} max units,"
-            f"{color(hit['initial_ship_saturation']*100,0,100,'>3.0f', inverse=True)}% ship saturation, "
+            f"{color(hit['ship_saturation_per_extractor']*100,0,100,'>3.0f', inverse=True)}% ship saturation per {hit['resource']['extractor_building']}, "
             f"max {color(max_extractor_fulfilment, 0,1,'>2.0f', value_override=max_extractors)}{hit['resource']['extractor_building']}"
             f"@{color(hit['max_income_per_ship'],0,50000,'>6.0f')}{exchange.currency}/day/ship"
         )
