@@ -51,7 +51,7 @@ def main():
     for hit in hits:
         exchange = hit['planet'].get_nearest_exchange()
 
-        if hit['planet'].cogc == "ADVERTISING_RESOURCE_EXTRACTION":
+        if hit['planet'].cogc == "RESOURCE_EXTRACTION":
             hit['resource']['daily_amount'] *= 1.25
             hit['resource']['process_hours'] /= 1.25
             hit['cogc_boost'] = True

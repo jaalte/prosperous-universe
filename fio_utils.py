@@ -272,8 +272,18 @@ class Planet:
             current_time_ms = int(time.time() * 1000)
             for period in self.rawdata.get("COGCPrograms", []):
                 if period["StartEpochMs"] <= current_time_ms <= period["EndEpochMs"]:
-                    self.cogc = period["ProgramType"]
-                    break 
+                    if period["ProgramType"]:
+                        raw_cogc = period["ProgramType"]
+
+                        # Remove "ADVERTISING_" or "WORKFORCE_" from the start if present
+                        if raw_cogc.startswith("ADVERTISING_"):
+                            self.cogc = raw_cogc[len("ADVERTISING_"):]
+                        elif raw_cogc.startswith("WORKFORCE_"):
+                            self.cogc = raw_cogc[len("WORKFORCE_"):]
+                        else:
+                            self.cogc = raw_cogc
+                    break
+
 
         # Process the resources in rawdata
         for resource in self.rawdata.get('Resources', []):
@@ -591,6 +601,7 @@ class Building:
             'engineers': self.rawdata.get('Engineers'),
             'researchers': self.rawdata.get('Researchers'),
         }
+        self.cogc_type = self.rawdata.get('Expertise')
 
         is_extractor = self.ticker in ['COL', 'RIG', 'EXT']
         self.type = 'extractor' if is_extractor else 'crafter'
@@ -639,6 +650,20 @@ class Building:
 
     def is_extractor(self):
         return self.ticker in ['COL', 'RIG', 'EXT']
+
+    def get_cogc_bonus(self, cogc=None):
+        if not cogc: return 1.0
+
+        if cogc == self.cogc_type:
+            return 1.25
+
+        if cogc in ['PIONEERS', 'SETTLERS', 'TECHNICIANS', 'ENGINEERS', 'SCIENTISTS']:
+            if self.population_needs[cogc.lower()] > 0:
+                return 1.1
+            else:
+                return 1.0
+
+        return 1.0
 
     def __str__(self):
         return f"{self.ticker}"
@@ -1031,67 +1056,22 @@ def main():
     exchange = tio_base.get_nearest_exchange()
     #hbase = Base(hydron.natural_id,{'HB1': 2,'RIG': 6})
     planet = tio_base
-    ship_storage = Container(500,500)
-    max_shipment_units = ship_storage.get_max_capacity_for('FE')
-    appx_travel_time = planet.exchange_distance*2.5+7
-    max_throughput = max_shipment_units / appx_travel_time/2
-    max_ship_saturation = max_daily_units / max_throughput
-    print(max_ship_saturation)
 
-    ship_storage = Container(500,500)
-    max_shipment_TIO = ship_storage.get_max_capacity_for('TIO')
-    max_shipment_TI  = ship_storage.get_max_capacity_for('TI')
+    # cogcs = {}
+    # for name, planet in planets.items():
+    #     if not planet.cogc in cogcs:
+    #         cogcs[planet.cogc] = []
+    #     cogcs[planet.cogc].append(planet.name)
+    # print(json.dumps(cogcs, indent=4))
 
-    max_throughput_TIO = max_shipment_TIO / appx_travel_time/2 *24
-    max_throughput_TI  = max_shipment_TI / appx_travel_time/2 *24
-
-    max_ship_saturation_TIO = max_daily_units / max_throughput_TIO
-    max_ship_saturation_TI  = max_daily_units / max_throughput_TI
-
-    revenue_TIO = ResourceList({'TIO': max_shipment_TIO}).get_total_value('NC1', "sell")
-    revenue_TI  = ResourceList({'TI':  max_shipment_TI}).get_total_value('NC1', "sell")
-
-
-    print(f"TIO max throughput {max_throughput_TIO} max shipment {max_shipment_TIO} saturation {max_ship_saturation_TIO} shipment revenue {revenue_TIO}")
-    print(f"TI  max throughput {max_throughput_TI}  max shipment {max_shipment_TI}  saturation {max_ship_saturation_TI}  shipment revenue {revenue_TI}")
-
-
-    print(montem.resources['LST']['daily_amount'])
-    #print(f"Max capacity TIO: {max_shipment_TIO}, TI: {max_shipment_TI}")
-    #print(f"Max throughput daily")
-
-    #print(montem)
-    #print(montem.get_population()print(json.dumps(montem.rawdata, indent=2))
-
-    # base = ResourceList({'MCG': 50.5, 'BSE': 12.33333})
-    # diff = base - ResourceList({'MCG': 12.77777, 'BSE': 3.33333})
-    # mult = 1.3 * base
-
-    # print(base)
-    # print(diff)
-    # print(mult)
+    test_building = Building("TNP", "XG-326a")
+    print(test_building.get_cogc_bonus("CHEMISTRY"))
+    print(test_building.get_cogc_bonus("TECHNICIANS"))
+    print(test_building.get_cogc_bonus("RESOURCE_EXTRACTION"))
 
 
     #print(json.dumps(planets['Montem'].rawdata, indent=2))
-    #print(json.dumps(planets['EM-929b'].get_population(), indent=2))
 
-    # for name, planet in planets.items():
-    #     if planet.environment_class['gravity'] == 'low':
-    #         print(name)
-
-    #exchanges = get_all_exchanges()
-    #print(json.dumps(exchanges['NC1'].goods['AMM'], indent=2))
-
-    #systems = get_all_systems()
-
-    #print(ResourceList({'BSE': 10, 'AMM': 10})-ResourceList({'BSE': 5, 'AMM': 17}))
-
-    #print(ResourceList({'BSE': 10, 'AMM': 10})*ResourceList({'BSE': 5, 'AMM': 17}))
-    
-    # buildings = fio.request("GET", "/building/allbuildings", cache='forever')
-    # buildings_sorted = sorted(buildings, key=lambda x: x.get('AreaCost', 0), reverse=True)
-    # for building in buildings_sorted:
-    #     print(f"{building['Ticker']}: {building['AreaCost']}")
 
     #building = Building('HB1','XG-326a')
 
