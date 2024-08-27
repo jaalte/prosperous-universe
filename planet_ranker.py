@@ -191,7 +191,7 @@ def main():
             f"{color(hit['colonization_cost'],200000,500000, '>5.0f', inverse=True)}{exchange.currency} investment,"
             f"{color(hit['roi'],1,4,'>5.1f', logarithmic=True, inverse=True)}d ROI, "
             #f"{color(hit['max_daily_units'],0,300,'>4.0f')} max units,"
-            f"{color(hit['initial_ship_saturation']*100,0,100,'>2.0f', inverse=True)}% ship saturation, "
+            f"{color(hit['initial_ship_saturation']*100,0,100,'>3.0f', inverse=True)}% ship saturation, "
             f"max {color(max_extractor_fulfilment, 0,1,'>2.0f', value_override=max_extractors)}{hit['resource']['extractor_building']}"
             f"@{color(hit['max_income_per_ship'],0,50000,'>6.0f')}{exchange.currency}/day/ship"
         )
