@@ -42,6 +42,10 @@ STL_FUEL_FLOW_RATE = 0.015 # Unknown what it means but it's from /ship/ships/fis
 
 DEMOGRAPHICS: ["pioneers", "settlers", "technicians", "engineers", "scientists"]
 
+# Tacotopia, no resources, no harsh environment, no fertility, has surface (MCG)
+#   also has population and resource_extraction cogc lol
+DEFAULT_BUILDING_PLANET_NATURAL_ID = "CB-045b"
+
 
 class DataLoader:
     def __init__(self):
@@ -133,8 +137,8 @@ class DataLoader:
         return cached_data
 
     @property
-    def allbuildings(self):
-        cache_key = 'allbuildings'
+    def allbuildings_raw(self):
+        cache_key = 'allbuildings_raw'
         cached_data = self._get_cached_data(cache_key)
         if cached_data is None:
             cached_data = fio.request("GET", f"/building/allbuildings", cache=-1)
@@ -248,6 +252,19 @@ class DataLoader:
                 exchanges[rawexchange['ComexCode']] = Exchange(rawexchange)
             self._set_cache(cache_key, exchanges)
         return self._cache[cache_key]
+
+    def get_all_buildings(self):
+        cache_key = 'buildings'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data is None:
+            buildings = {}
+            for rawbuilding in self.allbuildings_raw:
+                ticker = rawbuilding.get('Ticker')
+                planet = Planet(natural_id=DEFAULT_BUILDING_PLANET_NATURAL_ID)
+                buildings[ticker] = Building(ticker, planet)
+            cached_data = buildings
+            self._set_cache(cache_key, cached_data)
+        return cached_data
 
 loader = DataLoader()
 
@@ -586,17 +603,19 @@ class Base:
 
 # A single building of a particular ticker. Not a particular one though.
 class Building:
-    def __init__(self, ticker, planet):
+    def __init__(self, ticker, planet=None):
 
         self.ticker = ticker
         if isinstance(planet, str):
             self.planet = Planet(natural_id=planet)
         elif isinstance(planet, Planet):
             self.planet = planet
+        elif planet is None:
+            self.planet = Planet(natural_id=DEFAULT_PLANET_NATURAL_ID)
         else:
             raise Exception(f"Invalid planet type: {type(planet)}")
 
-        for building in loader.allbuildings:
+        for building in loader.allbuildings_raw:
             if building['Ticker'] == ticker:
                 self.rawdata = building
                 break
@@ -626,7 +645,7 @@ class Building:
         self.construction_materials = self.min_construction_materials + extra_materials
     
     def _init_crafter_recipes(self, building_ticker):
-        for building in loader.allbuildings:
+        for building in loader.allbuildings_raw:
             if building['Ticker'] == building_ticker:
                 rawrecipes = building.get('Recipes', [])
                 self.recipes = []
@@ -680,7 +699,7 @@ class Recipe:
     def __init__(self, rawdata):
         # Importing from buildings.json format
         if 'BuildingRecipeId' in rawdata:
-            self.building = rawdata.get('StandardRecipeName')[0:3]
+            self.building = rawdata.get('StandardRecipeName')[0:3].rstrip(':')
             self.name = rawdata.get('BuildingRecipeId')
             self.duration = rawdata.get('DurationMs')/1000/60/60
 
@@ -700,19 +719,31 @@ class Recipe:
             if not isinstance(self.outputs, ResourceList):
                 self.outputs = ResourceList(self.outputs)
 
-    def get_profit_per_craft(self):
-        input_cost = self.inputs.get_total_value('NC1', 'buy')
-        output_cost = self.outputs.get_total_value('NC1', 'sell')
+    def get_profit_per_craft(self, exchange='NC1'):
+        input_cost = self.inputs.get_total_value(exchange, 'buy')
+        output_cost = self.outputs.get_total_value(exchange, 'sell')
         return output_cost - input_cost
 
-    def get_profit_per_hour(self):
-        return self.get_profit_per_craft() / self.duration
+    def get_profit_ratio(self, exchange='NC1'):
+        input_cost = self.inputs.get_total_value(exchange, 'buy')
+        output_cost = self.outputs.get_total_value(exchange, 'sell')
 
-    def get_profit_per_day(self):
-        return self.get_profit_per_hour() * 24
+        if input_cost == 0:
+            if output_cost > 0:
+                return float('inf')
+            else:
+                return 1
+
+        return output_cost / input_cost
+
+    def get_profit_per_hour(self, exchange):
+        return self.get_profit_per_craft(exchange) / self.duration
+
+    def get_profit_per_day(self, exchange):
+        return self.get_profit_per_hour(exchange) * 24
 
     def __str__(self):
-        return f"{self.name} {self.duration}h"
+        return f"[{self.building:<3} Recipe: {self.inputs} => {self.outputs} in {self.duration}h]"
 
 class Population:
     def __init__(self, population_dict):
@@ -1063,6 +1094,9 @@ class ResourceList:
     def __rmul__(self, multiplier):
         return self.__mul__(multiplier)
 
+    def __len__(self):
+        return len(self.resources)
+
     def __str__(self):
         formatted_resources = []
         for name, count in self.resources.items():
@@ -1123,6 +1157,25 @@ def main():
     exchange = tio_base.get_nearest_exchange()
     #hbase = Base(hydron.natural_id,{'HB1': 2,'RIG': 6})
     planet = tio_base
+
+    recipes = []
+    for ticker, building in loader.get_all_buildings().items():
+        for recipe in building.recipes:
+            entry = {
+                'recipe': recipe,
+                'profit_per_day': recipe.get_profit_per_day('NC1'),
+                'ratio': recipe.get_profit_ratio('NC1'),
+            }
+            recipes.append(entry)
+            if len(recipe.outputs) > 1:
+                print(recipe)
+            
+    # sort recipes by profit descending
+    recipes.sort(key=lambda r: r['profit_per_day'], reverse=True)
+
+    for recipe in recipes:
+        print(f"{str(recipe['recipe'])+':':<100} {recipe['profit_per_day']:<8.0f} ({recipe['ratio']*100:.1f}%)")
+    
 
     # cogcs = {}
     # for name, planet in planets.items():
