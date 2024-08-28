@@ -103,41 +103,30 @@ def main():
 
         
 
-    # Sort all hits by daily profit
-    hits.sort(key=lambda x: x['max_income_per_ship'], reverse=True)
+    # Sort all hits by max income per ship
+    hits.sort(key=lambda hit: hit['max_income_per_ship'], reverse=True)
 
-    # The great filtering
+    ### The great filtering
+
     # Price == 0
     # (Should also include ones with 0 daily income and infinite roi)
-    prior_count = len(hits)
-    hits = [hit for hit in hits if hit['price'] > 0]
-    print(f"Removed {prior_count-len(hits)} hits with no sell orders for their resource")
+    hits = filter_hits(hits, lambda hit: hit['price'] > 0, "no sell orders for their resource")
     
     # Demand < min demand
-    prior_count = len(hits)
-    hits = [hit for hit in hits if hit['demand'] > MIN_DEMAND]
-    print(f"Removed {prior_count-len(hits)} planets with demand < {MIN_DEMAND}")
+    hits = filter_hits(hits, lambda hit: hit['demand'] > MIN_DEMAND, f"demand < {MIN_DEMAND}")
     
     # Exchange distance > max jumps
-    prior_count = len(hits)
-    hits = [hit for hit in hits if hit['planet'].exchange_distance <= MAX_JUMPS]
-    print(f"Removed {prior_count-len(hits)} planets with exchange distance > {MAX_JUMPS}")
+    hits = filter_hits(hits, lambda hit: hit['planet'].exchange_distance <= MAX_JUMPS, f"exchange distance > {MAX_JUMPS}")
     
     # Daily income < min daily income
-    prior_count = len(hits)
-    hits = [hit for hit in hits if hit['daily_income'] > MIN_DAILY_INCOME]
-    print(f"Removed {prior_count-len(hits)} planets with projected daily income < {MIN_DAILY_INCOME}")
+    hits = filter_hits(hits, lambda hit: hit['daily_income'] > MIN_DAILY_INCOME, f"projected daily income < {MIN_DAILY_INCOME}")
     
     # Colonization cost > max colonization cost
-    prior_count = len(hits)
-    hits = [hit for hit in hits if hit['colonization_cost'] <= MAX_COLONIZATION_COST]
-    print(f"Removed {prior_count-len(hits)} planets with colonization cost > {MAX_COLONIZATION_COST}")
+    hits = filter_hits(hits, lambda hit: hit['colonization_cost'] <= MAX_COLONIZATION_COST, f"colonization cost > {MAX_COLONIZATION_COST}")
 
     # No pioneers
     # Do last cause it's sloooow
-    prior_count = len(hits)
-    hits = [hit for hit in hits if hit['planet'].get_population_data()['pioneers']['count'] > 1000]
-    print(f"Removed {prior_count-len(hits)} planets with < {MIN_PIONEERS} pioneers")
+    hits = filter_hits(hits, lambda hit: hit['planet'].get_population_data()['pioneers']['count'] > MIN_PIONEERS, f"< {MIN_PIONEERS} pioneers")
     
 
     longest_name = max([len(hit['planet'].name) for hit in hits])
@@ -197,6 +186,25 @@ def main():
             f"@{color(hit['max_income_per_ship'],0,50000,'>6.0f')}{exchange.currency}/day/ship"
         )
         print(message)
+
+def filter_hits(hits, condition, message):
+    """
+    Filters the hits list based on a given condition and prints a summary message.
+
+    Parameters:
+    hits (list): The list of hits to be filtered.
+    condition (function): A function that returns True for elements to keep.
+    message (str): The message describing the filter being applied.
+
+    Returns:
+    list: The filtered list of hits.
+    """
+    prior_count = len(hits)
+    hits = [hit for hit in hits if condition(hit)]
+    diff = prior_count - len(hits)
+    pct = diff / prior_count * 100
+    print(f"Removed {diff} ({pct:>.0f}%) hits with {message}")
+    return hits
 
 def color(value, min_value, max_value, format_spec, value_override=None, inverse=False, logarithmic=False):
     """
