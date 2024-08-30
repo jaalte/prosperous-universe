@@ -538,9 +538,11 @@ class Base:
                             self.building_counts[ticker] += 1
                         else:
                             self.building_counts[ticker] = 1
+                self.exists = True
         else: # If there is no rawdata (and in most cases can't be)
             self.planet = Planet(natural_id=planet_natural_id)
             self.building_counts = building_counts
+            self.exists = False
 
         self.building_counts['CM'] = 1 # Add core module
 
@@ -596,6 +598,9 @@ class Base:
         self.available_recipes = [building.recipes for building in self.buildings]
         # Remove duplictes (same BuildingRecipeId)
         self.available_recipes = list(set([item for sublist in self.available_recipes for item in sublist]))
+
+    def get_burn_rate(self):
+        raw_burn_rate = loader.raw_burn_rate
 
     def __str__(self):
         buildings_str = ', '.join([f"{count} {name}" for name, count in self.building_counts.items()])
@@ -930,6 +935,7 @@ class ResourceList:
                 'MaterialTicker': 'Ticker',
                 'Ticker': 'Ticker',
                 'MaterialAmount': 'Amount',
+                'DailyConsumption': 'Amount',
                 'Amount': 'Amount',
             }
 
@@ -973,10 +979,21 @@ class ResourceList:
             raise TypeError("Unsupported data type for ResourceList initialization")
         
         self.resources = dict(sorted(self.resources.items()))
-        self.removed_resources = {}
 
     def get_material_properties(self):
         return {ticker: loader.materials_by_ticker[ticker] for ticker in self.resources}
+
+    def get_total_weight(self):
+        total = 0
+        for ticker, amount in self.resources.items():
+            total += loader.materials_by_ticker[ticker]['Weight'] * amount
+        return total
+
+    def get_total_volume(self):
+        total = 0
+        for ticker, amount in self.resources.items():
+            total += loader.materials_by_ticker[ticker]['Volume'] * amount
+        return total
 
     def get_total_value(self, exchange="NC1", trade_type="buy"):
         if isinstance(exchange, str):
@@ -1014,8 +1031,31 @@ class ResourceList:
 
     def remove(self, ticker):
         if ticker in self.resources:
-            self.removed_resources[ticker] = self.resources[ticker]
+            amount = self.resources[ticker]
             del self.resources[ticker]
+            return amount
+        else:
+            raise KeyError(f"Resource '{ticker}' does not exist in the ResourceList.")
+
+    def invert(self):
+        new_resources = {ticker: -amount for ticker, amount in self.resources.items()}
+        return ResourceList(new_resources)
+
+    def prune_negatives(self):
+        new_resources = {ticker: amount for ticker, amount in self.resources.items() if amount > 0}
+        return ResourceList(new_resources)
+
+    def floor(self):
+        new_resources = {ticker: math.floor(amount) for ticker, amount in self.resources.items()}
+        return ResourceList(new_resources)
+
+    def ceil(self):
+        new_resources = {ticker: math.ceil(amount) for ticker, amount in self.resources.items()}
+        return ResourceList(new_resources)
+
+    def round(self):
+        new_resources = {ticker: round(amount) for ticker, amount in self.resources.items()}
+        return ResourceList(new_resources)
     
     def add(self, ticker, amount):
         add_list = None
@@ -1076,10 +1116,6 @@ class ResourceList:
         for ticker, amount in other.resources.items():
             if ticker in new_resources:
                 new_resources[ticker] -= amount
-                # If zero, move to removed_resources
-                if new_resources[ticker] == 0:
-                    self.removed_resources[ticker] = 0
-                    del new_resources[ticker]
             else:
                 new_resources[ticker] = -amount
 
@@ -1096,6 +1132,9 @@ class ResourceList:
 
     def __len__(self):
         return len(self.resources)
+
+    def json(self):
+        return json.dumps(self.resources, indent=2)
 
     def __str__(self):
         formatted_resources = []
@@ -1141,6 +1180,23 @@ def get_all_systems():
 def get_all_exchanges():
     return loader.get_all_exchanges()
 
+def get_burn_rates():
+    raw_burn_rates = fio.request("GET", f"/csv/burnrate?apikey={fio.api_key}&username={USERNAME}", cache=-1)
+    burn_rates = {}
+    for raw_burn_rate in raw_burn_rates:
+        if not raw_burn_rate['PlanetName'] in burn_rates:
+            burn_rates[raw_burn_rate['PlanetName']] = []
+        burn_rates[raw_burn_rate['PlanetName']].append(raw_burn_rate)
+
+    for planet, rate_list in burn_rates.items():
+        burn_rates[planet] = ResourceList({rate['Ticker']: rate['DailyConsumption'] for rate in rate_list})
+
+        #burn_rates[raw_burn_rate['PlanetName']][raw_burn_rate['Ticker']] = raw_burn_rate
+
+
+    return burn_rates
+
+
 # Make this public for importing scripts cause it's very fast
 exchanges = get_all_exchanges()
 
@@ -1148,6 +1204,10 @@ def main():
     planets = loader.get_all_planets('name')
     montem = planets['Montem']
     tio_base = planets['XG-326a']
+
+    burn_rates = get_burn_rates()
+    for planet, rate in burn_rates.items():
+        print(f"{planet}: {rate}")
 
     #print(json.dumps(tio_base.rawdata, indent=2))
 
@@ -1177,12 +1237,20 @@ def main():
         print(f"{str(recipe['recipe'])+':':<100} {recipe['profit_per_day']:<8.0f} ({recipe['ratio']*100:.1f}%)")
     
 
-    # cogcs = {}
+    # targets = []
     # for name, planet in planets.items():
-    #     if not planet.cogc in cogcs:
-    #         cogcs[planet.cogc] = []
-    #     cogcs[planet.cogc].append(planet.name)
-    # print(json.dumps(cogcs, indent=4))
+    #     if planet.cogc == "METALLURGY":
+    #         if planet.get_population_count().engineers > 100:
+    #             target = {
+    #                 'planet': planet,
+    #                 'engineers': planet.get_population_count().engineers,
+    #                 'technicians': planet.get_population_count().technicians,
+    #                 'distance': jump_distance(planet.system_natural_id, tio_base.system_natural_id),
+    #             }
+    #             targets.append(target)
+
+    # for target in targets:
+    #     print(f"{target['planet'].name}: {target['engineers']} engineers, {target['technicians']} technicians, {target['distance']} distance from TIO base")
 
     # test_building = Building("TNP", "XG-326a")
     # print(test_building.get_cogc_bonus("CHEMISTRY"))
