@@ -14,6 +14,7 @@ MAX_JUMPS = 4
 MIN_DAILY_INCOME = 4000
 MIN_PIONEERS = 1000
 MAX_COLONIZATION_COST = 999999999999 # Large but not infinite
+PREFERRED_EXCHANGE = 'NC1'
 
 GASSES = ['AMM', 'AR', 'F', 'H', 'HE', 'HE3', 'N', 'NE', 'O']
 
@@ -50,6 +51,7 @@ def main():
     # Populate price-based properties
     for hit in hits:
         exchange = hit['planet'].get_nearest_exchange()
+        hit['exchange'] = exchange
 
         if hit['planet'].cogc == "RESOURCE_EXTRACTION":
             hit['resource']['daily_amount'] *= 1.25
@@ -115,6 +117,9 @@ def main():
     # Demand < min demand
     hits = filter_hits(hits, lambda hit: hit['demand'] > MIN_DEMAND, f"demand < {MIN_DEMAND}")
     
+    # Exchange != preferred exchange
+    hits = filter_hits(hits, lambda hit: hit['exchange'].ticker == PREFERRED_EXCHANGE, f"Not near preferred exchange ({PREFERRED_EXCHANGE})")
+
     # Exchange distance > max jumps
     hits = filter_hits(hits, lambda hit: hit['planet'].exchange_distance <= MAX_JUMPS, f"exchange distance > {MAX_JUMPS}")
     
