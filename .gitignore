@@ -1,6 +1,7 @@
 # Ignore folders
 /cache/
 /old/
+/raw_api_files/
 /__pycache__/
 
 # Ignore the API key file
