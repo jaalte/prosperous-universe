@@ -2,7 +2,7 @@ import pyperclip
 import json
 import re
 import sys
-import fio_utils as utils
+import prunpy as prun
 
 def parse_clipboard_data():
     # Get the clipboard data
@@ -51,9 +51,9 @@ def main():
     parsed_data = parse_clipboard_data()
 
     # Corrected iteration over the values in the parsed_data dictionary
-    burn_rate = utils.ResourceList({rate['ticker']: rate['production'] for rate in parsed_data.values()})
-    #needed = utils.ResourceList({rate['ticker']: rate['needed'] for rate in parsed_data.values()})
-    inv = utils.ResourceList({rate['ticker']: rate['inventory'] for rate in parsed_data.values()})
+    burn_rate = prun.ResourceList({rate['ticker']: rate['production'] for rate in parsed_data.values()})
+    #needed = prun.ResourceList({rate['ticker']: rate['needed'] for rate in parsed_data.values()})
+    inv = prun.ResourceList({rate['ticker']: rate['inventory'] for rate in parsed_data.values()})
 
     # target_days is arg1
     target_days = int(sys.argv[1]) or 7

@@ -1,3 +1,5 @@
+import math
+
 class ResourceList:
     def __init__(self, rawdata={}):
         if len(rawdata) == 0:
@@ -39,6 +41,7 @@ class ResourceList:
                 amount = resource[amount_key]
                 self.resources[ticker] = amount
         elif isinstance(rawdata, str):
+            from prunpy.data_loader import loader
             tickers = sorted(loader.materials_by_ticker.keys())
 
             pattern = r'\b(\d+)\s*x?\s*({})\b'.format('|'.join(re.escape(ticker) for ticker in tickers))
@@ -59,23 +62,27 @@ class ResourceList:
         self.resources = dict(sorted(self.resources.items()))
 
     def get_material_properties(self):
+        from prunpy.data_loader import loader
         return {ticker: loader.materials_by_ticker[ticker] for ticker in self.resources}
 
     def get_total_weight(self):
+        from prunpy.data_loader import loader
         total = 0
         for ticker, amount in self.resources.items():
             total += loader.materials_by_ticker[ticker]['Weight'] * amount
         return total
 
     def get_total_volume(self):
+        from prunpy.data_loader import loader
         total = 0
         for ticker, amount in self.resources.items():
             total += loader.materials_by_ticker[ticker]['Volume'] * amount
         return total
 
     def get_total_value(self, exchange="NC1", trade_type="buy"):
+        from prunpy.game_importer import importer 
         if isinstance(exchange, str):
-            exchange = Exchange(exchange)
+            exchange = importer.exchanges[exchange]
 
         if not isinstance(trade_type, str):
             return NotImplemented
