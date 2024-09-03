@@ -89,6 +89,9 @@ def jump_distance(origin, destination):
     
     return distance
 
+def appx_travel_time(jumps):
+    return jumps*3+6+4
+
 if __name__ == "__main__":
     origin = 'OT-580'
     destination = 'DW-161'

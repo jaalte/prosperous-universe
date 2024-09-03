@@ -42,6 +42,7 @@ class ExchangeGood:
         self.ticker = rawdata['MaterialTicker']
         self.name = rawdata['MaterialName']
         self.currency = rawdata['Currency']
+        self.recently_traded = rawdata['Traded']
 
         self._init_buy_orders() # AKA Bid
         self._init_sell_orders() # AKA Ask

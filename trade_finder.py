@@ -3,9 +3,10 @@
 import sys
 import json
 import math
-from fio_api import fio
 import fio_utils as utils
-from pathfinding import jump_distance
+#from pathfinding import jump_distance
+
+import prunpy as prun
 
 base_cost = 1000
 cost_per_jump = 750
@@ -20,62 +21,6 @@ ship_specs = {
     "volume": 500,
 }
 
-""" Example good dict:
-{
-  "BuyingOrders": [
-    {
-      "OrderId": "2d761ac09251b8732213cf251ac3f557",
-      "CompanyId": "95d0a1820bf73be355b2d34f85875f49",
-      "CompanyName": "The Star Business",
-      "CompanyCode": "TSB",
-      "ItemCount": 9482,
-      "ItemCost": 70.0
-    },
-  ],
-  "SellingOrders": [
-    {
-      "OrderId": "66f198a799372f4e641569e120195f29",
-      "CompanyId": "aeb1f2c1ccea1d8c82c84191e98dbff7",
-      "CompanyName": "Omg Crazy Kitties",
-      "CompanyCode": "OCK",
-      "ItemCount": 45,
-      "ItemCost": 95.0
-    },
-  ],
-  "CXDataModelId": "df72a43a8655beab2156b4b72a6c97f5",
-  "MaterialName": "sodiumBorohydride",
-  "MaterialTicker": "NAB",
-  "MaterialId": "710cb599231cd6b974bcc5feea9603c7",
-  "ExchangeName": "Moria Station Commodity Exchange",
-  "ExchangeCode": "NC1",
-  "Currency": "NCC",
-  "Previous": null,
-  "Price": 95.0,
-  "PriceTimeEpochMs": 1723740273366,
-  "High": 95.0,
-  "AllTimeHigh": 335.0,
-  "Low": 95.0,
-  "AllTimeLow": 25.0,
-  "Ask": 95.0,
-  "AskCount": 3752,
-  "Bid": 70.0,
-  "BidCount": 10000,
-  "Supply": 24733,
-  "Demand": 19632,
-  "Traded": 388,
-  "VolumeAmount": 36860.0,
-  "PriceAverage": 95.0,
-  "NarrowPriceBandLow": 9.5,
-  "NarrowPriceBandHigh": 237.5,
-  "WidePriceBandLow": 9.5,
-  "WidePriceBandHigh": 237.5,
-  "MMBuy": null,
-  "MMSell": null,
-  "UserNameSubmitted": "SHREWDSUN1",
-  "Timestamp": "2024-08-16T01:52:57.638065"
-}
-"""
-
 def find_trades(origin):
 
     exchanges = utils.get_all_exchanges()
@@ -86,7 +31,7 @@ def find_trades(origin):
         if code == origin: continue
         dex = exchange
 
-        dex.distance = jump_distance(oex.system_natural_id, dex.system_natural_id)
+        dex.distance = prun.pathfinding.jump_distance(oex.system_natural_id, dex.system_natural_id)
         destinations[dex.ticker] = dex
         #print(f"{code}: {dex.name} at distance {dex.distance}")
 
@@ -96,20 +41,20 @@ def find_trades(origin):
         dex.profitable_routes = []
         # Check all materials
         for material_ticker in exchanges[origin].goods:
-            og = oex.goods[material_ticker]
-            dg = dex.goods[material_ticker]
+            og = oex.get_good(material_ticker)
+            dg = dex.get_good(material_ticker)
             
-            if og['Ask'] is None or og['Ask'] == 0: continue
-            if dg['Bid'] is None or dg['Bid'] == 0: continue
-            if dg['Demand'] < min_demand: continue
-            if dg['Demand'] < dg['Traded']*min_volume_demand_ratio: continue
+            if og.buy_price == 0: continue
+            if dg.sell_price == 0: continue
+            if dg.demand < min_demand: continue
+            if dg.demand < dg.rawdata['Traded']*min_volume_demand_ratio: continue
 
             route = {
                 "origin": oex,
                 "destination": dex,
                 "material": material_ticker,
-                "profit_per_unit": dg['Bid'] - og['Ask'],
-                "profit_ratio": dg['Bid'] / og['Ask'],
+                "profit_per_unit": dg.sell_price - og.buy_price,
+                "profit_ratio": dg.sell_price / og.buy_price,
                 "origin_good": og,
                 "destination_good": dg,
             }
@@ -131,14 +76,8 @@ def find_trades(origin):
         for route in dex.profitable_routes:
             material = utils.loader.materials_by_ticker[route['material']]
 
-            buyable_orders = route['origin_good']['SellingOrders']
-            sellable_orders = route['destination_good']['BuyingOrders']
-
-            # Sort buyable orders from least to most expensive
-            buyable_orders.sort(key=lambda x: x['ItemCost'])
-            
-            # Sort sellable orders from most to least expensive
-            sellable_orders.sort(key=lambda x: x['ItemCost'], reverse=True)
+            buyable_orders = route['origin_good'].sell_orders.copy()
+            sellable_orders = route['destination_good'].buy_orders.copy()
 
             for buyable_order in buyable_orders:
                 buyable_order['material'] = route['material']
@@ -148,17 +87,17 @@ def find_trades(origin):
 
             # Pop off orders with too low buy volume to be reliable
             if sellable_orders:
-                while route['destination_good']['Traded']*min_volume_demand_ratio < (sellable_orders[0]['ItemCount'] or 0):
+                while route['destination_good'].rawdata['Traded']*min_volume_demand_ratio < (sellable_orders[0]['count'] or 0):
                     sellable_orders.pop(0)
                     if not sellable_orders: break
 
             # loop until either is empty
             while len(buyable_orders) > 0 and len(sellable_orders) > 0:
-                if buyable_orders[0]['ItemCost'] >= sellable_orders[0]['ItemCost']: break
+                if buyable_orders[0]['cost'] >= sellable_orders[0]['cost']: break
 
-                amount = min(buyable_orders[0]['ItemCount'], sellable_orders[0]['ItemCount'])
-                profit_per_unit = sellable_orders[0]['ItemCost'] - buyable_orders[0]['ItemCost']
-                profit_ratio = sellable_orders[0]['ItemCost'] / buyable_orders[0]['ItemCost']
+                amount = min(buyable_orders[0]['count'], sellable_orders[0]['count'])
+                profit_per_unit = sellable_orders[0]['cost'] - buyable_orders[0]['cost']
+                profit_ratio = sellable_orders[0]['cost'] / buyable_orders[0]['cost']
 
                 trades.append({
                     'buy': buyable_orders[0].copy(),  # copy to avoid reference issues
@@ -169,18 +108,18 @@ def find_trades(origin):
                     'profit_ratio': profit_ratio,
                 })
 
-                if buyable_orders[0]['ItemCount'] > sellable_orders[0]['ItemCount']:
-                    buyable_orders[0]['ItemCount'] -= amount
+                if buyable_orders[0]['count'] > sellable_orders[0]['count']:
+                    buyable_orders[0]['count'] -= amount
                     sellable_orders.pop(0)
-                elif buyable_orders[0]['ItemCount'] < sellable_orders[0]['ItemCount']:
-                    sellable_orders[0]['ItemCount'] -= amount
+                elif buyable_orders[0]['count'] < sellable_orders[0]['count']:
+                    sellable_orders[0]['count'] -= amount
                     buyable_orders.pop(0)
                 else:
                     buyable_orders.pop(0)
                     sellable_orders.pop(0)
 
-                while len(buyable_orders) > 0 and buyable_orders[0]['ItemCount'] == None: buyable_orders.pop(0)
-                while len(sellable_orders) > 0 and sellable_orders[0]['ItemCount'] == None: sellable_orders.pop(0)
+                while len(buyable_orders) > 0 and buyable_orders[0]['count'] == None: buyable_orders.pop(0)
+                while len(sellable_orders) > 0 and sellable_orders[0]['count'] == None: sellable_orders.pop(0)
 
         # sort trades by profit ratio in descending order
         trades.sort(key=lambda x: x['profit_ratio'], reverse=True)
@@ -202,7 +141,7 @@ def find_trades(origin):
             
             remaining_volume -= trade['amount'] * material['Volume']
             remaining_weight -= trade['amount'] * material['Weight']
-            remaining_credits -= trade['amount'] * trade['buy']['ItemCost']
+            remaining_credits -= trade['amount'] * trade['buy']['count']
             
             if trade['amount'] > 0:
                 approved_trades.append(trade)
@@ -238,7 +177,7 @@ def find_trades(origin):
             total_profit_ratio = (trade_job['adjusted_profit']+trade_job['cost']) / trade_job['cost']
             print(f"{origin}->{dex.ticker}: {trade_job['adjusted_profit']:.0f}c ({total_profit_ratio*100:.2f}%) profit, ({trade_job['distance']} jumps, {trade_job['cost']:.0f}c, {trade_job['weight']:.2f} kg, {trade_job['volume']:.2f} m3)")
             for trade in trade_job['trades']:
-                print(f"{trade['amount']:>5} {trade['material']:<3}: {trade['buy']['ItemCost']:.2f} - {trade['sell']['ItemCost']:.2f} -> {trade['profit_per_unit']:.2f} ({trade['profit_ratio']*100:.2f}% profit, {dex.goods[trade['material']]['Demand']} demand, {dex.goods[trade['material']]['Traded']} volume)")
+                print(f"{trade['amount']:>5} {trade['material']:<3}: {trade['buy']['count']:.2f} - {trade['sell']['count']:.2f} -> {trade['profit_per_unit']:.2f} ({trade['profit_ratio']*100:.2f}% profit, {dex.goods[trade['material']].demand} demand, {dex.goods[trade['material']].rawdata['Traded']} volume)")
             print()
 
         
@@ -246,7 +185,7 @@ def find_trades(origin):
 def get_max_space_remaining(trade, material, remaining_weight, remaining_volume, remaining_credits):
     max_by_volume = int(remaining_volume / material['Volume'])
     max_by_weight = int(remaining_weight / material['Weight'])
-    max_by_cost   = int(remaining_credits / trade['buy']['ItemCost'])
+    max_by_cost   = int(remaining_credits / trade['buy']['count'])
     max_units = min(max_by_volume, max_by_weight, max_by_cost)
     return max_units
 

@@ -3,7 +3,7 @@ from prunpy.data_loader import loader
 from prunpy.models.population import Population
 from prunpy.utils.resource_list import ResourceList
 from prunpy.constants import EXTRACTORS, PLANET_THRESHOLDS
-from prunpy.utils.pathfinding_legacy import jump_distance
+from prunpy.models.pathfinding import jump_distance
 
 import math
 import time

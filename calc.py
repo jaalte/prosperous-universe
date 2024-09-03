@@ -3,7 +3,7 @@
 import re
 import sys
 import json
-from fio_api import fio
+import prunpy as prun
 
 # Global variables to hold data
 resources = {}
@@ -14,7 +14,7 @@ def load_resources():
     global resources
 
     # Fetch materials data
-    materials = fio.request("GET", "/material/allmaterials", cache=60*60*24)
+    materials = prun.fio.request("GET", "/material/allmaterials", cache=60*60*24)
 
     # Initialize resources with materials data
     for material in materials:
@@ -41,7 +41,7 @@ def load_resources():
         }
 
     # Fetch prices data
-    prices = fio.request("GET", "/csv/prices", response_format="csv", cache=900)
+    prices = prun.fio.request("GET", "/csv/prices", response_format="csv", cache=900)
 
     # Update resources with prices data
     for price in prices:
