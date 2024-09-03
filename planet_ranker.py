@@ -48,7 +48,7 @@ def main():
 
     # Populate price-based properties
     for hit in hits:
-        nearest_exchange_code = hit['planet'].get_nearest_exchange()
+        nearest_exchange_code, _ = hit['planet'].get_nearest_exchange()
         exchange = prun.importer.get_exchange(nearest_exchange_code)
 
         hit['exchange'] = exchange
@@ -138,8 +138,6 @@ def main():
     longest_name = max([len(hit['planet'].name) for hit in hits])
 
     for hit in hits:
-        exchange = hit['planet'].get_nearest_exchange()
-
         name_string = f"{hit['planet'].natural_id}"
         shortened_name = ''
         if hit['planet'].natural_id != hit['planet'].name:
@@ -178,6 +176,7 @@ def main():
             f"{name_string:<21}"
             f"{color(1,0,1,'<1',value_override=cogc_string)} "
             f"{color(env_complications,0,4,'',value_override=env_section,inverse=True)} "
+            f"{hit['planet'].get_population_string()} "
             f"{color(hit['planet'].exchange_distance,0,6,'>2.0f', inverse=True)}j"
             f"->{exchange.ticker} "
             f"{color(hit['price'], price_range[0], price_range[1], '>3.0f')}{exchange.currency}/u"
