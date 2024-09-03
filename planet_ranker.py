@@ -10,6 +10,7 @@ color = prun.terminal_color_scale
 MIN_DEMAND = 10000
 MAX_JUMPS = 4
 MIN_DAILY_INCOME = 4000
+MAX_ROI = 100
 MIN_PIONEERS = 1000
 MAX_COLONIZATION_COST = 999999999999 # Large but not infinite
 PREFERRED_EXCHANGE = 'NC1'
@@ -118,7 +119,7 @@ def main():
     hits = filter_hits(hits, lambda hit: hit['price'] > 0, "no sell orders for their resource")
     
     # Demand < min demand
-    hits = filter_hits(hits, lambda hit: hit['demand'] > MIN_DEMAND, f"demand < {MIN_DEMAND}")
+    #hits = filter_hits(hits, lambda hit: hit['demand'] > MIN_DEMAND, f"demand < {MIN_DEMAND}")
     
     # Exchange != preferred exchange
     hits = filter_hits(hits, lambda hit: hit['exchange'].ticker == PREFERRED_EXCHANGE, f"not near preferred exchange ({PREFERRED_EXCHANGE})")
@@ -126,11 +127,13 @@ def main():
     # Exchange distance > max jumps
     hits = filter_hits(hits, lambda hit: hit['planet'].exchange_distance <= MAX_JUMPS, f"exchange distance > {MAX_JUMPS}")
     
+    hits = filter_hits(hits, lambda hit: hit['roi'] < MAX_ROI, f"ROI > {MAX_ROI} days")
+
     # Daily income < min daily income
-    hits = filter_hits(hits, lambda hit: hit['daily_income'] > MIN_DAILY_INCOME, f"projected daily income < {MIN_DAILY_INCOME}")
+    #hits = filter_hits(hits, lambda hit: hit['daily_income'] > MIN_DAILY_INCOME, f"projected daily income < {MIN_DAILY_INCOME}")
     
     # Colonization cost > max colonization cost
-    hits = filter_hits(hits, lambda hit: hit['colonization_cost'] <= MAX_COLONIZATION_COST, f"colonization cost > {MAX_COLONIZATION_COST}")
+    #hits = filter_hits(hits, lambda hit: hit['colonization_cost'] <= MAX_COLONIZATION_COST, f"colonization cost > {MAX_COLONIZATION_COST}")
 
     # No pioneers
     # Do last cause it's sloooow
@@ -154,8 +157,8 @@ def main():
 
         ticker = hit['resource']['ticker']
         price_range = [0,0]
-        for code, exchange in prun.importer.exchanges.items():
-            bid = exchange.get_good(ticker).sell_price
+        for code, exchange_object in prun.importer.exchanges.items():
+            bid = exchange_object.get_good(ticker).sell_price
             if bid == 0: continue
             if bid < price_range[0]:
                 price_range[0] = bid
@@ -171,6 +174,8 @@ def main():
 
         max_extractors = min(hit['max_extractors_per_ship'], hit['extractor_count_max'])
         max_extractor_fulfilment = max_extractors / hit['extractor_count_max']
+
+        exchange = hit['exchange']
 
         message = (
             f"{color(hit['resource']['factor'], factor_range[0], factor_range[1], '>4.1f', value_override=hit['resource']['daily_amount'])} "
