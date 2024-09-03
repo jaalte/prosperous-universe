@@ -60,8 +60,9 @@ def main():
         else:
             hit['cogc_boost'] = False
 
-        hit['price'] = exchange.goods[hit['resource']['ticker']]['Bid'] or 0
-        hit['demand'] = exchange.goods[hit['resource']['ticker']]['Demand'] or 0
+        ticker = hit['resource']['ticker']
+        hit['price'] = exchange.get_good(ticker).sell_price or 0
+        hit['demand'] = exchange.get_good(ticker).demand or 0
 
         initial_base = utils.Base(hit['planet'].natural_id,INITIAL_BASE_BUILDINGS[hit['resource']['extractor_building']])
         
@@ -151,15 +152,15 @@ def main():
         if shortened_name:
             name_string = f"{name_string} ({shortened_name+')':<10}"
 
+        ticker = hit['resource']['ticker']
         price_range = [0,0]
-        for code, exchange_object in utils.get_all_exchanges().items():
-            if hit['resource']['ticker'] in exchange_object.goods:
-                bid = exchange_object.goods[hit['resource']['ticker']]['Bid']
-                if not bid or bid == 0: continue
-                if bid < price_range[0]:
-                    price_range[0] = bid
-                if bid > price_range[1]:
-                    price_range[1] = bid
+        for code, exchange in utils.loader.exchanges.items():
+            bid = exchange.get_good(ticker).sell_price
+            if bid == 0: continue
+            if bid < price_range[0]:
+                price_range[0] = bid
+            if bid > price_range[1]:
+                price_range[1] = bid
 
         factor_range = hit['resource']['factor_range']
 

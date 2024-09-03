@@ -46,6 +46,8 @@ DEMOGRAPHICS: ["pioneers", "settlers", "technicians", "engineers", "scientists"]
 #   also has population and resource_extraction cogc lol
 DEFAULT_BUILDING_PLANET_NATURAL_ID = "CB-045b"
 
+BOGUS_ORDER_THRESHOLD = 5
+
 
 class DataLoader:
     def __init__(self):
@@ -59,113 +61,124 @@ class DataLoader:
     def _set_cache(self, key, data):
         """Store data in cache."""
         self._cache[key] = data
+        return data
 
     @property
     def allplanets(self):
         cache_key = 'allplanets'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            cached_data = fio.request("GET", f"/planet/allplanets/full")
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        allplanets = fio.request("GET", f"/planet/allplanets/full")
+        return self._set_cache(cache_key, allplanets)
 
     @property
     def planet_lookup(self):
         cache_key = 'planet_lookup'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            cached_data = {planet['PlanetNaturalId']: planet for planet in self.allplanets}
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        planet_lookup = {planet['PlanetNaturalId']: planet for planet in self.allplanets}
+        return self._set_cache(cache_key, planet_lookup)
 
     @property
     def system_planet_lookup(self):
         cache_key = 'system_planet_lookup'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            cached_data = {}
-            for planet in self.allplanets:
-                if planet['SystemId'] not in cached_data:
-                    cached_data[planet['SystemId']] = []
-                cached_data[planet['SystemId']].append(planet['PlanetName'])
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        system_planet_lookup = {}
+        for planet in self.allplanets:
+            if planet['SystemId'] not in system_planet_lookup:
+                system_planet_lookup[planet['SystemId']] = []
+            system_planet_lookup[planet['SystemId']].append(planet['PlanetName'])
+        return self._set_cache(cache_key, system_planet_lookup)
     
     @property
     def rawsystemstars(self):
         cache_key = 'rawsystemstars'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            cached_data = fio.request("GET", f"/systemstars")
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+        
+        rawsystemstars = fio.request("GET", f"/systemstars")
+        return self._set_cache(cache_key, rawsystemstars)
 
     @property
     def systemstars_lookup(self):
         cache_key = 'systemstars_lookup'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            cached_data = {system["SystemId"]: system for system in self.rawsystemstars}
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        systemstars_lookup = {system["SystemId"]: system for system in self.rawsystemstars}
+        return self._set_cache(cache_key, systemstars_lookup)
     
     @property
     def allmaterials(self):
         cache_key = 'allmaterials'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            cached_data = fio.request("GET", "/material/allmaterials")
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+        
+        allmaterials = fio.request("GET", "/material/allmaterials")
+        # Remove the entry with ticker "CMK", as it's not craftable
+        for i in range(len(allmaterials)):
+            if allmaterials[i]['Ticker'] == 'CMK':
+                del allmaterials[i]
+                break
+        return self._set_cache(cache_key, allmaterials)
 
     @property
     def materials_by_ticker(self):
         cache_key = 'materials_by_ticker'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            cached_data = {material['Ticker']: material for material in self.allmaterials}
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        materials_by_ticker = {material['Ticker']: material for material in self.allmaterials}
+        return self._set_cache(cache_key, materials_by_ticker)
+
+    @property
+    def material_ticker_list(self):
+        cache_key = 'material_ticker_list'
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        return self._set_cache(cache_key, self.materials_by_ticker.keys())
+
+    def get_material(self, ticker):
+        cache_key = 'get_material_' + str(ticker)
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        material = self.materials_by_ticker[ticker]
+        return self._set_cache(cache_key, material)
 
     @property
     def materials_by_hash(self):
         cache_key = 'material_by_hash'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            cached_data = {material['MaterialId']: material for material in self.allmaterials}
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        materials_by_hash = {material['MaterialId']: material for material in self.allmaterials}
+        return self._set_cache(cache_key, materials_by_hash)
 
     @property
     def allbuildings_raw(self):
         cache_key = 'allbuildings_raw'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            cached_data = fio.request("GET", f"/building/allbuildings", cache=-1)
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        allbuildings_raw = fio.request("GET", f"/building/allbuildings", cache=-1)
+        return self._set_cache(cache_key, allbuildings_raw)
 
     @property
     def rawexchangedata(self):
         cache_key = 'rawexchangedata'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            cached_data = fio.request("GET", f"/exchange/full", message="Fetching exchange data...")
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        rawexchangedata = fio.request("GET", f"/exchange/full", message="Fetching exchange data...")
+        return self._set_cache(cache_key, rawexchangedata)
 
     @property
     def exchange_goods(self):
         cache_key = 'exchange_goods'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            cached_data = {}
-            for good in self.rawexchangedata:
-                if good['ExchangeCode'] not in cached_data:
-                    cached_data[good['ExchangeCode']] = {}
-                cached_data[good['ExchangeCode']][good['MaterialTicker']] = good
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        exchange_goods = {}
+        for good in self.rawexchangedata:
+            # Initialize all exchanges
+            if good['ExchangeCode'] not in exchange_goods:
+                exchange_goods[good['ExchangeCode']] = {}
+            exchange_goods[good['ExchangeCode']][good['MaterialTicker']] = ExchangeGood(good)
+
+        return self._set_cache(cache_key, exchange_goods)
 
     @property
     def exchanges(self):
@@ -174,20 +187,17 @@ class DataLoader:
     @property
     def all_population_reports(self):
         cache_key = 'all_population_reports'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            all_population_reports_raw = fio.request("GET", "/csv/infrastructure/allreports", cache=60*60*24)
-            all_population_reports = {}
-            for report in all_population_reports_raw:
-                planet_id = report["PlanetNaturalId"]
-                # Initialize the list for this planet if it doesn't exist
-                if planet_id not in all_population_reports:
-                    all_population_reports[planet_id] = []
-                all_population_reports[planet_id].append(report)
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
-            cached_data = all_population_reports
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        all_population_reports_raw = fio.request("GET", "/csv/infrastructure/allreports", cache=60*60*24)
+        all_population_reports = {}
+        for report in all_population_reports_raw:
+            planet_id = report["PlanetNaturalId"]
+            # Initialize the list for this planet if it doesn't exist
+            if planet_id not in all_population_reports:
+                all_population_reports[planet_id] = []
+            all_population_reports[planet_id].append(report)
+        return self._set_cache(cache_key, all_population_reports)
 
     @property
     def planets(self):
@@ -244,27 +254,36 @@ class DataLoader:
 
     def get_all_exchanges(self):
         cache_key = 'all_exchanges'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            rawexchanges = fio.request("GET", "/exchange/station", cache='forever')
-            exchanges = {}
-            for rawexchange in rawexchanges:
-                exchanges[rawexchange['ComexCode']] = Exchange(rawexchange)
-            self._set_cache(cache_key, exchanges)
-        return self._cache[cache_key]
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        rawexchanges = fio.request("GET", "/exchange/station", cache='forever')
+        exchanges = {}
+        for rawexchange in rawexchanges:
+            exchanges[rawexchange['ComexCode']] = Exchange(rawexchange)
+        return self._set_cache(cache_key, exchanges)
+
+    def get_exchange(self, code):
+        cache_key = 'exchange_' + str(code)
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        exchange = self.exchanges[code]
+        return self._set_cache(cache_key, exchange)
+
+
+    def exchange(self, code):
+        return self.get_exchange(code)
 
     def get_all_buildings(self):
         cache_key = 'buildings'
-        cached_data = self._get_cached_data(cache_key)
-        if cached_data is None:
-            buildings = {}
-            for rawbuilding in self.allbuildings_raw:
-                ticker = rawbuilding.get('Ticker')
-                planet = Planet(natural_id=DEFAULT_BUILDING_PLANET_NATURAL_ID)
-                buildings[ticker] = Building(ticker, planet)
-            cached_data = buildings
-            self._set_cache(cache_key, cached_data)
-        return cached_data
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        buildings = {}
+        for rawbuilding in self.allbuildings_raw:
+            ticker = rawbuilding.get('Ticker')
+            planet = Planet(natural_id=DEFAULT_BUILDING_PLANET_NATURAL_ID)
+            buildings[ticker] = Building(ticker, planet)
+
+        return self._set_cache(cache_key, buildings)
 
 loader = DataLoader()
 
@@ -480,7 +499,7 @@ class Planet:
         if self.environment_class['surface']:
             cost += ResourceList({'MCG': 4*area})
         else: 
-            cost += ResourceList({'ASF': math.ceil(area/3)})
+            cost += ResourceList({'AEF': math.ceil(area/3)})
 
         return cost
 
@@ -826,19 +845,149 @@ class Exchange:
 
         self.rawdata = rawdata
         self.ticker = rawdata.get('ComexCode')
+        self.code = self.ticker
         self.name = rawdata.get('ComexName')
         self.currency = rawdata.get('CurrencyCode')
         self.country = rawdata.get('CountryCode')
         self.system_natural_id = rawdata.get('SystemNaturalId')
+
+        goods = {}
+        
         self.goods = loader.exchange_goods[self.ticker]
     
-    def get_average_price(self, material, buy_or_sell, amount):
-        good = self.goods[material]
+    def get_good(self, material_ticker):
+        return self.goods.get(material_ticker, None)
+
+    def get_average_price(self, material_ticker, buy_or_sell, amount):
+        good = self.goods[material_ticker]
         if buy_or_sell == "Buy":
             pass
 
+    def get_availability(self, material_ticker, buy_or_sell):
+        good = self.goods[material_ticker]
+
+
     def __str__(self):
         return f"[Exchange {self.ticker}]"
+
+# A single good on an exchange
+# Will contain price prediction logic later
+class ExchangeGood:
+    def __init__(self, rawdata):
+        self.rawdata = rawdata
+        self.ticker = rawdata['MaterialTicker']
+        self.name = rawdata['MaterialName']
+        self.currency = rawdata['Currency']
+
+        self._init_buy_orders() # AKA Bid
+        self._init_sell_orders() # AKA Ask
+
+
+    def _init_buy_orders(self):
+        raw_orders = self.rawdata['BuyingOrders'] # AKA Bid
+        # Remap ItemCount to count and ItemCost to cost
+        self.buy_orders = [{'cost': order['ItemCost'], 'count': order['ItemCount']} for order in raw_orders]
+        self.buy_orders = sorted(self.buy_orders, key=lambda k: k['cost'], reverse=True)
+
+        # Fixes values for nation orders with no count limit
+        for order in self.buy_orders:
+            if not order['count']:
+                order['count'] = float('inf')
+
+        # Filter bogus orders
+        if len(self.buy_orders) > 0:
+            filtered_orders = []
+            buy_min = self.buy_orders[0]['cost'] / BOGUS_ORDER_THRESHOLD
+            for i in range(len(self.buy_orders)):
+                order = self.buy_orders[i]
+                if order['cost'] >= buy_min:
+                    filtered_orders.append(order)
+            self.buy_orders = filtered_orders
+
+    def _init_sell_orders(self):
+        raw_orders = self.rawdata['SellingOrders']  # AKA Ask
+        # Remap ItemCount to count and ItemCost to cost
+        self.sell_orders = [{'cost': order['ItemCost'], 'count': order['ItemCount']} for order in raw_orders]
+        self.sell_orders = sorted(self.sell_orders, key=lambda k: k['cost'])
+
+        # Fixes values for nation orders with no count limit
+        for order in self.sell_orders:
+            if not order['count']:
+                order['count'] = float('inf')
+
+        # Filter bogus orders
+        if len(self.sell_orders) > 0:
+            filtered_orders = []
+            sell_max = self.sell_orders[0]['cost'] * BOGUS_ORDER_THRESHOLD
+            for i in range(len(self.sell_orders)):
+                order  = self.sell_orders[i]
+                if order['cost'] <= sell_max:
+                    filtered_orders.append(order)
+            self.sell_orders  = filtered_orders
+
+
+    @property
+    def buy_price(self):
+        if len(self.sell_orders) > 0:
+            return self.sell_orders[0]['cost']
+        else:  
+            return float('inf')
+
+    @property
+    def sell_price(self):
+        if len(self.buy_orders) > 0:
+            return self.buy_orders[0]['cost']
+        else:  
+            return 0
+
+    def buy_price_for_amount(self, amount):
+        # Go through orders in order until
+        met = 0
+        while met < amount and len(self.buy_orders) > 0:
+            order = self.buy_orders[0]
+            if order['cost'] <= self.sell_price * BOGUS_ORDER_THRESHOLD:
+                met += order['count']
+                self.buy_orders.pop(0)
+            else: 
+                break
+        return
+
+    @property
+    def supply(self):
+        # Get average price for all orders
+        #total_cost = sum([i['cost'] * i['count'] for i in self.sell_orders])
+        if len(self.sell_orders) == 0:
+            return 0
+
+        total_count = 0
+        for order in self.sell_orders: 
+            total_count += order['count']
+
+        
+        return total_count#, total_cost/total_count
+ 
+    @property
+    def demand(self):
+        # Get average price for all orders
+        #total_cost = sum([i['cost'] * i['count'] for i in self.buy_orders])
+        if len(self.buy_orders) == 0:
+            return 0
+        
+        total_count = 0
+        for order in self.buy_orders:
+            total_count += order['count']
+        
+        return total_count#, total_cost/total_count
+
+
+
+# WIP
+class Material:
+    def __init__(self, ticker):
+        self.ticker  = ticker
+        self.rawdata = loader.get_material(ticker)
+
+        print(self.rawdata)
 
 class System:
     def __init__(self, hashid):
@@ -1006,21 +1155,9 @@ class ResourceList:
         total = 0
         for ticker, amount in self.resources.items():
             if trade_type == "buy":
-                if ticker not in exchange.goods:
-                    total += float('inf')
-                    continue
-                if exchange.goods[ticker]['Ask']:
-                    total += exchange.goods[ticker]['Ask'] * amount
-                else:
-                    total += float('inf')
+                total += exchange.get_good(ticker).buy_price * amount
             else: # trade_type == "sell" or other:
-                if ticker not in exchange.goods:
-                    total += 0
-                    continue
-                if exchange.goods[ticker]['Bid']:
-                    total += exchange.goods[ticker]['Bid'] * amount
-                else:
-                    total += 0
+                total += exchange.get_good(ticker).sell_price * amount
         return total
 
     def get_amount(self, ticker):
@@ -1212,30 +1349,15 @@ def main():
     #print(json.dumps(tio_base.rawdata, indent=2))
 
     # ship = Ship("AVI-054C4")
-
-    max_daily_units = 448
-    exchange = tio_base.get_nearest_exchange()
-    #hbase = Base(hydron.natural_id,{'HB1': 2,'RIG': 6})
-    planet = tio_base
-
-    recipes = []
-    for ticker, building in loader.get_all_buildings().items():
-        for recipe in building.recipes:
-            entry = {
-                'recipe': recipe,
-                'profit_per_day': recipe.get_profit_per_day('NC1'),
-                'ratio': recipe.get_profit_ratio('NC1'),
-            }
-            recipes.append(entry)
-            if len(recipe.outputs) > 1:
-                print(recipe)
-            
-    # sort recipes by profit descending
-    recipes.sort(key=lambda r: r['profit_per_day'], reverse=True)
-
-    for recipe in recipes:
-        print(f"{str(recipe['recipe'])+':':<100} {recipe['profit_per_day']:<8.0f} ({recipe['ratio']*100:.1f}%)")
     
+    nc1 = loader.exchange('NC1')
+    #print(json.dumps(nc1.goods, indent=2))
+
+    for ticker, material in loader.materials_by_ticker.items():
+        for code, exchange in loader.exchanges.items():
+                if exchange.get_good(ticker) is None:
+                    print(f"{exchange.code}: No {ticker} good.")
+
 
     # targets = []
     # for name, planet in planets.items():
