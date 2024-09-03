@@ -941,16 +941,44 @@ class ExchangeGood:
             return 0
 
     def buy_price_for_amount(self, amount):
-        # Go through orders in order until
         met = 0
-        while met < amount and len(self.buy_orders) > 0:
-            order = self.buy_orders[0]
-            if order['cost'] <= self.sell_price * BOGUS_ORDER_THRESHOLD:
-                met += order['count']
-                self.buy_orders.pop(0)
-            else: 
+        spent = 0
+        for order in self.sell_orders:
+            needed = amount - met
+            if order['count'] >= needed:
+                bought = needed
+                spent += bought * order['cost']
+                met = amount
                 break
-        return
+            else:
+                bought = order['count']
+                met += bought
+                spent += bought * order['cost']
+        
+        if met < amount:
+            return float('inf')
+        else:
+            return spent
+
+    def sell_price_for_amount(self, amount):
+        met = 0
+        earned = 0
+        for order in self.buy_orders:
+            needed = amount - met
+            if order['count'] >= needed:
+                sold = needed
+                earned += sold * order['cost']
+                met = amount
+                break
+            else:
+                sold = order['count']
+                met += sold
+                earned += sold * order['cost']
+        
+        if met < amount:
+            return 0
+        else:
+            return earned
 
     @property
     def supply(self):
@@ -1343,8 +1371,8 @@ def main():
     tio_base = planets['XG-326a']
 
     burn_rates = get_burn_rates()
-    for planet, rate in burn_rates.items():
-        print(f"{planet}: {rate}")
+    #for planet, rate in burn_rates.items():
+        #print(f"{planet}: {rate}")
 
     #print(json.dumps(tio_base.rawdata, indent=2))
 
@@ -1357,6 +1385,28 @@ def main():
         for code, exchange in loader.exchanges.items():
                 if exchange.get_good(ticker) is None:
                     print(f"{exchange.code}: No {ticker} good.")
+
+
+    good = loader.exchanges['NC1'].get_good('MCG')
+
+    values = [1, 100, good.supply, good.supply+1]
+    print(f"{good.buy_orders[0]}")
+    print(f"Base price: {good.buy_price}")
+    for amount in values:
+        ppu = good.buy_price_for_amount(amount)/amount
+        ratio = ppu/good.buy_price
+        
+        print(f"Price for {amount}: {good.buy_price_for_amount(amount)} ({ppu:.2} NCC, {ratio:.2%})")
+
+    values = [1, 100, good.demand, good.demand+1]
+    print(f"{good.sell_orders[0]}")
+    print(f"Base price: {good.buy_price}")
+    for amount in values:
+        ppu = good.sell_price_for_amount(amount)/amount
+        ratio = ppu/good.buy_price
+        
+        print(f"Price for {amount}: {good.sell_price_for_amount(amount)} ({ppu:.2} NCC, {ratio:.2%})")
+
 
 
     # targets = []
