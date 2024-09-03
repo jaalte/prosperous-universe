@@ -2,7 +2,10 @@
 
 import json
 import math
-from prunpy import loader, Base, Container, pathfinding
+#from prunpy import loader, Base, Container
+import prunpy as prun
+
+color = prun.terminal_color_scale
 
 MIN_DEMAND = 10000
 MAX_JUMPS = 4
@@ -29,7 +32,7 @@ def fetch_sites(name, planet):
     return name, planet.get_sites()
 
 def main():
-    planets = utils.get_all_planets()
+    planets = prun.importer.get_all_planets()
 
     # First pass: filter to only profitable routes
     hits = []
@@ -45,7 +48,9 @@ def main():
 
     # Populate price-based properties
     for hit in hits:
-        exchange = hit['planet'].get_nearest_exchange()
+        nearest_exchange_code = hit['planet'].get_nearest_exchange()
+        exchange = prun.importer.get_exchange(nearest_exchange_code)
+
         hit['exchange'] = exchange
 
         if hit['planet'].cogc == "RESOURCE_EXTRACTION":
@@ -59,23 +64,23 @@ def main():
         hit['price'] = exchange.get_good(ticker).sell_price or 0
         hit['demand'] = exchange.get_good(ticker).demand or 0
 
-        initial_base = utils.Base(hit['planet'].natural_id,INITIAL_BASE_BUILDINGS[hit['resource']['extractor_building']])
+        initial_base = prun.Base(hit['planet'].natural_id,INITIAL_BASE_BUILDINGS[hit['resource']['extractor_building']])
         
         # Anything in initial_base.buildings (a list) with .is_extractor()
         extractor_count = sum(1 for b in initial_base.buildings if b.is_extractor())
         hit['daily_income_per_extractor'] = hit['resource']['daily_amount'] * hit['price']
         hit['daily_income'] = hit['daily_income_per_extractor'] * extractor_count
 
-        max_base = utils.Base(hit['planet'].natural_id,MAX_BASE_BUILDINGS[hit['resource']['extractor_building']])
+        max_base = prun.Base(hit['planet'].natural_id,MAX_BASE_BUILDINGS[hit['resource']['extractor_building']])
         extractor_count_max = sum(1 for b in max_base.buildings if b.is_extractor())
         hit['extractor_count_max'] = extractor_count_max
         max_daily_units = hit['resource']['daily_amount']*extractor_count_max
         hit['max_daily_units'] = max_daily_units
         hit['max_daily_income'] = max_daily_units * hit['price']
 
-        #material = utils.loader.materials_by_ticker[hit['resource']['ticker']]
+        #material = prun.loader.materials_by_ticker[hit['resource']['ticker']]
 
-        ship_storage = utils.Container(500,500)
+        ship_storage = prun.Container(500,500)
         max_shipment_units = ship_storage.get_max_capacity_for(hit['resource']['ticker'])
         # 3h per jump, 6h average STL, 4h for user availability
         appx_travel_time = hit['planet'].exchange_distance*3+6+4
@@ -149,7 +154,7 @@ def main():
 
         ticker = hit['resource']['ticker']
         price_range = [0,0]
-        for code, exchange in utils.loader.exchanges.items():
+        for code, exchange in prun.importer.exchanges.items():
             bid = exchange.get_good(ticker).sell_price
             if bid == 0: continue
             if bid < price_range[0]:
@@ -206,85 +211,6 @@ def filter_hits(hits, condition, message):
     pct = diff / prior_count * 100
     print(f"Removed {diff} ({pct:>.0f}%) hits with {message}")
     return hits
-
-def color(value, min_value, max_value, format_spec, value_override=None, inverse=False, logarithmic=False):
-    """
-    Applies color to the formatted value based on the given range and color map.
-    Supports coloration for values outside the min and max range.
-    If 'inverse' is True or if min_value > max_value, the colors are applied in reverse.
-    """
-    # Define the color map with positions and corresponding colors
-    color_map = {
-        -1: (40, 40, 40),           # Dark gray for values far below min
-        0: (255, 0, 0),             # Red at min
-        0.25: (255, 165, 0),        # Orange
-        0.5: (255, 255, 0),         # Yellow
-        0.75: (0, 255, 0),          # Green
-        1: (0, 255, 255),           # Cyan at max
-        2: (255, 0, 255),           # Magenta for values far above max
-    }
-
-    # Handle inverse logic by reversing the mapping
-    if min_value > max_value:
-        inverse = not inverse
-    if inverse:
-        min_value, max_value = min(max_value, min_value), max(max_value, min_value)
-        color_map = {
-            -1: color_map[2],     
-            0: color_map[1],      
-            0.25: color_map[0.75],
-            0.5: color_map[0.5],  
-            0.75: color_map[0.25],
-            1: color_map[0],      
-            2: color_map[-1],     
-        }
-    
-    # Apply logarithmic scaling if requested
-    placement_value = value
-    if logarithmic:
-        placement_value = math.log10(value)
-    
-    # Calculate the span and normalized value key
-    span = max_value - min_value
-    normalized_value = (placement_value - min_value) / span
-
-    # Clamp normalized_value to the min and max keys in color_map
-    min_key = min(color_map.keys())
-    max_key = max(color_map.keys())
-
-    if normalized_value < min_key:
-        normalized_value = min_key
-    elif normalized_value > max_key:
-        normalized_value = max_key
-
-    # Get the two keys to interpolate between
-    sorted_keys = sorted(color_map.keys())
-    
-    lower_key = max(k for k in sorted_keys if k <= normalized_value)
-    upper_key = min(k for k in sorted_keys if k >= normalized_value)
-
-    if lower_key == upper_key:
-        r, g, b = color_map[lower_key]
-    else:
-        # Interpolate between the lower and upper color
-        lower_color = color_map[lower_key]
-        upper_color = color_map[upper_key]
-        segment_ratio = (normalized_value - lower_key) / (upper_key - lower_key)
-        
-        r = int(lower_color[0] + (upper_color[0] - lower_color[0]) * segment_ratio)
-        g = int(lower_color[1] + (upper_color[1] - lower_color[1]) * segment_ratio)
-        b = int(lower_color[2] + (upper_color[2] - lower_color[2]) * segment_ratio)
-
-    if value_override is not None:
-        value = value_override
-
-    # Format the value using the specified format
-    formatted_value = format(value, format_spec)
-    
-    # Apply color using ANSI escape codes for RGB
-    colored_value = f"\033[38;2;{r};{g};{b}m{formatted_value}\033[0m"
-    
-    return colored_value
 
 def abbreviate(value):
     suffixes = {

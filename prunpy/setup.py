@@ -6,7 +6,13 @@ setup(
     packages=find_packages(),
     install_requires=[
         # List any external dependencies here, e.g.,
-        # 'requests',
+        
+        # api.py
+        'requests', 'json', 'pandas', 're', 'os', 'io', 'urllib.parse', 'datetime',
+
+        # pathfinding legacy
+        'csv', 'heapq'
+
     ],
     entry_points={
         'console_scripts': [

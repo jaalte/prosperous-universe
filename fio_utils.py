@@ -7,6 +7,7 @@ from pathfinding import jump_distance
 
 USERNAME = 'fishmodem'
 
+# Migrated
 # Constants
 EXTRACTORS = {
     'COL': {
@@ -48,7 +49,7 @@ DEFAULT_BUILDING_PLANET_NATURAL_ID = "CB-045b"
 
 BOGUS_ORDER_THRESHOLD = 5
 
-
+# Migrated
 class DataLoader:
     def __init__(self):
         self._cache = {}
@@ -288,7 +289,7 @@ class DataLoader:
 loader = DataLoader()
 
         
-
+# Migrated
 class Planet:
     # Constructor
     # CHOOSE ONE: id (hash), planet name, or planet natural id
@@ -537,6 +538,7 @@ class Planet:
         # Note: Reimplement once Planet.system class is added
         return f"(Planet {self.name} ({self.natural_id}) in the {self.system_natural_id} system)"
 
+# Migrated
 class Base:
     # Constructor. Either:
     # - a planet_natural_id and building counts
@@ -624,7 +626,7 @@ class Base:
     def __str__(self):
         buildings_str = ', '.join([f"{count} {name}" for name, count in self.building_counts.items()])
         return f"[Base ({self.planet.name}):\n  Buildings: {buildings_str}]"
-
+# Migrated
 # A single building of a particular ticker. Not a particular one though.
 class Building:
     def __init__(self, ticker, planet=None):
@@ -719,6 +721,7 @@ class Building:
     def __str__(self):
         return f"{self.ticker}"
 
+# Migrated
 class Recipe:
     def __init__(self, rawdata):
         # Importing from buildings.json format
@@ -769,6 +772,7 @@ class Recipe:
     def __str__(self):
         return f"[{self.building:<3} Recipe: {self.inputs} => {self.outputs} in {self.duration}h]"
 
+# Migrated
 class Population:
     def __init__(self, population_dict):
         # TODO: Implement parsing of multiple rawdata types to clean up code elsewhere
@@ -872,6 +876,7 @@ class Exchange:
 
 # A single good on an exchange
 # Will contain price prediction logic later
+# Migrated with Exchange
 class ExchangeGood:
     def __init__(self, rawdata):
         self.rawdata = rawdata
@@ -1009,13 +1014,13 @@ class ExchangeGood:
 
 
 
-# WIP
-class Material:
-    def __init__(self, ticker):
-        self.ticker  = ticker
-        self.rawdata = loader.get_material(ticker)
+# # WIP
+# class Material:
+#     def __init__(self, ticker):
+#         self.ticker  = ticker
+#         self.rawdata = loader.get_material(ticker)
 
-        print(self.rawdata)
+#         print(self.rawdata)
 
 class System:
     def __init__(self, hashid):
