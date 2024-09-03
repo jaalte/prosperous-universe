@@ -1374,6 +1374,8 @@ def main():
     #for planet, rate in burn_rates.items():
         #print(f"{planet}: {rate}")
 
+    
+
     #print(json.dumps(tio_base.rawdata, indent=2))
 
     # ship = Ship("AVI-054C4")
@@ -1387,60 +1389,7 @@ def main():
                     print(f"{exchange.code}: No {ticker} good.")
 
 
-    good = loader.exchanges['NC1'].get_good('MCG')
-
-    values = [1, 100, good.supply, good.supply+1]
-    print(f"{good.buy_orders[0]}")
-    print(f"Base price: {good.buy_price}")
-    for amount in values:
-        ppu = good.buy_price_for_amount(amount)/amount
-        ratio = ppu/good.buy_price
-        
-        print(f"Price for {amount}: {good.buy_price_for_amount(amount)} ({ppu:.2} NCC, {ratio:.2%})")
-
-    values = [1, 100, good.demand, good.demand+1]
-    print(f"{good.sell_orders[0]}")
-    print(f"Base price: {good.buy_price}")
-    for amount in values:
-        ppu = good.sell_price_for_amount(amount)/amount
-        ratio = ppu/good.buy_price
-        
-        print(f"Price for {amount}: {good.sell_price_for_amount(amount)} ({ppu:.2} NCC, {ratio:.2%})")
-
-
-
-    # targets = []
-    # for name, planet in planets.items():
-    #     if planet.cogc == "METALLURGY":
-    #         if planet.get_population_count().engineers > 100:
-    #             target = {
-    #                 'planet': planet,
-    #                 'engineers': planet.get_population_count().engineers,
-    #                 'technicians': planet.get_population_count().technicians,
-    #                 'distance': jump_distance(planet.system_natural_id, tio_base.system_natural_id),
-    #             }
-    #             targets.append(target)
-
-    # for target in targets:
-    #     print(f"{target['planet'].name}: {target['engineers']} engineers, {target['technicians']} technicians, {target['distance']} distance from TIO base")
-
-    # test_building = Building("TNP", "XG-326a")
-    # print(test_building.get_cogc_bonus("CHEMISTRY"))
-    # print(test_building.get_cogc_bonus("TECHNICIANS"))
-    # print(test_building.get_cogc_bonus("RESOURCE_EXTRACTION"))
-
-    # print(Population({
-    #     'pioneers': 100,
-    #     'settlers': 100,
-    #     'technicians': 100,
-    #     'engineers': 100,
-    #     'scientists': 100
-    # }).get_upkeep())
-
-    #print(json.dumps(planets['Montem'].rawdata, indent=2))
-
-
-    #building = Building('HB1','XG-326a')
+    good = loader.exchanges['NC1'].get_good('MCB')
 
 if __name__ == "__main__":
     main()
