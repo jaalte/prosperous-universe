@@ -1,0 +1,14 @@
+Metadata-Version: 2.1
+Name: prunpy
+Version: 0.1
+Summary: A package for modeling systems within the game Prosperous Universe, and providing an interface for the FIO API.
+Home-page: https://github.com/fishmodem/prun
+Author: fishmodem
+Author-email: fishmodem@proton.me
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+
+Some tools I've made using the [FIO API](https://doc.fnar.net/) to help me make business decisions in the MMO space colony management game [Prosperous Universe](https://prosperousuniverse.com/)
