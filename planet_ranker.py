@@ -61,7 +61,9 @@ def main():
             hit['cogc_boost'] = False
 
         ticker = hit['resource']['ticker']
-        hit['price'] = exchange.get_good(ticker).sell_price or 0
+        #hit['price'] = exchange.get_good(ticker).sell_price or 0
+        price_per_1000 = exchange.get_good(ticker).sell_price_for_amount(1000) or 0
+        hit['price'] = price_per_1000 / 1000
         hit['demand'] = exchange.get_good(ticker).demand or 0
 
         initial_base = prun.Base(hit['planet'].natural_id,INITIAL_BASE_BUILDINGS[hit['resource']['extractor_building']])
@@ -179,8 +181,8 @@ def main():
             f"{hit['planet'].get_population_string()} "
             f"{color(hit['planet'].exchange_distance,0,6,'>2.0f', inverse=True)}j"
             f"->{exchange.ticker} "
-            f"{color(hit['price'], price_range[0], price_range[1], '>3.0f')}{exchange.currency}/u"
-            f" ({color(hit['demand'],3,5,'>6.0f', logarithmic=True)} demand), "
+            f"{color(hit['price'], price_range[0], price_range[1], '>3.0f')}{exchange.currency}/u, "
+            #f" ({color(hit['demand'],3,5,'>6.0f', logarithmic=True)} demand), "
             f"{color(hit['daily_income'],0,10000,'>5.0f')}"
             f"{exchange.currency}/day. "
             f"{color(hit['colonization_cost'],200000,500000, '>5.0f', inverse=True)}{exchange.currency} investment,"
