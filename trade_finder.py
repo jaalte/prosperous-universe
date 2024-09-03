@@ -3,8 +3,6 @@
 import sys
 import json
 import math
-import fio_utils as utils
-#from pathfinding import jump_distance
 
 import prunpy as prun
 
@@ -23,7 +21,7 @@ ship_specs = {
 
 def find_trades(origin):
 
-    exchanges = utils.get_all_exchanges()
+    exchanges = prun.importer.get_all_exchanges()
 
     oex = exchanges[origin]
     destinations = {}
@@ -74,7 +72,7 @@ def find_trades(origin):
     for code, dex in destinations.items():
         trades = []
         for route in dex.profitable_routes:
-            material = utils.loader.materials_by_ticker[route['material']]
+            material = prun.loader.materials_by_ticker[route['material']]
 
             buyable_orders = route['origin_good'].sell_orders.copy()
             sellable_orders = route['destination_good'].buy_orders.copy()
@@ -131,7 +129,7 @@ def find_trades(origin):
         approved_trades = []
 
         for trade in trades:
-            material = utils.loader.materials_by_ticker[trade['buy']['material']]
+            material = prun.loader.materials_by_ticker[trade['buy']['material']]
 
             max_units = get_max_space_remaining(trade, material, remaining_weight, remaining_volume, remaining_credits)
 
@@ -197,7 +195,7 @@ def get_fuel_cost(jumps):
 def main():
     #origin = sys.argv[1] if len(sys.argv) > 1 else "NC1"
     
-    exchanges = utils.get_all_exchanges()
+    exchanges = prun.importer.get_all_exchanges()
     for code, exchange in exchanges.items():
         find_trades(code)
 
