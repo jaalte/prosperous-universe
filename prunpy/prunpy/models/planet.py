@@ -2,8 +2,9 @@ from prunpy.api import fio
 from prunpy.data_loader import loader
 from prunpy.models.population import Population
 from prunpy.utils.resource_list import ResourceList
-from prunpy.constants import EXTRACTORS, PLANET_THRESHOLDS
+from prunpy.constants import EXTRACTORS, PLANET_THRESHOLDS, DEMOGRAPHICS
 from prunpy.models.pathfinding import jump_distance
+from prunpy.utils.terminal_color_scale import terminal_color_scale as color
 
 import math
 import time
@@ -129,7 +130,7 @@ class Planet:
                 nearest_distance = distance
         self.exchange_code = nearest_exchange_code
         self.exchange_distance = nearest_distance
-        return nearest_exchange_code
+        return nearest_exchange_code, nearest_distance
 
     def get_sites(self):
         sites = fio.request("GET", f"/planet/sites/{self.natural_id}", cache=60*60*24*7)
@@ -253,6 +254,15 @@ class Planet:
 
 
         return text
+    
+    def get_population_string(self):
+        population = self.get_population_count()
+        population_string = ''
+        for demographic in DEMOGRAPHICS:
+            pop = population.get(demographic)
+            letter = demographic[0].upper()
+            population_string += color(pop,3,6,'', logarithmic=True, value_override=letter)
+        return population_string
 
 
 

@@ -33,6 +33,11 @@ class Population:
     def scientists(self):
         return self.population.get('scientists', 0)
 
+    def get(self, demographic):
+        if not demographic in self.population:
+            raise KeyError(f"Population.get called for unknown demographic: {demographic}")
+        return self.population[demographic]
+
     def __getitem__(self, demographic):
         return self.population.get(demographic.lower(), 0)
 
