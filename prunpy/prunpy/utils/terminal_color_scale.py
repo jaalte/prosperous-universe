@@ -1,21 +1,22 @@
 import math
 
-def terminal_color_scale(value, min_value, max_value, format_spec, value_override=None, inverse=False, logarithmic=False):
+def terminal_color_scale(value, min_value, max_value, format_spec, value_override=None, inverse=False, logarithmic=False, color_map=None):
     """
     Applies color to the formatted value based on the given range and color map.
     Supports coloration for values outside the min and max range.
     If 'inverse' is True or if min_value > max_value, the colors are applied in reverse.
     """
     # Define the color map with positions and corresponding colors
-    color_map = {
-        -1: (40, 40, 40),           # Dark gray for values far below min
-        0: (255, 0, 0),             # Red at min
-        0.25: (255, 165, 0),        # Orange
-        0.5: (255, 255, 0),         # Yellow
-        0.75: (0, 255, 0),          # Green
-        1: (0, 255, 255),           # Cyan at max
-        2: (255, 0, 255),           # Magenta for values far above max
-    }
+    if color_map is None:
+        color_map = {
+            -1: (40, 40, 40),           # Dark gray for values far below min
+            0: (255, 0, 0),             # Red at min
+            0.25: (255, 165, 0),        # Orange
+            0.5: (255, 255, 0),         # Yellow
+            0.75: (0, 255, 0),          # Green
+            1: (0, 255, 255),           # Cyan at max
+            2: (255, 0, 255),           # Magenta for values far above max
+        }
 
     # Handle inverse logic by reversing the mapping
     if min_value > max_value:
@@ -35,7 +36,10 @@ def terminal_color_scale(value, min_value, max_value, format_spec, value_overrid
     # Apply logarithmic scaling if requested
     placement_value = value
     if logarithmic:
-        placement_value = math.log10(value)
+        if value == 0:
+            placement_value = 1e-32
+        else:
+            placement_value = math.log10(value)
 
     # Calculate the span and normalized value key
     span = max_value - min_value
