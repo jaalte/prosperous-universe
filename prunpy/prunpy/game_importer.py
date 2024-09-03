@@ -3,6 +3,7 @@ from prunpy.data_loader import loader
 from prunpy.models.planet import Planet
 from prunpy.models.system import System
 from prunpy.models.exchange import Exchange, ExchangeGood
+from prunpy.constants import DEMOGRAPHICS
 
 class GameImporter:
     def __init__(self):
@@ -109,5 +110,17 @@ class GameImporter:
         exchange = self.exchanges[code]
         return self._set_cache(cache_key, exchange)
 
+    def get_max_population(self):
+        cache_key = 'max_pops'
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        max_pop = {dem: 0 for dem in DEMOGRAPHICS}
+        for name, planet in self.get_all_planets().items():
+            population = planet.get_population_count().population
+            for dem, count in population.items():
+                if max_pop[dem] < count:
+                    max_pop[dem] = count
+
+        return self._set_cache(cache_key, max_pop)
 
 importer = GameImporter()

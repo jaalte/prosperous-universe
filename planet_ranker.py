@@ -119,7 +119,7 @@ def main():
     hits = filter_hits(hits, lambda hit: hit['demand'] > MIN_DEMAND, f"demand < {MIN_DEMAND}")
     
     # Exchange != preferred exchange
-    hits = filter_hits(hits, lambda hit: hit['exchange'].ticker == PREFERRED_EXCHANGE, f"Not near preferred exchange ({PREFERRED_EXCHANGE})")
+    hits = filter_hits(hits, lambda hit: hit['exchange'].ticker == PREFERRED_EXCHANGE, f"not near preferred exchange ({PREFERRED_EXCHANGE})")
 
     # Exchange distance > max jumps
     hits = filter_hits(hits, lambda hit: hit['planet'].exchange_distance <= MAX_JUMPS, f"exchange distance > {MAX_JUMPS}")

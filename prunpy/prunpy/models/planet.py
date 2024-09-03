@@ -256,12 +256,16 @@ class Planet:
         return text
     
     def get_population_string(self):
+        from prunpy.game_importer import importer
+
+        max_pop = importer.get_max_population()
         population = self.get_population_count()
         population_string = ''
         for demographic in DEMOGRAPHICS:
             pop = population.get(demographic)
             letter = demographic[0].upper()
-            population_string += color(pop,3,6,'', logarithmic=True, value_override=letter)
+            top = math.log10(max_pop[demographic])
+            population_string += color(pop,3,top,'', logarithmic=True, value_override=letter)
         return population_string
 
 
