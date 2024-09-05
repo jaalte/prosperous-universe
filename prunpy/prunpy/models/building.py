@@ -75,8 +75,16 @@ class Building:
                 self.recipes.append(Recipe(recipedata))
 
     # function to get total cost of building by resourcelist
-    def get_cost(self, exchange='NC1'):
+    def get_cost(self, exchange=None):
+        exchange = exchange or self.planet.get_nearest_exchange()[0]
         return self.construction_materials.get_total_value(exchange, "buy")
+    
+    def get_daily_maintenance(self):
+        return self.construction_materials/180
+
+    def get_daily_maintenance_cost(self, exchange=None):
+        exchange = exchange or self.planet.get_nearest_exchange()[0]
+        return self.get_daily_maintenance.get_total_value(exchange, "buy")
 
     def is_extractor(self):
         return self.ticker in ['COL', 'RIG', 'EXT']
