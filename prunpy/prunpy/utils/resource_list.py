@@ -203,6 +203,15 @@ class ResourceList:
     def __rmul__(self, multiplier):
         return self.__mul__(multiplier)
 
+    def __truediv__(self, divisor):
+        if not isinstance(divisor, int) and not isinstance(divisor, float):
+            return NotImplemented
+        if divisor == 0:
+            raise ZeroDivisionError("Division by zero is not allowed.")
+        new_resources = {ticker: amount / divisor for ticker, amount in self.resources.items()}
+        return ResourceList(new_resources)
+
+
     def __len__(self):
         return len(self.resources)
 
