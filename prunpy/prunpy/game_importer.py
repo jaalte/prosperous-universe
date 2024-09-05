@@ -3,7 +3,7 @@ from prunpy.data_loader import loader
 from prunpy.models.planet import Planet
 from prunpy.models.system import System
 from prunpy.models.exchange import Exchange, ExchangeGood
-from prunpy.constants import DEMOGRAPHICS
+from prunpy.constants import DEMOGRAPHICS, DEFAULT_BUILDING_PLANET_NATURAL_ID
 
 class GameImporter:
     def __init__(self):
@@ -64,6 +64,7 @@ class GameImporter:
         return self._set_cache(cache_key, systems)
 
     def get_all_buildings(self):
+        from prunpy.models.building import Building
         cache_key = 'systems'
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
