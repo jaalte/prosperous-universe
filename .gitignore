@@ -13,7 +13,7 @@ allplanets-raw.json
 cx_report_full.csv
 
 # Ignore python module-specific folders
-/prunpy/prunpy.egg-info
+/prunpy/prunpy.egg-info/
 /prunpy/prunpy/__pycache__
 /prunpy/prunpy/models/__pycache__
 /prunpy/prunpy/utils/__pycache__
