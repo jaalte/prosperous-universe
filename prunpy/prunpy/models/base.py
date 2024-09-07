@@ -60,11 +60,22 @@ class Base:
             materials += building.construction_materials
         return materials
 
-    def get_daily_maintenance(self):
-        materials = ResourceList()
+    def get_daily_upkeep(self):
+        upkeep = self.get_daily_building_maintenance()
+        upkeep += self.get_daily_population_maintenance()
+        return upkeep
+
+    def get_daily_building_maintenance(self):
+        upkeep = ResourceList()
         for building in self.buildings:
-            materials += building.get_daily_maintenance()
+            upkeep += building.get_daily_maintenance()
         return materials
+
+    def get_daily_population_maintenance(self):
+        upkeep = ResourceList()
+        for building in self.buildings:
+            upkeep += building.population_needs.get_upkeep()
+        return upkeep
 
     def get_area(self):
         return sum([building.area for building in self.buildings])
