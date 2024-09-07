@@ -7,10 +7,10 @@ import prunpy as prun
 def parse_clipboard_data():
     # Get the clipboard data
     clipboard_data = pyperclip.paste()
-    
+
     # Split the data into lines
     lines = clipboard_data.splitlines()
-    
+
     # Initialize an empty dictionary to store parsed data
     data_dict = {}
 
@@ -56,7 +56,7 @@ def main():
     inv = prun.ResourceList({rate['ticker']: rate['inventory'] for rate in parsed_data.values()})
 
     # target_days is arg1
-    target_days = int(sys.argv[1]) or 7
+    target_days = float(sys.argv[1]) if len(sys.argv) > 1 else 7.0
 
     needed = burn_rate.invert() * target_days
     needed -= inv
