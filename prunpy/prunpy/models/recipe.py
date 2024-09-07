@@ -47,5 +47,12 @@ class Recipe:
     def get_profit_per_day(self, exchange):
         return self.get_profit_per_hour(exchange) * 24
 
+    @property
+    def throughput(self, output_ticker=None):
+        if not output_ticker:
+            output_ticker = self.outputs.tickers[0]
+
+        return self.outputs.resources[output_ticker] / self.duration
+
     def __str__(self):
         return f"[{self.building:<3} Recipe: {self.inputs} => {self.outputs} in {self.duration}h]"

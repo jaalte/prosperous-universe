@@ -110,6 +110,10 @@ class ResourceList:
         else:
             raise KeyError(f"Resource '{ticker}' does not exist in the ResourceList.")
 
+    @property
+    def tickers(self):
+        return list(self.resources.keys())
+
     def invert(self):
         new_resources = {ticker: -amount for ticker, amount in self.resources.items()}
         return ResourceList(new_resources)

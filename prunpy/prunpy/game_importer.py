@@ -124,4 +124,16 @@ class GameImporter:
 
         return self._set_cache(cache_key, max_pop)
 
+    def get_all_recipes(self):
+        cache_key = 'all_recipes'
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        buildings = self.get_all_buildings()
+        recipes = []
+        for ticker, building in buildings.items():
+            recipes += building.recipes
+        
+        return self._set_cache(cache_key, recipes)
+    
+
 importer = GameImporter()
