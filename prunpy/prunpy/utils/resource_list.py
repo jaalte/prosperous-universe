@@ -223,11 +223,16 @@ class ResourceList:
         return json.dumps(self.resources, indent=2)
 
     def __str__(self):
+        def format_float(value, max_decimals=2):
+            if value == round(value, 0):  # No decimals needed
+                return f"{int(value)}"
+            for decimals in range(1, max_decimals + 1):
+                if value == round(value, decimals):
+                    return f"{value:.{decimals}f}"
+            return f"{value:.{max_decimals}f}"
+
         formatted_resources = []
         for name, count in self.resources.items():
-            if abs(count - round(count)) < 0.0001:  # Check if count is within 4 decimal places of an integer
-                formatted_resources.append(f"{int(round(count))} {name}")  # Display as an integer
-            else:
-                formatted_resources.append(f"{count:.2f} {name}")  # Display with 2 decimal places
+            formatted_resources.append(f"{format_float(count)} {name}")  # Display with 2 decimal places
 
         return ', '.join(formatted_resources)

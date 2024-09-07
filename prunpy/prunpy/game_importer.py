@@ -134,6 +134,45 @@ class GameImporter:
             recipes += building.recipes
         
         return self._set_cache(cache_key, recipes)
+
+    def get_material_recipes(self, ticker):
+        cache_key = 'material_recipes_' + str(ticker)
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        # Find recipes that use the material_ticker
+        target_recipes = []
+        for recipe in self.get_all_recipes():
+            if ticker in recipe.outputs.resources.keys():
+                target_recipes.append(recipe)
+        
+        return self._set_cache(cache_key, target_recipes)
+    
+    def get_best_recipe(self, ticker, priority_mode='profit'):
+        cache_key = 'best_recipe_' + str(ticker) + '_' + str(priority_mode)
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        target_recipes = self.get_material_recipes(ticker)
+
+        # Pick recipe with highest profit per hour
+        best_recipe = None
+        for recipe in target_recipes:
+            if best_recipe is None:
+                best_recipe = recipe
+
+            if priority_mode == 'throughput':
+                if recipe.throughput > best_recipe.throughput:
+                    best_recipe = recipe
+            elif priority_mode == 'profit_amount':
+                if recipe.get_profit_per_hour('NC1') > best_recipe.get_profit_per_hour('NC1'):
+                    best_recipe = recipe
+            elif priority_mode == 'profit_ratio':
+                if recipe.get_profit_ratio('NC1') > best_recipe.get_profit_ratio('NC1'):
+                    best_recipe = recipe
+            else:
+                raise ValueError(f"Invalid priority mode: {priority_mode}")
+
+        return self._set_cache(cache_key, best_recipe)
+
     
 
 importer = GameImporter()

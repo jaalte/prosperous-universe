@@ -3,7 +3,7 @@ import sys
 import re
 
 EXCHANGE='NC1'
-PRIORITY_MODE = 'profit' or 'throughput'
+PRIORITY_MODE = 'profit_amount' or 'throughput'
 
 def get_input_ticker():
     # Merge arguments into one string
@@ -24,53 +24,41 @@ def get_input_ticker():
 
     return target_ticker
 
-# Replace with Material.getRecipes() eventually 
-def get_recipes(ticker):
-    recipes = prun.importer.get_all_recipes()
-
-    # Find recipes that use the material_ticker
-    target_recipes = []
-    for recipe in recipes:
-        if ticker in recipe.outputs.resources.keys():
-            target_recipes.append(recipe)
-
-    if len(target_recipes) == 0:
-        #print(f"No recipes found for material ticker {ticker}")
-        return None
-
-    # Pick recipe with highest profit per hour
-    best_recipe = None
-    for recipe in target_recipes:
-        if best_recipe is None:
-            best_recipe = recipe
-        if PRIORITY_MODE == 'throughput':
-            if recipe.throughput > best_recipe.throughput:
-                best_recipe = recipe
-        if PRIORITY_MODE == 'profit':
-            if recipe.get_profit_per_hour('NC1') > best_recipe.get_profit_per_hour('NC1'):
-                best_recipe = recipe
-        
-
-    return best_recipe
-
 def get_recipe_string(recipe):
-    return f"{recipe.outputs} <= {recipe.inputs} in {recipe.duration:.1f}h @ {recipe.building}"
+    out = f"{recipe.outputs} <= {recipe.inputs} in {recipe.duration:.1f}h @{recipe.building}"
+    if recipe.multiplier != 1:
+        out += f" x{recipe.multiplier}"
+    return out
 
-def display_recipe_tree(recipe, indent=0):
+def display_recipe_tree(recipe, indent=0, parent=None):
+
+    if not 'multiplier' in vars(recipe):
+        recipe.multiplier = 1
+
+    # recipe.multiplier = 1
+    # if parent:
+    #     parent_amount = parent.inputs.resources[recipe.inputs.tickers[0]]
+
+
     print("| " * indent + get_recipe_string(recipe))
 
     # Check the inputs of the current recipe
     for input_ticker in recipe.inputs.resources.keys():
         # Fetch the recipe for the input material
-        input_recipe = get_recipes(input_ticker)
-        
+        input_recipe = prun.importer.get_best_recipe(input_ticker, PRIORITY_MODE)
+
         if input_recipe:
+            amount_needed = recipe.inputs.resources[input_ticker]
+            amount_gained = input_recipe.outputs.resources[input_ticker]
+            input_recipe.multiplier = amount_needed / amount_gained
+            input_recipe.inputs *= input_recipe.multiplier
+            input_recipe.outputs *= input_recipe.multiplier
             # Recursively display the input recipe with increased indentation
-            display_recipe_tree(input_recipe, indent + 1)
+            display_recipe_tree(input_recipe, indent + 1, parent = recipe)
 
 def main():
     target_ticker = get_input_ticker()
-    recipe = get_recipes(target_ticker)
+    recipe = prun.importer.get_best_recipe(target_ticker, PRIORITY_MODE)
     
     exchanges = prun.importer.get_all_exchanges()
 
