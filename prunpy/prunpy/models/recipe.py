@@ -24,6 +24,23 @@ class Recipe:
             if not isinstance(self.outputs, ResourceList):
                 self.outputs = ResourceList(self.outputs)
 
+    def convert_to_daily(self):
+        mult = 24 / self.duration
+        new_rawdata = {
+            'building': self.building,
+            'name': self.name,
+            'duration': 24,
+            'inputs': self.inputs * mult,
+            'outputs': self.outputs * mult,
+        }
+        return Recipe(new_rawdata)
+
+    def include_worker_upkeep(self):
+        building = loader.get_all_buildings()[self.building]
+        daily_upkeep = building.population_needs.get_upkeep()
+        self.inputs += daily_upkeep * (self.duration / 24)
+        return daily_upkeep * (self.duration / 24)
+
     def get_profit_per_craft(self, exchange='NC1'):
         input_cost = self.inputs.get_total_value(exchange, 'buy')
         output_cost = self.outputs.get_total_value(exchange, 'sell')
@@ -55,4 +72,4 @@ class Recipe:
         return self.outputs.resources[output_ticker] / self.duration
 
     def __str__(self):
-        return f"[{self.building:<3} Recipe: {self.inputs} => {self.outputs} in {self.duration}h]"
+        return f"{self.outputs} <= {self.inputs} in {self.duration}h @{self.building:<3}"
