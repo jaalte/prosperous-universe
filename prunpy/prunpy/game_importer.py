@@ -63,9 +63,9 @@ class GameImporter:
             systems[system_class.name] = system_class
         return self._set_cache(cache_key, systems)
 
-    def get_all_buildings(self):
+    def get_all_buildings(self, planet_id=DEFAULT_BUILDING_PLANET_NATURAL_ID):
         from prunpy.models.building import Building
-        cache_key = 'systems'
+        cache_key = 'all_buildings_' + str(planet_id)
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
         buildings = {}
@@ -75,6 +75,9 @@ class GameImporter:
             buildings[ticker] = Building(ticker, planet)
 
         return self._set_cache(cache_key, buildings)
+
+    def get_building(self, ticker, planet_id=DEFAULT_BUILDING_PLANET_NATURAL_ID):
+        return self.get_all_buildings().get(ticker, planet_id)
 
     def get_all_exchanges(self):
         cache_key = 'all_exchanges'
@@ -147,7 +150,7 @@ class GameImporter:
         
         return self._set_cache(cache_key, target_recipes)
     
-    def get_best_recipe(self, ticker, priority_mode='profit'):
+    def get_best_recipe(self, ticker, priority_mode='profit_ratio'):
         cache_key = 'best_recipe_' + str(ticker) + '_' + str(priority_mode)
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
