@@ -24,9 +24,9 @@ def main():
     # for ticker, building in buildings.items():
     #     print(f"{ticker}: {building.planet.name}: {building.get_daily_maintenance()}")
 
-    from prunpy.models.recipe_tree import RecipeTreeRoot, RecipeTreeNode
+    from prunpy.models.recipe_tree import RecipeTreeNode
 
-    recipe = prun.importer.get_best_recipe('PE')
+    recipe = prun.importer.get_best_recipe('WCB')
 
     root_node = RecipeTreeNode(
         recipe=recipe,

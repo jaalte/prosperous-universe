@@ -1,6 +1,7 @@
 from prunpy.api import fio
 from prunpy.data_loader import loader
 from prunpy.models.population import Population
+from prunpy.models.recipe import Recipe
 from prunpy.utils.resource_list import ResourceList
 from prunpy.constants import EXTRACTORS, PLANET_THRESHOLDS, DEMOGRAPHICS
 from prunpy.models.pathfinding import jump_distance
@@ -63,6 +64,7 @@ class Planet:
             daily_amount = factor * 100 * EXTRACTORS[extractor_building]["multiplier"]
             process_hours, process_amount = self._calculate_process_time_and_amount(extractor_building, daily_amount)
 
+            # Deprecated, replaced with Planet.mining_recipes
             self.resources[ticker] = {
                 'name': material_data['Name'],
                 'ticker': ticker,
@@ -70,12 +72,22 @@ class Planet:
                 'weight': material_data['Weight'],
                 'volume': material_data['Volume'],
                 'type': resource_type,
-                'factor': factor,
+                'factor': factor, # Not in Recipe (Shouldn't be but should be accessible somehow)
                 'extractor_building': extractor_building,
-                'daily_amount': daily_amount,
+                'daily_amount': daily_amount, # Not in Recipe
                 'process_amount': process_amount,
                 'process_hours': process_hours
             }
+
+            self.mining_recipes = []
+            recipe_rawdata = {
+                'building': extractor_building,
+                'duration': process_hours,
+                'inputs': {},
+                'outputs': {ticker: process_amount}
+            }
+
+            self.mining_recipes.append(Recipe(recipe_rawdata))
 
         # Process environmental properties
         self.environment = {}
@@ -93,8 +105,6 @@ class Planet:
             else:
                 self.environment_class[prop] = 'normal'
         self.environment_class['surface'] = self.rawdata.get('Surface')
-
-
 
 
     def _calculate_process_time_and_amount(self, extractor_building, daily_amount):

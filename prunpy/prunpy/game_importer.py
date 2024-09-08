@@ -52,6 +52,9 @@ class GameImporter:
 
         return self._set_cache(cache_key, planets)
 
+    def get_planet(self, name):
+        return self.get_all_planets().get(name)
+
     def get_all_systems(self):
         cache_key = 'systems'
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
@@ -138,8 +141,9 @@ class GameImporter:
         
         return self._set_cache(cache_key, recipes)
 
-    def get_material_recipes(self, ticker):
-        cache_key = 'material_recipes_' + str(ticker)
+    def get_material_recipes(self, ticker, include_mining_from_planet_id=None, include_purchase_from=None):
+        from prunpy.models.recipe import Recipe
+        cache_key = f"material_recipes_{ticker}_mining-{include_mining_from_planet_id}_purchase-{include_purchase_from}"
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
         # Find recipes that use the material_ticker
@@ -147,7 +151,26 @@ class GameImporter:
         for recipe in self.get_all_recipes():
             if ticker in recipe.outputs.resources.keys():
                 target_recipes.append(recipe)
-        
+
+        if include_mining_from_planet_id:
+            planet = self.get_planet(include_mining_from_planet_id)
+            for recipe in planet.mining_recipes:
+                if ticker in recipe.outputs.resources.keys():
+                    target_recipes.append(recipe)
+                    break
+
+        if include_purchase_from:
+            exchange = self.get_exchange(include_purchase_from)
+            buy_price = exchange.get_good(ticker).buy_price
+            mult = 100
+            purchase_recipe_rawdata = {
+                'building': exchange.code,
+                'duration': 12,
+                'inputs': {exchange.currency: buy_price*mult},
+                'outputs': {ticker: 1*mult},
+            }
+            target_recipes.append(Recipe(purchase_recipe_rawdata))
+
         return self._set_cache(cache_key, target_recipes)
     
     def get_best_recipe(self, ticker, priority_mode='profit_ratio'):

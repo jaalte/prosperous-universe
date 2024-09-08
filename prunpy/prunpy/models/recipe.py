@@ -2,10 +2,12 @@ from prunpy.utils.resource_list import ResourceList
 
 class Recipe:
     def __init__(self, rawdata):
+        if isinstance(rawdata, Recipe):
+            pass # Do nothing, it will init like a dict
+
         # Importing from buildings.json format
         if 'BuildingRecipeId' in rawdata:
             self.building = rawdata.get('StandardRecipeName')[0:3].rstrip(':')
-            self.name = rawdata.get('BuildingRecipeId')
             self.duration = rawdata.get('DurationMs')/1000/60/60
 
             self.inputs = ResourceList(rawdata.get('Inputs'))
@@ -14,7 +16,6 @@ class Recipe:
         # Manually specified format
         else:
             self.building = rawdata.get('building')
-            self.name = rawdata.get('name')
             self.duration = rawdata.get('duration')
 
             self.inputs = rawdata.get('inputs')
@@ -23,12 +24,11 @@ class Recipe:
             self.outputs = rawdata.get('outputs')
             if not isinstance(self.outputs, ResourceList):
                 self.outputs = ResourceList(self.outputs)
-
+         
     def convert_to_daily(self):
         mult = 24 / self.duration
         new_rawdata = {
             'building': self.building,
-            'name': self.name,
             'duration': 24,
             'inputs': self.inputs * mult,
             'outputs': self.outputs * mult,

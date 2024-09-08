@@ -1,26 +1,5 @@
 from prunpy.game_importer import importer
 
-
-
-class RecipeTreeRoot:
-    def __init__(self, root_ticker, priority_mode):
-        self.root_ticker = root_ticker
-        self.priority_mode = priority_mode
-
-        # Populate children
-        self.children = importer.get_material_recipes(root_ticker)
-
-        
-
-   
-
-
-
-    def get_single_recipe_string(self, recipe):
-        return f"{recipe.outputs} <= {recipe.inputs} in {recipe.duration:.1f}h @ {recipe.building}"
-
-
-
 class RecipeTreeNode:
     def __init__(self, recipe, depth=0, multiplier=1, priority_mode='profit_ratio', include_worker_upkeep=False):
         self.recipe = recipe
@@ -32,7 +11,11 @@ class RecipeTreeNode:
         self.children = {}
 
         for input_ticker in self.recipe.inputs.tickers:
-            recipes = importer.get_material_recipes(input_ticker)
+            #print(input_ticker)
+            recipes = importer.get_material_recipes(input_ticker, 
+                include_mining_from_planet_id='XG-326a',
+                #include_purchase_from='NC1'
+            )
             recipes = self.sort_recipes(recipes, priority_mode)
 
 
@@ -40,6 +23,7 @@ class RecipeTreeNode:
             need = self.recipe.inputs.resources[input_ticker] * self.multiplier
             
             for recipe in recipes:
+                #print(recipe)
                 provided = recipe.outputs.resources[input_ticker]
                 new_child_multiplier = need / provided
 
@@ -51,7 +35,31 @@ class RecipeTreeNode:
                     include_worker_upkeep=self.include_worker_upkeep
                 )
 
-            
+    def __mul__(self, multiplier):
+        if not isinstance(multiplier, int) and not isinstance(multiplier, float):
+            return NotImplemented
+
+        newself = self.copy()
+        newself.recipe = self.recipe.copy()
+        newself.recipe.duration *= multiplier
+        newself.recipe.inputs *= multiplier
+        newself.recipe.outputs *= multiplier
+        newself.recipe.multiplier = newself.recipe.multiplier or 1
+        newself.recipe.multiplier *= multiplier
+
+        return newself
+
+    def __rmul__(self, multiplier):
+        return self.__mul__(multiplier)
+
+    @property
+    def has_children(self):
+        return len(self.children) > 0
+
+    @property
+    def isterminal(self):
+        return not self.has_children
+
     def sort_recipes(self, recipes, priority_mode):
         if priority_mode == 'throughput':
             return sorted(recipes, key=lambda x: x.throughput, reverse=True)
