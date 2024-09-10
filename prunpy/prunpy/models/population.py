@@ -1,10 +1,16 @@
 from prunpy.utils.resource_list import ResourceList
-from prunpy.constants import POPULATION_UPKEEP_PER_100_PER_DAY
+from prunpy.constants import POPULATION_UPKEEP_PER_100_PER_DAY, DEMOGRAPHICS
 
 class Population:
     def __init__(self, population_dict):
         # TODO: Implement parsing of multiple rawdata types to clean up code elsewhere
         self.population = population_dict
+
+        # Add keys set to 0 for all in DEMOGRAPHICS 
+        for demographic in DEMOGRAPHICS:
+            if demographic not in self.population:
+                self.population[demographic] = 0
+        
 
     def get_upkeep(self):
         # Population is a dict of {demographic: amount}
