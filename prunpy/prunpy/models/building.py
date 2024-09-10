@@ -24,12 +24,13 @@ class Building:
                 break
 
         self.area = self.rawdata.get('AreaCost')
+
         self.population_demand = Population({
             'pioneers': self.rawdata.get('Pioneers'),
-            'colonists': self.rawdata.get('Colonists'),
+            'settlers': self.rawdata.get('Settlers'),
             'technicians': self.rawdata.get('Technicians'),
             'engineers': self.rawdata.get('Engineers'),
-            'researchers': self.rawdata.get('Researchers'),
+            'scientists': self.rawdata.get('Scientists'),
         })
         self.cogc_type = self.rawdata.get('Expertise')
 
@@ -105,3 +106,8 @@ class Building:
 
     def __str__(self):
         return f"{self.ticker}"
+
+
+class RealBuilding(Building):
+    def __init__(self, ticker, planet):
+        super().__init__(ticker, planet)
