@@ -2,34 +2,19 @@ from prunpy.models.building import Building
 from prunpy.models.population import Population
 from prunpy.models.planet import Planet
 from prunpy.utils.resource_list import ResourceList
-
+from prunpy.api import fio
 from prunpy.constants import DEMOGRAPHICS
+
+import json
 
 class Base:
     # Constructor. Either:
     # - a planet_natural_id and building counts
     # - a site object from FIO /sites/{username}
-    def __init__(self, planet_natural_id, building_counts, rawdata=None):
+    def __init__(self, planet_natural_id, building_counts):
 
-        if rawdata:
-            if planet_natural_id and planet_natural_id != rawdata.get('PlanetNaturalId'):
-                print("Base constructor called with conflicting planet_natural_id")
-            else:
-                self.planet = Planet(planet_id=self.rawdata.get('PlanetId'))
-                # Extract and count buildings by their ticker
-                self.building_counts = {}
-                for building in rawdata.get('Buildings', []):
-                    ticker = building.get('BuildingTicker')
-                    if ticker:
-                        if ticker in self.building_counts:
-                            self.building_counts[ticker] += 1
-                        else:
-                            self.building_counts[ticker] = 1
-                self.exists = True
-        else: # If there is no rawdata (and in most cases can't be)
-            self.planet = Planet(natural_id=planet_natural_id)
-            self.building_counts = building_counts
-            self.exists = False
+        self.planet = Planet(natural_id=planet_natural_id)
+        self.building_counts = building_counts
 
         self.building_counts['CM'] = 1 # Add core module
 
@@ -109,3 +94,42 @@ class Base:
     def __str__(self):
         buildings_str = ', '.join([f"{count} {name}" for name, count in self.building_counts.items()])
         return f"[Base ({self.planet.name}):\n  Buildings: {buildings_str}]"
+
+class RealBase(Base):
+    def __init__(self, planet_natural_id, username):
+
+        sites = fio.request('GET', f'/sites/{username}')
+
+        # Find site whose PlanetIdentifier matches planet_natural_id
+        for site in sites:
+            if site.get('PlanetIdentifier') == planet_natural_id:
+                self.rawsite = site
+                break
+        else:
+            raise ValueError(f"Could not find site owned by {username} on planet {planet_natural_id}")
+
+        self.building_counts = {}
+        for rawbuilding in self.rawsite.get('Buildings', []):
+            ticker = rawbuilding.get('BuildingTicker')
+            if ticker:
+                if ticker in self.building_counts:
+                    self.building_counts[ticker] += 1
+                else:
+                    self.building_counts[ticker] = 1
+
+        super().__init__(
+            planet_natural_id=planet_natural_id,
+            building_counts=self.building_counts
+        )
+        self.buildings = [] # Recreate with RealBuildings
+
+        #print(json.dumps(self.rawsite['Buildings'], indent=4))
+
+        base_production = fio.request('GET', f'/production/{username}/{planet_natural_id}')
+        #print(json.dumps(base_production, indent=4))
+        for rawbuilding in self.rawsite.get('Buildings', []):
+            ticker = rawbuilding.get('BuildingTicker')
+            if ticker:
+                self.buildings.append(Building(ticker, self.planet))
+
+        self.username = username

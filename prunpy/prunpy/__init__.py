@@ -7,7 +7,7 @@ from .game_importer import importer
 # Import key classes from the models package
 from .models.planet import Planet
 from .models.system import System
-from .models.base import Base
+from .models.base import Base, RealBase
 from .models.building import Building
 from .models.exchange import Exchange
 from .models.recipe import Recipe
@@ -24,7 +24,7 @@ from .utils.terminal_color_scale import terminal_color_scale
 # Define the public API of the package
 __all__ = [
     'fio', 'loader', 'importer',
-    'Planet', 'System', 'Base', 'Building',
+    'Planet', 'System', 'Base', 'RealBase', 'Building',
     'Exchange', 'Recipe', 'ResourceList', 'Population',
     'Container',
 
