@@ -33,7 +33,7 @@ def fetch_sites(name, planet):
     return name, planet.get_sites()
 
 def main():
-    planets = prun.importer.get_all_planets()
+    planets = prun.loader.get_all_planets()
 
     # First pass: filter to only profitable routes
     hits = []
@@ -50,7 +50,7 @@ def main():
     # Populate price-based properties
     for hit in hits:
         nearest_exchange_code, _ = hit['planet'].get_nearest_exchange()
-        exchange = prun.importer.get_exchange(nearest_exchange_code)
+        exchange = prun.loader.get_exchange(nearest_exchange_code)
 
         hit['exchange'] = exchange
 
@@ -157,7 +157,7 @@ def main():
 
         ticker = hit['resource']['ticker']
         price_range = [0,0]
-        for code, exchange_object in prun.importer.exchanges.items():
+        for code, exchange_object in prun.loader.exchanges.items():
             bid = exchange_object.get_good(ticker).sell_price
             if bid == 0: continue
             if bid < price_range[0]:

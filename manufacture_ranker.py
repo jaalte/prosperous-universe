@@ -13,11 +13,11 @@ def main():
         print("Usage: python manufacture_ranker.py <planet_name>")
         sys.exit(1)
 
-    planet = prun.importer.get_planet(planet_name)
+    planet = prun.loader.get_planet(planet_name)
     exchange_code, exchange_distance = planet.get_nearest_exchange()
 
-    exchange = prun.importer.get_exchange(exchange_code)
-    all_recipes = prun.importer.get_all_recipes()
+    exchange = prun.loader.get_exchange(exchange_code)
+    all_recipes = prun.loader.get_all_recipes()
 
     hits = []
     for recipe in all_recipes:

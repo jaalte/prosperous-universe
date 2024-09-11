@@ -2,7 +2,6 @@
 
 from .api import fio
 from .data_loader import loader
-from .game_importer import importer
 
 # Import key classes from the models package
 from .models.planet import Planet
@@ -23,7 +22,7 @@ from .utils.terminal_color_scale import terminal_color_scale
 
 # Define the public API of the package
 __all__ = [
-    'fio', 'loader', 'importer',
+    'fio', 'loader',
     'Planet', 'System', 'Base', 'RealBase', 'Building',
     'Exchange', 'Recipe', 'ResourceList', 'Population',
     'Container',

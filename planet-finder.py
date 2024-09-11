@@ -95,7 +95,7 @@ def main():
         filters = [arg for arg in sys.argv[2:] if arg.lower() in ['fertile', 'infertile', 'colonized', 'uncolonized']]
         required_resources = set(arg for arg in sys.argv[2:] if arg.lower() not in ['fertile', 'infertile', 'colonized', 'uncolonized'])
 
-        planets = prun.importer.get_all_planets()
+        planets = prun.loader.get_all_planets()
 
 
         for name, planet in planets.copy().items():

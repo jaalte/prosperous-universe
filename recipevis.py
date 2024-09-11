@@ -45,7 +45,7 @@ def display_recipe_tree(recipe, indent=0, parent=None):
     # Check the inputs of the current recipe
     for input_ticker in recipe.inputs.resources.keys():
         # Fetch the recipe for the input material
-        input_recipe = prun.importer.get_best_recipe(input_ticker, PRIORITY_MODE)
+        input_recipe = prun.loader.get_best_recipe(input_ticker, PRIORITY_MODE)
 
         if input_recipe:
             amount_needed = recipe.inputs.resources[input_ticker]
@@ -58,9 +58,9 @@ def display_recipe_tree(recipe, indent=0, parent=None):
 
 def main():
     target_ticker = get_input_ticker()
-    recipe = prun.importer.get_best_recipe(target_ticker, PRIORITY_MODE)
+    recipe = prun.loader.get_best_recipe(target_ticker, PRIORITY_MODE)
     
-    exchanges = prun.importer.get_all_exchanges()
+    exchanges = prun.loader.get_all_exchanges()
 
     if recipe:
         display_recipe_tree(recipe)

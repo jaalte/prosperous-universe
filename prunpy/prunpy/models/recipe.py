@@ -1,4 +1,5 @@
 from prunpy.utils.resource_list import ResourceList
+from prunpy.data_loader import loader
 
 class Recipe:
     def __init__(self, rawdata):
@@ -38,10 +39,9 @@ class Recipe:
         }
         return Recipe(new_rawdata)
 
-    def include_worker_upkeep(self):
+    def get_worker_upkeep_per_craft(self):
         building = loader.get_all_buildings()[self.building]
-        daily_upkeep = building.population_needs.get_upkeep()
-        self.inputs += daily_upkeep * (self.duration / 24)
+        daily_upkeep = building.population_demand.get_upkeep()
         return daily_upkeep * (self.duration / 24)
 
     def get_profit_per_craft(self, exchange='NC1'):

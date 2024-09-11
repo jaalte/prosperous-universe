@@ -21,7 +21,7 @@ ship_specs = {
 
 def find_trades(origin):
 
-    exchanges = prun.importer.get_all_exchanges()
+    exchanges = prun.loader.get_all_exchanges()
 
     oex = exchanges[origin]
     destinations = {}
@@ -195,7 +195,7 @@ def get_fuel_cost(jumps):
 def main():
     #origin = sys.argv[1] if len(sys.argv) > 1 else "NC1"
     
-    exchanges = prun.importer.get_all_exchanges()
+    exchanges = prun.loader.get_all_exchanges()
     for code, exchange in exchanges.items():
         find_trades(code)
 

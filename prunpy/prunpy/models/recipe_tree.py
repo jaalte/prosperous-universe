@@ -1,4 +1,4 @@
-from prunpy.game_importer import importer
+from prunpy.data_loader import loader
 
 class RecipeTreeNode:
     def __init__(self, recipe, depth=0, multiplier=1, priority_mode='profit_ratio', include_worker_upkeep=False):
@@ -12,7 +12,7 @@ class RecipeTreeNode:
 
         for input_ticker in self.recipe.inputs.tickers:
             #print(input_ticker)
-            recipes = importer.get_material_recipes(input_ticker, 
+            recipes = loader.get_material_recipes(input_ticker, 
                 include_mining_from_planet_id='XG-326a',
                 #include_purchase_from='NC1'
             )

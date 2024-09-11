@@ -80,9 +80,9 @@ class ResourceList:
         return total
 
     def get_total_value(self, exchange="NC1", trade_type="buy"):
-        from prunpy.game_importer import importer 
+        from prunpy.data_loader import loader 
         if isinstance(exchange, str):
-            exchange = importer.exchanges[exchange]
+            exchange = loader.exchanges[exchange]
 
         if not isinstance(trade_type, str):
             return NotImplemented

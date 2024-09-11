@@ -4,7 +4,7 @@ USERNAME = 'fishmodem'
 PLANET = 'Montem'
 
 def main():
-    planet = prun.importer.get_planet(PLANET)
+    planet = prun.loader.get_planet(PLANET)
     base = prun.RealBase(planet.natural_id, USERNAME)
 
     hb2_mats = prun.Building('HB2', planet).construction_materials

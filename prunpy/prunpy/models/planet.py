@@ -266,9 +266,7 @@ class Planet:
         return text
     
     def get_population_string(self):
-        from prunpy.game_importer import importer
-
-        max_pop = importer.get_max_population()
+        max_pop = loader.get_max_population()
         population = self.get_population_count()
         population_string = ''
         for demographic in DEMOGRAPHICS:
