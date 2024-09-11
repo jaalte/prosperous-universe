@@ -219,6 +219,11 @@ class ResourceList:
     def __len__(self):
         return len(self.resources)
 
+    def __eq__(self, other):
+        if not isinstance(other, ResourceList):
+            return NotImplemented
+        return self.resources == other.resources
+
     def json(self):
         return json.dumps(self.resources, indent=2)
 
