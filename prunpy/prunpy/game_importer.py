@@ -52,8 +52,28 @@ class GameImporter:
 
         return self._set_cache(cache_key, planets)
 
-    def get_planet(self, name):
-        return self.get_all_planets().get(name)
+    def get_planet(self, name_string):
+        planet_names = list(self.get_all_planets('name').keys())
+        planet_ids   = list(self.get_all_planets('natural_id').keys())
+
+        # Create lowercase mappings for case-insensitive lookup
+        lc_names = {name.lower(): name for name in planet_names}
+        lc_ids   = {planet_id.lower(): planet_id for planet_id in planet_ids}
+
+        # Lowercase the input for case-insensitive comparison
+        lc_name_string = name_string.lower()
+
+        if lc_name_string in lc_names:
+            original_name = lc_names[lc_name_string]
+            return self.get_all_planets('name')[original_name]
+        elif lc_name_string in lc_ids:
+            original_id = lc_ids[lc_name_string]
+            return self.get_all_planets('natural_id')[original_id]
+        else:
+            # Raise error
+            raise Exception(f"Could not find planet '{name_string}'")
+
+        
 
     def get_all_systems(self):
         cache_key = 'systems'
