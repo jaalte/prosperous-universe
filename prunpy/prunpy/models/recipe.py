@@ -3,10 +3,13 @@ from prunpy.utils.resource_list import ResourceList
 class Recipe:
     def __init__(self, rawdata):
         if isinstance(rawdata, Recipe):
-            pass # Do nothing, it will init like a dict
+            self.building = rawdata.building.copy()
+            self.duration = rawdata.duration.copy()
+            self.inputs = rawdata.inputs.copy()
+            self.outputs = rawdata.outputs.copy()
 
         # Importing from buildings.json format
-        if 'BuildingRecipeId' in rawdata:
+        elif 'BuildingRecipeId' in rawdata:
             self.building = rawdata.get('StandardRecipeName')[0:3].rstrip(':')
             self.duration = rawdata.get('DurationMs')/1000/60/60
 
@@ -71,5 +74,8 @@ class Recipe:
 
         return self.outputs.resources[output_ticker] / self.duration
 
+    def copy(self):
+        return Recipe(self)
+
     def __str__(self):
-        return f"{self.outputs} <= {self.inputs} in {self.duration}h @{self.building:<3}"
+        return f"{self.outputs} <= {self.inputs} in {self.duration:.1f}h @{self.building:<3}"

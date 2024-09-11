@@ -222,6 +222,9 @@ class ResourceList:
     def json(self):
         return json.dumps(self.resources, indent=2)
 
+    def copy(self):
+    return ResourceList(self.resources.copy())
+
     def __str__(self):
         def format_float(value, max_decimals=2):
             if value == round(value, 0):  # No decimals needed
