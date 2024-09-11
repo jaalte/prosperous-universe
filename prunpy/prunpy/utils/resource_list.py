@@ -223,7 +223,7 @@ class ResourceList:
         return json.dumps(self.resources, indent=2)
 
     def copy(self):
-    return ResourceList(self.resources.copy())
+        return ResourceList(self.resources.copy())
 
     def __str__(self):
         def format_float(value, max_decimals=2):
