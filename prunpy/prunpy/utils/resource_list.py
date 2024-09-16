@@ -1,4 +1,5 @@
 import math
+import re
 
 class ResourceList:
     def __init__(self, rawdata={}):

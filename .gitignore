@@ -3,6 +3,7 @@
 /old/
 /raw_api_files/
 **/__pycache__/
+/.vscode/
 
 # Ignore the API key file
 apikey.txt
