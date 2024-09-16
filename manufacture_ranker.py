@@ -27,10 +27,12 @@ def main():
         bonus = building.get_cogc_bonus(planet.cogc)
         # Optionally add expert bonus later
         recipe.duration /= bonus
-        recipe.inputs += recipe.get_worker_upkeep_per_craft()
+        #recipe.inputs += recipe.get_worker_upkeep_per_craft()
 
         max_count = base_area // building.area
         if max_count <= 0: continue
+
+        upkeep_cost = recipe.get_worker_upkeep_per_craft().get_total_value(exchange.code, 'buy')
 
         daily_profit_per_building = recipe.get_profit_per_day(exchange.code)
         profit_ratio = recipe.get_profit_ratio(exchange.code)
@@ -41,8 +43,15 @@ def main():
         roi = building_cost / daily_profit_per_building
         if roi <= 0: continue
 
-        recipe.inputs -= recipe.get_worker_upkeep_per_craft()*2
-        recipe.inputs = recipe.inputs.prune_negatives()
+        #recipe.inputs -= recipe.get_worker_upkeep_per_craft()*2
+        #recipe.inputs = recipe.inputs.prune_negatives()
+
+        inputs = []
+        for ticker, count in recipe.inputs.resources.items():
+            supply = exchange.get_good(ticker).supply
+            daily_need = recipe.inputs.resources[ticker] * 24 / recipe.duration
+            days_available = supply / daily_need
+            if days_available < MIN_DAYS_SUPPLY_AVAILABLE: remove = True
 
         hit = {
             'recipe': recipe,
@@ -62,8 +71,10 @@ def main():
     # Further filtering
     filtered_hits = []
     for hit in hits:
+        #print(hit['recipe'])
         remove = False
-        for ingredient in hit['recipe'].inputs.resources:
+        for ingredient, count in hit['recipe'].inputs.resources.items():
+            #print(f"  {ingredient}: {count}")
             supply = exchange.get_good(ingredient).supply
             daily_need = hit['recipe'].inputs.resources[ingredient] * 24 / hit['recipe'].duration
             days_available = supply / daily_need
@@ -79,6 +90,8 @@ def main():
         filtered_hits.append(hit)
 
     hits = filtered_hits
+
+    #return
 
     for hit in hits:
         print(
