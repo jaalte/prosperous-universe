@@ -6,14 +6,15 @@ class Container:
         self.volume_capacity = volume_capacity
 
     def get_max_capacity_for(self, resource_ticker):
-        material = loader.materials_by_ticker[resource_ticker]
+        from prunpy.models.material import Material
+        material = loader.get_material(resource_ticker)
         #print(json.dumps(material, indent=4))
-        max_by_volume = int(self.volume_capacity / material['Volume'])
-        max_by_mass = int(self.mass_capacity / material['Weight'])
+        max_by_volume = int(self.volume_capacity / material.volume)
+        max_by_mass = int(self.mass_capacity / material.weight)
 
         return min(max_by_volume, max_by_mass)
 
-# Won't work until API is better reintegrated
+# Won't work until API is better reintegrated with username support
 class Ship:
     def __init__(self, id):
         ships = fio.request("GET", f"/ship/ships/{USERNAME}", cache=60*60*24)

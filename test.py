@@ -48,13 +48,18 @@ def main():
     
     print(minable_resources)
 
-    for resource in minable_resources:
-        
+    #storage = prun.Storage(500,500)
+
+    #print(prun.loader.materials_by_ticker['MCG'])
+
+    #for resource in minable_resources:
+
+    value = 0.23999999463558197
+    print(round(value, 2))
 
 
-
-
-
+    for ticker, material in prun.loader.materials.items():
+        print(f"{ticker}: {material.name}, Weight: {material.weight}, Volume: {material.volume}, Category: {material.category_name}")
 
 
 if __name__ == "__main__":

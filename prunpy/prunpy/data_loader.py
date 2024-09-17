@@ -60,47 +60,60 @@ class DataLoader:
         return self._set_cache(cache_key, systemstars_lookup)
 
     @property
-    def allmaterials(self):
-        cache_key = 'allmaterials'
+    def materials_raw(self):
+        cache_key = 'materials_raw'
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
-        allmaterials = fio.request("GET", "/material/allmaterials")
+        materials_raw = fio.request("GET", "/material/allmaterials")
         # Remove the entry with ticker "CMK", as it's not craftable
-        for i in range(len(allmaterials)):
-            if allmaterials[i]['Ticker'] == 'CMK':
-                del allmaterials[i]
+        # Note: This will break things when reading ships of new players
+        for i in range(len(materials_raw)):
+            if materials_raw[i]['Ticker'] == 'CMK':
+                del materials_raw[i]
                 break
-        return self._set_cache(cache_key, allmaterials)
+        return self._set_cache(cache_key, materials_raw)
 
     @property
     def materials_by_ticker(self):
+        from prunpy.models.material import Material
         cache_key = 'materials_by_ticker'
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
-        materials_by_ticker = {material['Ticker']: material for material in self.allmaterials}
+        materials_by_ticker = {material['Ticker']: Material(material) for material in self.materials_raw}
         return self._set_cache(cache_key, materials_by_ticker)
+
+    @property
+    def materials(self):
+        return self.materials_by_ticker
+
+    @property
+    def materials_by_hash(self):
+        from prunpy.models.material import Material
+        cache_key = 'material_by_hash'
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        materials_by_hash = {material['MaterialId']: Material(material) for material in self.materials_raw}
+        return self._set_cache(cache_key, materials_by_hash)
 
     @property
     def material_ticker_list(self):
         cache_key = 'material_ticker_list'
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
-        return self._set_cache(cache_key, self.materials_by_ticker.keys())
+        return self._set_cache(cache_key, sorted(self.materials_by_ticker.keys()))
 
     def get_material(self, ticker):
         cache_key = 'get_material_' + str(ticker)
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
+        if ticker not in self.materials_by_ticker:
+            raise ValueError(f"Material with ticker {ticker} not found")
+
         material = self.materials_by_ticker[ticker]
         return self._set_cache(cache_key, material)
 
-    @property
-    def materials_by_hash(self):
-        cache_key = 'material_by_hash'
-        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
-
-        materials_by_hash = {material['MaterialId']: material for material in self.allmaterials}
-        return self._set_cache(cache_key, materials_by_hash)
+    def material(self, ticker):
+        return self.get_material(ticker)
 
     @property
     def allbuildings_raw(self):

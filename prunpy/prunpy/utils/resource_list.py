@@ -43,7 +43,7 @@ class ResourceList:
                 self.resources[ticker] = amount
         elif isinstance(rawdata, str):
             from prunpy.data_loader import loader
-            tickers = sorted(loader.materials_by_ticker.keys())
+            tickers = loader.material_ticker_list
 
             pattern = r'\b(\d+)\s*x?\s*({})\b'.format('|'.join(re.escape(ticker) for ticker in tickers))
             matches = re.findall(pattern, rawdata)
@@ -64,20 +64,20 @@ class ResourceList:
 
     def get_material_properties(self):
         from prunpy.data_loader import loader
-        return {ticker: loader.materials_by_ticker[ticker] for ticker in self.resources}
+        return {ticker: loader.get_material(ticker) for ticker in self.resources}
 
     def get_total_weight(self):
         from prunpy.data_loader import loader
         total = 0
         for ticker, amount in self.resources.items():
-            total += loader.materials_by_ticker[ticker]['Weight'] * amount
+            total += loader.get_material(ticker).weight * amount
         return total
 
     def get_total_volume(self):
         from prunpy.data_loader import loader
         total = 0
         for ticker, amount in self.resources.items():
-            total += loader.materials_by_ticker[ticker]['Volume'] * amount
+            total += loader.get_material(ticker).volume * amount
         return total
 
     def get_total_value(self, exchange="NC1", trade_type="buy"):

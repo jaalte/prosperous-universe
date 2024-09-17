@@ -46,13 +46,13 @@ class Planet:
         # Process the resources in rawdata
         for resource in self.rawdata.get('Resources', []):
             material_hash = resource.get('MaterialId')
-            material_data = loader.materials_by_hash[material_hash]
+            material = loader.materials_by_hash[material_hash]
 
-            if not material_data:
+            if not material:
                 print(f"Warning: Material {material_hash} not found in material lookup")
                 continue
 
-            ticker = material_data['Ticker']
+            ticker = material.ticker
             resource_type = resource.get('ResourceType')
             factor = resource.get('Factor', 0)
 
@@ -66,11 +66,11 @@ class Planet:
 
             # Deprecated, replaced with Planet.mining_recipes
             self.resources[ticker] = {
-                'name': material_data['Name'],
+                'name': material.name,
                 'ticker': ticker,
-                'category': material_data['CategoryName'],
-                'weight': material_data['Weight'],
-                'volume': material_data['Volume'],
+                'category': material.category_name,
+                'weight': material.weight,
+                'volume': material.volume,
                 'type': resource_type,
                 'factor': factor, # Not in Recipe (Shouldn't be but should be accessible somehow)
                 'extractor_building': extractor_building,

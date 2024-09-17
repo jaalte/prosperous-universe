@@ -72,7 +72,7 @@ def find_trades(origin):
     for code, dex in destinations.items():
         trades = []
         for route in dex.profitable_routes:
-            material = prun.loader.materials_by_ticker[route['material']]
+            material = prun.loader.get_material(route['material'])
 
             buyable_orders = route['origin_good'].sell_orders.copy()
             sellable_orders = route['destination_good'].buy_orders.copy()
@@ -129,7 +129,7 @@ def find_trades(origin):
         approved_trades = []
 
         for trade in trades:
-            material = prun.loader.materials_by_ticker[trade['buy']['material']]
+            material = prun.loader.get_material(trade['buy']['material'])
 
             max_units = get_max_space_remaining(trade, material, remaining_weight, remaining_volume, remaining_credits)
 
@@ -137,8 +137,8 @@ def find_trades(origin):
                 # Trade is too large, only take what can fit
                 trade['amount'] = max_units
             
-            remaining_volume -= trade['amount'] * material['Volume']
-            remaining_weight -= trade['amount'] * material['Weight']
+            remaining_volume -= trade['amount'] * material.volume
+            remaining_weight -= trade['amount'] * material.weight
             remaining_credits -= trade['amount'] * trade['buy']['count']
             
             if trade['amount'] > 0:
@@ -181,8 +181,20 @@ def find_trades(origin):
         
 
 def get_max_space_remaining(trade, material, remaining_weight, remaining_volume, remaining_credits):
-    max_by_volume = int(remaining_volume / material['Volume'])
-    max_by_weight = int(remaining_weight / material['Weight'])
+    from prunpy.models.material import Material
+    if not isinstance(material, prun.Material):
+        material = prun.loader.get_material(material)
+    
+    if material.volume == 0:
+        max_by_volume = float('inf')
+    else:
+        max_by_volume = int(remaining_volume / material.volume)
+
+    if material.weight == 0:
+        max_by_weight = float('inf')
+    else:
+        max_by_weight = int(remaining_weight / material.weight)
+
     max_by_cost   = int(remaining_credits / trade['buy']['count'])
     max_units = min(max_by_volume, max_by_weight, max_by_cost)
     return max_units
