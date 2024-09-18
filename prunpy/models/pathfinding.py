@@ -3,6 +3,8 @@
 import csv
 import heapq
 import os
+from prunpy.api import fio
+import json
 
 CACHE_FILE = './cache/jump_distance.csv'
 
@@ -31,6 +33,11 @@ def read_system_links(filename):
     with open(filename, 'r') as file:
         reader = csv.reader(file)
         next(reader)  # Skip the header
+
+        links = fio.request('GET', '/csv/systemlinks', response_format='csv')
+
+        print(json.dump(links, indent=2))
+        
         for row in reader:
             left, right = row
             if left not in graph:

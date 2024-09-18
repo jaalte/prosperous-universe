@@ -28,9 +28,9 @@ class Material:
         import re
         s = self.rawname
         # Insert spaces before uppercase letters
-        s = re.sub('([A-Z])', r' \1', s)
+        s = re.sub(r'([A-Z])', r' \1', s)
         # Insert spaces before sequences of digits
-        s = re.sub('(\d+)', r' \1', s)
+        s = re.sub(r'(\d+)', r' \1', s)
         # Remove any leading/trailing spaces
         s = s.strip()
         # Split into words and capitalize each

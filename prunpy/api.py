@@ -14,13 +14,15 @@ MAX_RETRIES = 3
 class FIOAPI:
     def __init__(self, api_key_file='./apikey.txt'):
         self.api_key = self._read_api_key(api_key_file)
-        if not self.api_key:
-            raise ValueError("API key is empty or not read correctly.")
+        #if not self.api_key:
+        #    raise ValueError("API key is empty or not read correctly.")
         self.base_url = "https://rest.fnar.net"
         self.headers = {
             "accept": "application/json",
-            "Authorization": self.api_key.strip()  # Just the API key, no Bearer prefix
         }
+        if self.api_key:
+            self.headers['Authorization'] = self.api_key.strip() # Just the API key, no Bearer prefix
+
         self.cache_dir = './cache'
         os.makedirs(self.cache_dir, exist_ok=True)
 

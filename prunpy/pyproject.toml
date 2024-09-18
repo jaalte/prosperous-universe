@@ -4,17 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prunpy"
-version = "0.1.1"
+version = "0.1.2"
 description = "A package for modeling systems within the game Prosperous Universe, and providing an interface for the FIO API."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
 authors = [
     { name = "fishmodem", email = "fishmodem@proton.me" }
 ]
-license = { text = "MIT" }
+license = { text = "GPLv3" }
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GPLv3 License",
     "Operating System :: OS Independent"
 ]
 dependencies = [
@@ -22,8 +22,11 @@ dependencies = [
     "pandas"
 ]
 
+[tool.setuptools]
+packages = { find = {} }
+
 [project.urls]
-"Homepage" = "https://github.com/fishmodem/prun"
+#"Homepage" = "https://github.com/fishmodem/prunpy"
 
 [project.scripts]
 # This is where your command-line scripts go
