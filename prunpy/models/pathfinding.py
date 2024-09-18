@@ -30,22 +30,16 @@ def save_to_cache(origin, destination, distance):
 
 def read_system_links(filename):
     graph = {}
-    with open(filename, 'r') as file:
-        reader = csv.reader(file)
-        next(reader)  # Skip the header
-
-        links = fio.request('GET', '/csv/systemlinks', response_format='csv')
-
-        print(json.dump(links, indent=2))
-        
-        for row in reader:
-            left, right = row
-            if left not in graph:
-                graph[left] = []
-            if right not in graph:
-                graph[right] = []
-            graph[left].append(right)
-            graph[right].append(left)
+    links = fio.request('GET', '/csv/systemlinks', response_format='csv', cache=True)
+    for pair in links:
+        left = pair['Left']
+        right = pair['Right']
+        if left not in graph:
+            graph[left] = []
+        if right not in graph:
+            graph[right] = []
+        graph[left].append(right)
+        graph[right].append(left)
     return graph
 
 def heuristic(node, goal):

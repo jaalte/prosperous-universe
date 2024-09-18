@@ -4,10 +4,11 @@
 /raw_api_files/
 **/__pycache__/
 /.vscode/
-/prunpy/build/
 
 # Ignore the API key file
 apikey.txt
 
 # Ignore python module-specific folders
 /prunpy/prunpy.egg-info/
+/build/
+/prunpy/build/
