@@ -55,6 +55,10 @@ def main():
     #needed = prun.ResourceList({rate['ticker']: rate['needed'] for rate in parsed_data.values()})
     inv = prun.ResourceList({rate['ticker']: rate['inventory'] for rate in parsed_data.values()})
 
+    # Subtract 1 from each resource since estimate doesn't account for time until consumption
+    # Also helps lessen impact of travel times
+    inv -= prun.ResourceList({rate['ticker']: 1 for rate in parsed_data.values()})
+
     # target_days is arg1
     target_days = float(sys.argv[1]) if len(sys.argv) > 1 else 7.0
 
