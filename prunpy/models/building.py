@@ -104,6 +104,32 @@ class Building:
 
         return 1.0
 
+    def filter_recipes(self, output_tickers=None, input_tickers=None):
+        if isinstance(output_tickers, str):
+            output_tickers = [output_tickers]
+        if isinstance(input_tickers, str):
+            input_tickers = [input_tickers]
+        if not output_tickers: output_tickers = []
+        if not input_tickers: input_tickers = []
+        
+        matched_recipes = []
+        # Filter to recipes whose outputs contain output_tickers wth resourcelist.contains, which accepts a single ticker
+
+        for recipe in self.recipes:
+            keep = True
+            for ticker in output_tickers:
+                if not recipe.outputs.contains(ticker):
+                    keep = False
+                    continue
+            for ticker in input_tickers:
+                if not recipe.inputs.contains(ticker):
+                    keep = False
+                    continue
+            if keep:
+                matched_recipes.append(recipe)
+
+        return matched_recipes
+
     def __str__(self):
         return f"{self.ticker}"
 
