@@ -39,6 +39,27 @@ class Recipe:
         }
         return Recipe(new_rawdata)
 
+    @property
+    def daily(self):
+        return self.convert_to_daily()
+
+    @property
+    def daily_burn(self):
+        return self.convert_to_daily().inputs
+
+    @property
+    def delta(self):
+        return self.outputs - self.inputs
+
+    def apply_multiplier(self, multiplier):
+        new_rawdata = {
+            'building': self.building,
+            'duration': self.duration / multiplier,
+            'inputs': self.inputs,
+            'outputs': self.outputs,
+        }
+        return Recipe(new_rawdata)
+
     def get_worker_upkeep_per_craft(self):
         building = loader.get_all_buildings()[self.building]
         daily_upkeep = building.population_demand.get_upkeep()

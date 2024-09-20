@@ -103,12 +103,12 @@ class ResourceList:
     def contains(self, ticker):
         return ticker in self.resources.keys() and self.resources[ticker] > 0
 
-    def remove(self, ticker):
+    def remove(self, ticker, quiet=False):
         if ticker in self.resources:
-            amount = self.resources[ticker]
-            del self.resources[ticker]
-            return amount
-        else:
+            new_resources = self.resources.copy()
+            del new_resources[ticker]
+            return ResourceList(new_resources)
+        elif not quiet:
             raise KeyError(f"Resource '{ticker}' does not exist in the ResourceList.")
 
     @property
