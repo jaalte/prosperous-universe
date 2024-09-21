@@ -42,6 +42,8 @@ POPULATION_UPKEEP_PER_100_PER_DAY = {
     'scientists':  ResourceList({'MEA': 7, 'DW': 10,  'MED': 0.5, 'LC':  0.2, 'WS':  0.1, 'NS':  0.1, 'WIN': 1  }),
 }
 
+COGCS = ['FUEL_REFINING', 'FOOD_INDUSTRIES', 'METALLURGY', 'AGRICULTURE', 'CHEMISTRY', 'RESOURCE_EXTRACTION', 'ELECTRONICS', 'CONSTRUCTION', 'MANUFACTURING', 'PIONEERS', 'SETTLERS', 'TECHNICIANS', 'ENGINEERS', 'SCIENTISTS']
+
 # Tacotopia, no resources, no harsh environment, no fertility, has surface (MCG)
 #   also has population and resource_extraction cogc lol
 DEFAULT_BUILDING_PLANET_NATURAL_ID = "CB-045b"
