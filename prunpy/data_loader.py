@@ -163,20 +163,23 @@ class DataLoader:
 
     def get_all_planets(self, key='name'):
         from prunpy.models.planet import Planet
-        cache_key = 'planets'
+        cache_key = f"all_planets_by_{key}"
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
         planets = {}
         total = len(loader.allplanets)
         for i, planet in enumerate(loader.allplanets):
-            planet_class = Planet(natural_id=planet.get('PlanetNaturalId'))
-            planet_key_value = getattr(planet_class, key, None)
-            if planet_key_value is not None:
-                planets[planet_key_value] = planet_class
+            planet_instance = Planet(natural_id=planet.get('PlanetNaturalId'))
+
+            if key in ['name', '', 'PlanetName']:
+                planets[planet_instance.name] = planet_instance
+            elif key in ['natural_id', 'id', 'PlanetNaturalId']:
+                planets[planet_instance.natural_id] = planet_instance
             else:
-                print(f"Warning: Planet {planet_class.name} does not have the attribute '{key}'")
-            print(f"\rLoading all planets: {i+1}/{total}", end="")
-        print("\n")
+                raise ValueError(f"Invalid key: {key}")
+
+            #print(f"\rLoading all planets: {i+1}/{total}", end="")
+        #print("\n")
 
         factor_ranges = {}
         # Determine range of factors for all resources
@@ -196,9 +199,27 @@ class DataLoader:
 
         return self._set_cache(cache_key, planets)
 
+    def get_all_planet_names(self):
+        cache_key = 'get_all_planet_names'
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        names = list(self.get_all_planets('name').keys())
+
+        return self._set_cache(cache_key, names)
+
+    def get_all_planet_ids(self):
+        cache_key = 'get_all_planet_ids'
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        ids = []
+        for planet in loader.allplanets:
+            ids.append(planet['PlanetNaturalId'])
+
+        return self._set_cache(cache_key, ids)
+
     def get_planet(self, name_string):
-        planet_names = list(self.get_all_planets('name').keys())
-        planet_ids   = list(self.get_all_planets('natural_id').keys())
+        planet_names = self.get_all_planet_names()
+        planet_ids   = self.get_all_planet_ids()
 
         # Create lowercase mappings for case-insensitive lookup
         lc_names = {name.lower(): name for name in planet_names}
@@ -209,10 +230,10 @@ class DataLoader:
 
         if lc_name_string in lc_names:
             original_name = lc_names[lc_name_string]
-            return self.get_all_planets('name')[original_name]
+            return self.get_all_planets(key='name')[original_name]
         elif lc_name_string in lc_ids:
             original_id = lc_ids[lc_name_string]
-            return self.get_all_planets('natural_id')[original_id]
+            return self.get_all_planets(key='natural_id')[original_id]
         else:
             # Raise error
             raise Exception(f"Could not find planet '{name_string}'")
