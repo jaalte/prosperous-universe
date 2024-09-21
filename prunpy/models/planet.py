@@ -3,7 +3,7 @@ from prunpy.data_loader import loader
 from prunpy.models.population import Population
 from prunpy.models.recipe import Recipe
 from prunpy.utils.resource_list import ResourceList
-from prunpy.constants import EXTRACTORS, PLANET_THRESHOLDS, DEMOGRAPHICS
+from prunpy.constants import EXTRACTORS, PLANET_THRESHOLDS, DEMOGRAPHICS, DEFAULT_BUILDING_PLANET_NATURAL_ID
 from prunpy.models.pathfinding import jump_distance
 from prunpy.utils.terminal_color_scale import terminal_color_scale as color
 
@@ -26,7 +26,7 @@ class Planet:
 
         # Set current COGC program
         self.cogc = ""
-        if len(self.rawdata.get('COGCPrograms', [])) > 0 and self.rawdata.get("COGCProgramStatus") == "ACTIVE":
+        if len(self.rawdata.get('COGCPrograms', [])) > 0:
             current_time_ms = int(time.time() * 1000)
             for period in self.rawdata.get("COGCPrograms", []):
                 if period["StartEpochMs"] <= current_time_ms <= period["EndEpochMs"]:
@@ -276,6 +276,21 @@ class Planet:
             population_string += color(pop,3,top,'', logarithmic=True, value_override=letter)
         return population_string
 
+    def get_resource_string(self, separator=', '):
+        string = ""
+        for ticker, resource in self.resources.items():
+            factor_range = resource['factor_range']
+            string += f"{color(resource['factor'], factor_range[0], factor_range[1], '', value_override=resource['ticker'])} "
+        return string
+
+    def get_building_cost_factor(self):
+        area = 25
+        mats_here = self.get_building_environment_cost(area)
+        mats_ideal = loader.get_planet(DEFAULT_BUILDING_PLANET_NATURAL_ID).get_building_environment_cost(area)
+
+        exchange = self.get_nearest_exchange()[0]
+
+        return mats_here.get_total_value(exchange) / mats_ideal.get_total_value(exchange)
 
 
     # Make Planet printable
