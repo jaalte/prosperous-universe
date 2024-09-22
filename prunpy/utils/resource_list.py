@@ -60,7 +60,7 @@ class ResourceList:
         else:
             raise TypeError("Unsupported data type for ResourceList initialization")
 
-        self.resources = dict(sorted(self.resources.items()))
+        #self.resources = dict(sorted(self.resources.items()))
 
     def get_material_properties(self):
         from prunpy.data_loader import loader
