@@ -11,6 +11,7 @@ from .models.building import Building
 from .models.exchange import Exchange
 from .models.recipe import Recipe
 from .models.population import Population
+from .models.company import Company
 from .models.material import Material
 from .models.logistics import Container
 from .models import pathfinding
@@ -26,7 +27,7 @@ __all__ = [
     'fio', 'loader',
     'Planet', 'System', 'Base', 'RealBase', 'Building',
     'Exchange', 'Recipe', 'ResourceList', 'Population',
-    'Container', 'Material'
+    'Container', 'Material', 'Company',
 
-    'terminal_color_scale', 'pathfinding'
+    'terminal_color_scale', 'pathfinding',
 ]
