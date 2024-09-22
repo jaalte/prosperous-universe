@@ -1,5 +1,6 @@
 from prunpy.utils.resource_list import ResourceList
-from prunpy.constants import POPULATION_UPKEEP_PER_100_PER_DAY, DEMOGRAPHICS
+from prunpy.constants import DEMOGRAPHICS
+from prunpy.data_loader import loader
 
 class Population:
     def __init__(self, population_dict):
@@ -16,7 +17,7 @@ class Population:
         # Population is a dict of {demographic: amount}
         needs = ResourceList()
         for demographic in self.population:
-            needs += self.population[demographic]/100 * POPULATION_UPKEEP_PER_100_PER_DAY[demographic]
+            needs += self.population[demographic]/100 * loader.get_population_upkeep()[demographic]
         return needs
 
     @property

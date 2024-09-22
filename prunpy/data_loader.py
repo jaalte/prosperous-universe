@@ -317,6 +317,16 @@ class DataLoader:
 
         return self._set_cache(cache_key, max_pop)
 
+    def get_population_upkeep(self):
+        cache_key = 'population_upkeep'
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        from prunpy.utils.resource_list import ResourceList
+        rawdata = fio.request("GET", "/global/workforceneeds", cache=60*60*24)
+        needs = {entry['WorkforceType'].lower(): ResourceList(entry['Needs']) for entry in rawdata}
+        
+        return self._set_cache(cache_key, needs)
+
     def get_all_recipes(self):
         cache_key = 'all_recipes'
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
