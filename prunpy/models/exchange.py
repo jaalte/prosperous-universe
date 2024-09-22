@@ -1,5 +1,6 @@
 from prunpy.data_loader import loader
 from prunpy.constants import BOGUS_ORDER_THRESHOLD
+import json
 
 class Exchange:
     def __init__(self, rawdata, exchange_goods):
@@ -51,7 +52,13 @@ class ExchangeGood:
     def _init_buy_orders(self):
         raw_orders = self.rawdata['BuyingOrders'] # AKA Bid
         # Remap ItemCount to count and ItemCost to cost
-        self.buy_orders = [{'cost': order['ItemCost'], 'count': order['ItemCount']} for order in raw_orders]
+        self.buy_orders = []
+        for raw_order in raw_orders:
+            order = {}
+            order['cost'] = raw_order['ItemCost']
+            order['count'] = raw_order['ItemCount']
+            order['company_name'] = raw_order['CompanyName']
+            self.buy_orders.append(order)
         self.buy_orders = sorted(self.buy_orders, key=lambda k: k['cost'], reverse=True)
 
         # Fixes values for nation orders with no count limit
@@ -72,7 +79,13 @@ class ExchangeGood:
     def _init_sell_orders(self):
         raw_orders = self.rawdata['SellingOrders']  # AKA Ask
         # Remap ItemCount to count and ItemCost to cost
-        self.sell_orders = [{'cost': order['ItemCost'], 'count': order['ItemCount']} for order in raw_orders]
+        self.sell_orders = []
+        for raw_order in raw_orders:
+            order = {}
+            order['cost'] = raw_order['ItemCost']
+            order['count'] = raw_order['ItemCount']
+            order['company_name'] = raw_order['CompanyName']
+            self.sell_orders.append(order)
         self.sell_orders = sorted(self.sell_orders, key=lambda k: k['cost'])
 
         # Fixes values for nation orders with no count limit
