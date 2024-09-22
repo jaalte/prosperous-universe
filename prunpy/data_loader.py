@@ -323,8 +323,8 @@ class DataLoader:
 
         from prunpy.utils.resource_list import ResourceList
         rawdata = fio.request("GET", "/global/workforceneeds", cache=60*60*24)
-        needs = {entry['WorkforceType'].lower(): ResourceList(entry['Needs']) for entry in rawdata}
-        
+        needs = {entry['WorkforceType'].lower()+'s': ResourceList(entry['Needs']) for entry in rawdata}
+
         return self._set_cache(cache_key, needs)
 
     def get_all_recipes(self):
