@@ -5,7 +5,10 @@ from prunpy.data_loader import loader
 class Population:
     def __init__(self, population_dict):
         # TODO: Implement parsing of multiple rawdata types to clean up code elsewhere
-        self.population = population_dict
+        if isinstance(population_dict, Population):
+            self.population = population_dict.population
+        elif isinstance(population_dict, dict):
+            self.population = population_dict
 
         # Add keys set to 0 for all in DEMOGRAPHICS 
         for demographic in DEMOGRAPHICS:
@@ -45,8 +48,8 @@ class Population:
             raise KeyError(f"Population.get called for unknown demographic: {demographic}")
         return self.population[demographic]
 
-    def __getitem__(self, demographic):
-        return self.population.get(demographic.lower(), 0)
+    #def __getitem__(self, demographic):
+    #    return self.population.get(demographic.lower(), 0)
 
     def __add__(self, other):
         if not isinstance(other, Population):
