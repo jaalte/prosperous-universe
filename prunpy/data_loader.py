@@ -124,6 +124,13 @@ class DataLoader:
         return self._set_cache(cache_key, allbuildings_raw)
 
     @property
+    def all_building_tickers(self):
+        cache_key = 'all_building_tickers'
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        return self._set_cache(cache_key, [building['Ticker'] for building in self.allbuildings_raw])
+
+    @property
     def rawexchangedata(self):
         cache_key = 'rawexchangedata'
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
@@ -139,6 +146,13 @@ class DataLoader:
         rawexchanges = fio.request("GET", "/exchange/station", cache='forever')
         return self._set_cache(cache_key, rawexchanges)
 
+    def get_exchange_price_history(self, exchange_ticker, material_ticker):
+        cache_key = f'get_exchange_price_history_{exchange_ticker}.{material_ticker}'
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        history = fio.request("GET", f"/exchange/cxpc/{material_ticker}.{exchange_ticker}", cache=60*60*24)
+
+        return self._set_cache(cache_key, history)
 
     @property
     def all_population_reports(self):

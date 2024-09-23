@@ -9,6 +9,7 @@ from .models.system import System
 from .models.base import Base, RealBase
 from .models.building import Building
 from .models.exchange import Exchange
+from .models.price_history import PriceHistory
 from .models.recipe import Recipe
 from .models.population import Population
 from .models.company import Company
@@ -26,7 +27,7 @@ from .utils.terminal_color_scale import terminal_color_scale
 __all__ = [
     'fio', 'loader',
     'Planet', 'System', 'Base', 'RealBase', 'Building',
-    'Exchange', 'Recipe', 'ResourceList', 'Population',
+    'Exchange', 'PriceHistory', 'Recipe', 'ResourceList', 'Population',
     'Container', 'Material', 'Company',
 
     'terminal_color_scale', 'pathfinding',
