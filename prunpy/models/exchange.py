@@ -33,6 +33,8 @@ class Exchange:
     def get_availability(self, material_ticker, buy_or_sell):
         good = self.goods[material_ticker]
 
+    def get_price_history(self, material_ticker):
+        return loader.get_exchange_price_history(self.ticker, material_ticker)
 
     def __str__(self):
         return f"[Exchange {self.ticker}]"
@@ -44,6 +46,7 @@ class ExchangeGood:
         self.name = rawdata['MaterialName']
         self.currency = rawdata['Currency']
         self.recently_traded = rawdata['Traded']
+        self.exchange_code = rawdata['ExchangeCode']
 
         self._init_buy_orders() # AKA Bid
         self._init_sell_orders() # AKA Ask

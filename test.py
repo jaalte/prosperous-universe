@@ -1,4 +1,7 @@
 import prunpy as prun
+import json
+import math
+import time
 
 def find_largest_pop():
     max_pop = {dem: 0 for dem in prun.constants.DEMOGRAPHICS}
@@ -40,15 +43,33 @@ def main():
 
     from prunpy.models.recipe_tree import RecipeTreeNode
 
-    recipe = prun.loader.get_best_recipe('WCB')
+    recipe = prun.loader.get_best_recipe('HMS')
 
     root_node = RecipeTreeNode(
-        recipe=recipe,
+        recipe=recipe.daily,
         priority_mode='profit_ratio',
-        include_worker_upkeep=True
+        include_worker_upkeep=True,
+        multiplier=1,
+        terminals = ['SIO', 'FE', 'C', 'O', 'AL', 'PG', 'PE', 'CU', 'AU', 'SI', 'GC', 'NL', 'MG', 'S'],
     )
 
-    #print(root_node)
+    planet = prun.loader.get_planet('Montem')
+
+    print(root_node)
+
+    building_days = root_node.get_total_building_days()
+
+    for building, amount in building_days.items():
+        building_days[building] = math.ceil(amount)
+
+    print(json.dumps(building_days, indent=2))
+
+    base = prun.Base(planet.natural_id, building_days)
+
+    print(base)
+    print(f"Area: {base.get_area()}")
+    print(f"Population: {base.population_demand}")
+
 
     # materials = prun.ResourceList("8 COF, 7 CU, 17 FE, 46 GC, 114 H2O, 2 KOM, 13 LST, 7 MG, 8 NL, 3 PWO, 79 RAT, 7 S, 55 SIO")
     # materials += prun.ResourceList("5 COF, 34 DW, 5 OVE, 2 PWO, 34 RAT")
@@ -75,7 +96,59 @@ def main():
     # for ticker, material in prun.loader.materials.items():
     #     print(f"{ticker}: {material.name}, Weight: {material.weight}, Volume: {material.volume}, Category: {material.category_name}")
 
-    count_pops_in_area()
+    #count_pops_in_area()
+    daily_count = 2
+    ppu = 61000
+
+    mats = prun.ResourceList({
+        "MGS": 0.1,
+        "LST": 0.01,
+        "FEO": 0.81,
+        "AUO": 0.96,
+        "O": 6.54,
+        "H2O": 1.36,
+        "HAL": 4.0,
+        "LIO": 10.0,
+        "ALO": 20.39,
+        "SIO": 6.75,
+        "CUO": 1.27,
+        "HE": 1.0
+    }) * daily_count
+
+    pop = prun.Population({
+        "engineers": 70,
+        "pioneers": 790,
+        "settlers": 575,
+        "technicians": 340
+    })
+    mats += pop.get_upkeep()
+
+    cost = mats.get_total_value('NC1', 'buy')
+    revenue = ppu * daily_count
+    profit = revenue - cost
+
+    print(f"Cost: {cost}, Revenue: {revenue}, Profit: {profit}")
+
+
+
+    # exchange = prun.loader.exchanges['NC1']
+    # price_history = exchange.get_price_history('SIO')
+    # print(json.dumps(price_history, indent=2))
+
+    #history = prun.PriceHistory('HMS', 'NC1')
+    # for name, interval in history.intervals.items():
+    #     print(f"{name}: {len(interval)} listings")
+    #     print(f"  {interval.start_time}-{interval.end_time}, {interval.interval} interval, {interval.span} span")
+    #print(history.intervals.keys())
+
+    tickers = prun.loader.material_ticker_list
+
+    for ticker in prun.loader.material_ticker_list:
+        print(f"{ticker}: ", end="")
+        history = prun.PriceHistory(ticker, 'NC1')
+        print(f"{history.average_traded_daily:.2f} per day")
+
+    #print(history.average_traded_daily)
 
 
 if __name__ == "__main__":
