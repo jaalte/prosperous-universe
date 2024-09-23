@@ -1,7 +1,6 @@
 import prunpy as prun
 import json
 import math
-import time
 
 def find_largest_pop():
     max_pop = {dem: 0 for dem in prun.constants.DEMOGRAPHICS}
@@ -31,6 +30,95 @@ def count_pops_in_area():
     technician_upkeep = prun.ResourceList({'HMS': 0.005})*total
 
     print(f"Total technicians of all planets: {total}, need {technician_upkeep} upkeep daily")
+
+def estimate_company_value(company_name):
+    company = prun.Company(company_name)
+    
+    _ = prun.loader.rawexchangedata
+    
+    for code, exchange in prun.loader.exchanges.items():
+        goods = exchange.goods
+        
+        own_buy_orders = []
+        own_sell_orders = []
+        for ticker, good in goods.items():
+            for buy_order in good.buy_orders:
+                if buy_order['company_name'] == company.name:
+                    buy_order = buy_order.copy()
+                    buy_order['ticker'] = ticker
+                    buy_order['exchange'] = exchange.code
+                    own_buy_orders.append(buy_order)
+
+            for sell_order in good.sell_orders:
+                if sell_order['company_name'] == company.name:
+                    sell_order = sell_order.copy()
+                    sell_order['ticker'] = ticker
+                    sell_order['exchange'] = exchange.code
+                    own_sell_orders.append(sell_order)
+    
+    total_buy = 0
+    for order in own_buy_orders:
+        total_buy += order['cost'] * order['count']
+    
+    total_sell = 0
+    for order in own_sell_orders:
+        exchange = prun.loader.exchanges[order['exchange']]
+        actual_sell_cost = exchange.get_good(order['ticker']).sell_price_for_amount(order['count'])
+        total_sell += actual_sell_cost # * order['count']
+
+    total = total_buy + total_sell
+    print(f"Company {company.name} has {total_buy} credits in buy orders and {total_sell} credits in sell orders")
+
+    return total
+
+def estimate_all_companies_value():
+    companies = {}
+
+    for exchange in prun.loader.exchanges.values():
+        goods = exchange.goods
+
+        for ticker, good in goods.items():
+            # Process buy orders
+            for buy_order in good.buy_orders:
+                company_name = buy_order['company_name']
+                if company_name not in companies:
+                    companies[company_name] = {
+                        'buy_order_capital': 0,
+                        'sell_order_capital': 0,
+                        'sell_order_capital_optimistic': 0,
+                        'company_name': company_name
+                    }
+
+                buy_order_capital = buy_order['cost'] * buy_order['count']
+                companies[company_name]['buy_order_capital'] += buy_order_capital
+
+            # Process sell orders
+            for sell_order in good.sell_orders:
+                company_name = sell_order['company_name']
+                if company_name not in companies:
+                    companies[company_name] = {
+                        'buy_order_capital': 0,
+                        'sell_order_capital': 0,
+                        'sell_order_capital_optimistic': 0,
+                        'company_name': company_name
+                    }
+
+                # Actual sell cost based on the exchange's pricing
+                actual_sell_cost = exchange.get_good(ticker).sell_price_for_amount(sell_order['count'])
+                companies[company_name]['sell_order_capital'] += actual_sell_cost
+
+                # Optimistic sell cost using the listed cost
+                sell_order_capital_optimistic = sell_order['cost'] * sell_order['count']
+                companies[company_name]['sell_order_capital_optimistic'] += sell_order_capital_optimistic
+
+    # Calculate total capital for each company
+    for company in companies.values():
+        company['total_capital'] = company['buy_order_capital'] + company['sell_order_capital']
+
+    # Sort by descending total capital
+    companies = sorted(companies.values(), key=lambda x: x['total_capital'], reverse=False)
+
+    return companies
 
 
 def main():
@@ -129,27 +217,14 @@ def main():
 
     print(f"Cost: {cost}, Revenue: {revenue}, Profit: {profit}")
 
+    ll = estimate_company_value("Lumber Liquidators")
+    print(f"Lumber Liquidators: ~{ll} credits in the market")
 
 
-    # exchange = prun.loader.exchanges['NC1']
-    # price_history = exchange.get_price_history('SIO')
-    # print(json.dumps(price_history, indent=2))
-
-    #history = prun.PriceHistory('HMS', 'NC1')
-    # for name, interval in history.intervals.items():
-    #     print(f"{name}: {len(interval)} listings")
-    #     print(f"  {interval.start_time}-{interval.end_time}, {interval.interval} interval, {interval.span} span")
-    #print(history.intervals.keys())
-
-    tickers = prun.loader.material_ticker_list
-
-    for ticker in prun.loader.material_ticker_list:
-        print(f"{ticker}: ", end="")
-        history = prun.PriceHistory(ticker, 'NC1')
-        print(f"{history.average_traded_daily:.2f} per day")
-
-    #print(history.average_traded_daily)
-
+    all_values = estimate_all_companies_value()
+    for company in all_values:
+        print(f"Company {company['company_name']} has {company['buy_order_capital']:.0f} credits in buy orders and {company['sell_order_capital']:.0f} credits in sell orders ({company['sell_order_capital_optimistic']:.0f} at listed price), for a total of ~{company['total_capital']:.0f} credits")
+        
 
 if __name__ == "__main__":
     main()

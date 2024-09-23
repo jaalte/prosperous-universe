@@ -1,12 +1,14 @@
 import prunpy as prun
+from prunpy.data_loader import loader
+from prunpy.utils.resource_list import ResourceList
 
 USERNAME = 'fishmodem'
 PLANET = 'Montem'
+MAX_PRODUCTION_RATIO = 0.25
 
-def main():
+def hms_production_crunch():
     planet = prun.loader.get_planet(PLANET)
-    base = prun.RealBase(planet.natural_id, USERNAME)
-
+    #base = prun.RealBase(planet.natural_id, USERNAME)
 
     hb2 = prun.Building('HB2', planet)
     chp = prun.Building('CHP', planet)
@@ -41,6 +43,28 @@ def main():
 
     print(f"\nTotal: {total}")
     print(f"Cost: {total.get_total_value('NC1', 'buy')}")
+
+def calc_material(ticker):
+    planet = prun.loader.get_planet(PLANET)
+    #base = prun.RealBase(planet.natural_id, USERNAME)
+    exchange = loader.exchanges[planet.get_nearest_exchange()[0]]
+
+    recipe = loader.get_material_recipes(ticker)[0]
+
+    print(recipe)
+    cost = recipe.inputs.get_total_value('NC1', 'buy')
+    revenue = recipe.outputs.get_total_value('NC1', 'sell')
+    profit = revenue - cost
+
+    daily_sold = exchange.get_price_history(ticker).average_traded_daily
+
+    print(f"{ticker}: {profit:.0f} ({revenue:.0f} - {cost:.0f}), max {daily_sold*MAX_PRODUCTION_RATIO:.2f}")
+
+
+def main():
+    #hms_production_crunch()
+    for ticker in ['HMS', 'HSS', 'LC']:
+        calc_material(ticker)
 
 if __name__ == '__main__':
     main()
