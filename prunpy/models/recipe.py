@@ -4,8 +4,8 @@ from prunpy.data_loader import loader
 class Recipe:
     def __init__(self, rawdata):
         if isinstance(rawdata, Recipe):
-            self.building = rawdata.building.copy()
-            self.duration = rawdata.duration.copy()
+            self.building = rawdata.building
+            self.duration = rawdata.duration
             self.inputs = rawdata.inputs.copy()
             self.outputs = rawdata.outputs.copy()
 
