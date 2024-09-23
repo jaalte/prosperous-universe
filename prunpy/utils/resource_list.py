@@ -3,11 +3,11 @@ import re
 
 class ResourceList:
     def __init__(self, rawdata={}):
-        if len(rawdata) == 0:
+        if isinstance(rawdata, ResourceList):
+            self.resources = rawdata.resources.copy()
+        elif len(rawdata) == 0:
             self.resources = {}
-            return
-
-        if isinstance(rawdata, dict):
+        elif isinstance(rawdata, dict):
             self.resources = rawdata
         elif isinstance(rawdata, list):
 
@@ -141,6 +141,8 @@ class ResourceList:
             add_list = ResourceList(ticker)
         if isinstance(ticker, ResourceList):
             add_list = ticker
+        if isinstance(ticker, str):
+            add_list = ResourceList({ticker: amount})
 
         if add_list is not None:
             add_list = ResourceList(add_list)
