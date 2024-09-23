@@ -8,7 +8,7 @@ class PriceHistory:
         self.material_ticker = material_ticker
         self.exchange_ticker = exchange_ticker
 
-        self.rawdata = loader.get_exchange_price_history(exchange_ticker, material_ticker)
+        self.rawdata = loader.get_raw_exchange_price_history(exchange_ticker, material_ticker)
 
         rawintervals = {}
         for listing in self.rawdata:

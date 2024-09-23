@@ -30,11 +30,11 @@ class Exchange:
         if buy_or_sell == "Buy":
             pass
 
-    def get_availability(self, material_ticker, buy_or_sell):
-        good = self.goods[material_ticker]
+    #def get_availability(self, material_ticker, buy_or_sell):
+    #    good = self.goods[material_ticker]
 
     def get_price_history(self, material_ticker):
-        return loader.get_exchange_price_history(self.ticker, material_ticker)
+        return loader.get_price_history(self.ticker, material_ticker)
 
     def __str__(self):
         return f"[Exchange {self.ticker}]"
@@ -187,3 +187,7 @@ class ExchangeGood:
             total_count += order['count']
 
         return total_count#, total_cost/total_count
+
+    def price_history(self):
+        from prunpy.models.price_history import PriceHistory
+

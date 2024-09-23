@@ -146,12 +146,21 @@ class DataLoader:
         rawexchanges = fio.request("GET", "/exchange/station", cache='forever')
         return self._set_cache(cache_key, rawexchanges)
 
-    def get_exchange_price_history(self, exchange_ticker, material_ticker):
-        cache_key = f'get_exchange_price_history_{exchange_ticker}.{material_ticker}'
+    def get_raw_exchange_price_history(self, exchange_ticker, material_ticker):
+        cache_key = f'get_raw_exchange_price_history_{exchange_ticker}.{material_ticker}'
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
         history = fio.request("GET", f"/exchange/cxpc/{material_ticker}.{exchange_ticker}", cache=60*60*24*3)
+        
+        return self._set_cache(cache_key, history)
 
+    def get_price_history(self, exchange_ticker, material_ticker):
+        cache_key = f'get_price_history_{exchange_ticker}.{material_ticker}'
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        from prunpy.models.price_history import PriceHistory
+        history = PriceHistory(material_ticker, exchange_ticker)
+        
         return self._set_cache(cache_key, history)
 
     @property
