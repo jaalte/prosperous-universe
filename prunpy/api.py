@@ -8,8 +8,12 @@ import os
 from io import StringIO
 from urllib.parse import urlencode, urlparse, quote_plus
 from datetime import datetime, timedelta
+import time
+from collections import deque
 
 MAX_RETRIES = 3
+REQUESTS_PER_RATE_LIMIT = 1
+RATE_LIMIT = 0.2  # seconds
 
 class FIOAPI:
     def __init__(self, api_key_file='./apikey.txt'):
@@ -25,6 +29,9 @@ class FIOAPI:
 
         self.cache_dir = './cache'
         os.makedirs(self.cache_dir, exist_ok=True)
+        
+        # Initialize a deque to keep track of request timestamps
+        self.request_times = deque()
 
     def _read_api_key(self, api_key_file):
         try:
@@ -46,7 +53,7 @@ class FIOAPI:
         cache_filename = self._generate_cache_filename(url, method, data, response_format)
         cache_path = os.path.join(self.cache_dir, cache_filename)
 
-        # Handle cache loading
+        # Check if the response is cached, skip rate limiting if cache is being used
         if os.path.exists(cache_path):
             if cache == 0 or cache == False or str(cache).lower() == 'never':
                 pass
@@ -57,8 +64,24 @@ class FIOAPI:
                 if cache_age.total_seconds() < cache:
                     return self._load_cached_file(cache_path, response_format)
 
-        # Fetch the data from the API
+        # Apply rate limiting only if the request is not served from cache
+        current_time = time.time()
 
+        # Remove timestamps that are outside of the RATE_LIMIT window
+        while self.request_times and current_time - self.request_times[0] > RATE_LIMIT:
+            self.request_times.popleft()
+
+        # If the number of requests in the last RATE_LIMIT seconds exceeds the allowed limit, delay the request
+        if len(self.request_times) >= REQUESTS_PER_RATE_LIMIT:
+            time_to_wait = RATE_LIMIT - (current_time - self.request_times[0])
+            if time_to_wait > 0:
+                #print(f"Rate limit reached. Waiting for {time_to_wait:.2f} seconds.")
+                time.sleep(time_to_wait)
+
+        # Record the time of this request
+        self.request_times.append(time.time())
+
+        # Make a web request
         if type(message) is str:
             print(message)
         elif message is not None:
@@ -73,7 +96,7 @@ class FIOAPI:
                 else:
                     raise ValueError("Unsupported HTTP method.")
 
-                response.raise_for_status()  # Raise HTTPError for bad responses
+                response.raise_for_status()
 
                 # Save response to cache if caching is enabled
                 if cache != 0:
