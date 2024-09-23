@@ -59,7 +59,7 @@ class Base:
     def get_daily_population_maintenance(self):
         upkeep = ResourceList()
         for building in self.buildings:
-            upkeep += building.population_needs.get_upkeep()
+            upkeep += building.population_demand.get_upkeep()
         return upkeep
 
     def get_area(self):
@@ -67,10 +67,9 @@ class Base:
 
     @property
     def population_demand(self):
-        population = self.buildings[0].population_needs
-        for building in self.buildings[1:]:
-            for key in DEMOGRAPHICS:
-                population[key] += building.population_needs[key]
+        population = Population({})
+        for building in self.buildings:
+            population += building.population_demand
         return Population(population)
 
     @property
