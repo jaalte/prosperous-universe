@@ -21,7 +21,7 @@ class Population:
         needs = ResourceList()
         for demographic in self.population:
             needs += self.population[demographic]/100 * loader.get_population_upkeep()[demographic]
-        return needs
+        return needs.prune()
 
     @property
     def pioneers(self):

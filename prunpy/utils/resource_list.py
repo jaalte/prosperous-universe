@@ -123,6 +123,10 @@ class ResourceList:
         new_resources = {ticker: amount for ticker, amount in self.resources.items() if amount > 0}
         return ResourceList(new_resources)
 
+    def prune(self, threshold=0):
+        new_resources = {ticker: amount for ticker, amount in self.resources.items() if amount > threshold}
+        return ResourceList(new_resources)
+
     def floor(self):
         new_resources = {ticker: math.floor(amount) for ticker, amount in self.resources.items()}
         return ResourceList(new_resources)
