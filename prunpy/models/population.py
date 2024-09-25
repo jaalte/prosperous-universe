@@ -24,6 +24,10 @@ class Population:
         return needs.prune()
 
     @property
+    def upkeep(self):
+        return self.get_upkeep()
+
+    @property
     def pioneers(self):
         return self.population.get('pioneers', 0)
 
