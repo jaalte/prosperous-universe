@@ -222,6 +222,10 @@ class DataLoader:
 
         return self._set_cache(cache_key, planets)
 
+    @property
+    def planets(self):
+        return self.get_all_planets()
+
     def get_all_planet_names(self):
         cache_key = 'get_all_planet_names'
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
