@@ -36,6 +36,27 @@ class Exchange:
     def get_price_history(self, material_ticker):
         return loader.get_price_history(self.ticker, material_ticker)
 
+    def get_raw_local_market_data(self):
+        market_name = self.name.replace(" Commodity Exchange", "")
+        if not market_name.endswith(" Station"):
+            market_name += " Station"
+        market_name = market_name.replace(" ", "%20")
+        
+        try:
+            request_url = f"/localmarket/planet/{market_name}"
+            print(f"Requesting {request_url}")
+            rawdata = prun.fio.request("GET", request_url)
+            return rawdata
+        except:
+            print(f"Failed to get market data for {market_name}")
+            return {
+                "ShippingAds": [],
+                "BuyingAds": [],
+                "SellingAds": [],
+            }
+
+
+
     def __str__(self):
         return f"[Exchange {self.ticker}]"
 
@@ -45,7 +66,7 @@ class ExchangeGood:
         self.ticker = rawdata['MaterialTicker']
         self.name = rawdata['MaterialName']
         self.currency = rawdata['Currency']
-        self.recently_traded = rawdata['Traded']
+        #self.recently_traded = rawdata['Traded']
         self.exchange_code = rawdata['ExchangeCode']
 
         self._init_buy_orders() # AKA Bid
@@ -188,6 +209,21 @@ class ExchangeGood:
 
         return total_count#, total_cost/total_count
 
+    @property
     def price_history(self):
-        from prunpy.models.price_history import PriceHistory
+        exchange = loader.exchanges[self.exchange_code]
+        return exchange.get_price_history(self.ticker)
 
+    @property
+    def daily_sold(self):
+        return self.price_history.average_traded_daily
+
+    @property
+    def spread_absolute(self):
+        return self.buy_price - self.sell_price
+
+    def spread_ratio(self):
+        return self.buy_price / self.sell_price
+
+    def __str__(self):
+        return f"[{self.ticker} at {self.exchange_code}]"
