@@ -12,3 +12,5 @@ apikey.txt
 /prunpy/prunpy.egg-info/
 /build/
 /prunpy/build/
+
+*sell_rates*.csv
