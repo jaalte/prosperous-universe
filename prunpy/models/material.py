@@ -63,7 +63,7 @@ class Material:
         if self.volume == 0:
             if self.weight == 0: return 1
             return float('inf')
-        return self.weight / self.volume
+        return round(self.weight / self.volume, 2)
 
     def __str__(self):
         return self.ticker
