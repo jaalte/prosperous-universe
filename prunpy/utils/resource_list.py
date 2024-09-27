@@ -73,12 +73,20 @@ class ResourceList:
             total += loader.get_material(ticker).weight * amount
         return total
 
+    @property
+    def weight(self):
+        return self.get_total_weight()
+
     def get_total_volume(self):
         from prunpy.data_loader import loader
         total = 0
         for ticker, amount in self.resources.items():
             total += loader.get_material(ticker).volume * amount
         return total
+
+    @property
+    def volume(self):
+        return self.get_total_volume()
 
     def get_total_value(self, exchange="NC1", trade_type="buy"):
         from prunpy.data_loader import loader 
@@ -96,6 +104,10 @@ class ResourceList:
             else: # trade_type == "sell" or other:
                 total += exchange.get_good(ticker).sell_price * amount
         return total
+
+    @property
+    def cost(self):
+        return self.get_total_value(exchange="NC1", trade_type="buy")
 
     def get_amount(self, ticker):
         return self.resources.get(ticker, 0)
