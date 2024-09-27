@@ -102,13 +102,18 @@ class FIOAPI:
                 if cache != 0:
                     self._save_to_cache(cache_path, response, response_format)
 
-                if response_format == 'json':
-                    return response.json()
-                elif response_format == 'csv':
-                    df = pd.read_csv(StringIO(response.text))
-                    return df.to_dict(orient='records')
-                else:
-                    raise ValueError("Unsupported response format.")
+                # Try to encode the response in the requested format
+                try:
+                    if response_format == 'json':
+                        return response.json()
+                    elif response_format == 'csv':
+                        df = pd.read_csv(StringIO(response.text))
+                        return df.to_dict(orient='records')
+                    else:
+                        raise ValueError("Unsupported response format.")
+                except:
+                    raise Exception(f"Failed to parse response: {response.text}")
+
 
             except requests.exceptions.RequestException as e:
                 if response.status_code == 522 and attempt < MAX_RETRIES - 1:
