@@ -245,7 +245,7 @@ class DataLoader:
         return self._set_cache(cache_key, ids)
 
     def get_planet(self, name_string):
-        if instance(name_string, Planet):
+        if isinstance(name_string, Planet):
             return self.get_all_planets(key='natural_id')[name_string.natural_id]
         
         planet_names = self.get_all_planet_names()
