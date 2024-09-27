@@ -2,8 +2,9 @@ import prunpy as prun
 import sys
 import math
 
-MIN_DAYS_SUPPLY_AVAILABLE = 500 # 100d worth per building
-MIN_DAYS_DEMAND_AVAILABLE = 500 # 100d worth per building
+MIN_DAYS_SUPPLY_AVAILABLE = 30 # days worth per building
+MIN_DAYS_DEMAND_AVAILABLE = 0 # days worth per building
+MIN_DAILY_SOLD = 50
 
 def main():
     planet_name = ''
@@ -46,12 +47,30 @@ def main():
         #recipe.inputs -= recipe.get_worker_upkeep_per_craft()*2
         #recipe.inputs = recipe.inputs.prune_negatives()
 
-        inputs = []
         for ticker, count in recipe.inputs.resources.items():
             supply = exchange.get_good(ticker).supply
             daily_need = recipe.inputs.resources[ticker] * 24 / recipe.duration
             days_available = supply / daily_need
             if days_available < MIN_DAYS_SUPPLY_AVAILABLE: remove = True
+
+        outputs = []
+        for ticker, count in recipe.outputs.resources.items():
+            good = exchange.get_good(ticker)
+            daily_sold = good.daily_sold
+
+            daily_produced = recipe.daily.outputs.resources[ticker]
+
+            output_data = { # Per building
+                'ticker': ticker,
+                'instant_sell_price': good.sell_price,
+                'patient_sell_price': good.buy_price,
+                'daily_produced': daily_produced,
+                'daily_sold': daily_sold,
+                'sell_saturation_per_building': daily_produced / daily_sold,
+                'good': good
+            }
+            outputs.append(output_data)
+
 
         hit = {
             'recipe': recipe,
@@ -61,12 +80,13 @@ def main():
             'max_count': max_count,
             'building_cost': building_cost,
             'roi': roi,
+            'outputs': outputs,
         }
 
         hits.append(hit)
     
     # Sort hits by lowest roi
-    hits.sort(key=lambda x: x['roi'], reverse=False)
+    hits.sort(key=lambda x: x['roi'], reverse=True)
 
     # Further filtering
     filtered_hits = []
@@ -78,29 +98,62 @@ def main():
             supply = exchange.get_good(ingredient).supply
             daily_need = hit['recipe'].inputs.resources[ingredient] * 24 / hit['recipe'].duration
             days_available = supply / daily_need
-            if days_available < MIN_DAYS_SUPPLY_AVAILABLE: remove = True
+            if days_available < MIN_DAYS_SUPPLY_AVAILABLE:
+                print(f"Removed {hit['recipe']} due to low input supply")
+                remove = True
         
-        for result in hit['recipe'].outputs.resources:
-            demand = exchange.get_good(result).demand
-            daily_made = hit['recipe'].outputs.resources[result] * 24 / hit['recipe'].duration
-            days_available = demand / daily_made
-            if days_available < MIN_DAYS_DEMAND_AVAILABLE: remove = True
+        for product, count in hit['recipe'].outputs.resources.items():
+            good = exchange.get_good(product)
+            daily_made = hit['recipe'].outputs.resources[product] * 24 / hit['recipe'].duration
+            days_available = good.demand / daily_made
+
+            has_market_maker = False
+
+            if days_available < MIN_DAYS_DEMAND_AVAILABLE:
+                print(f"Removed {hit['recipe']} due to low output demand")
+                remove = True
+            if good.daily_sold < MIN_DAILY_SOLD:
+                print(f"Removed {hit['recipe']} due to low output daily sold")
+                remove = True
 
         if remove: continue
         filtered_hits.append(hit)
 
     hits = filtered_hits
 
-    #return
-
     for hit in hits:
         print(
-            f"{hit['recipe']}: ".ljust(80) +
-            f"ROI: {hit['roi']:>6.2f}d "
-            f"  Building cost: {hit['building_cost']:.2f} "
-            f"  DPPB: {hit['daily_profit']:.2f} "
-            f"  Max DP: {hit['max_daily_profit']:.2f} "
+            f"{str(hit['recipe'])+':':<50} "
+            f"ROI: {hit['roi']:>6.2f}d   "
+            f"  Building cost: {hit['building_cost']:.2f}   "
+            f"  Daily profit / building: {hit['daily_profit']:.2f}   "
+            #f"  Max DP: {hit['max_daily_profit']:.2f} "
         )
+        # for ingredient, count in hit['recipe'].inputs.resources.items():
+        #     good = exchange.get_good(ingredient)
+        #     price = good.buy_price
+        #     print(f"  Buy  {ingredient:<3}: {count:>3}, {price:>5.0f}/u ({price*count:>5.0f}/recipe) with {good.daily_sold:<6.1f} sold daily")
+
+        for output in hit['outputs']:
+            print(
+                f"Sell: {output['daily_produced']:>5.1f} "
+                f" {output['ticker']:>3}/day "
+                f"@{output['instant_sell_price']:>5.0f} <-> {output['patient_sell_price']:>5.0f} /u.    "
+                f"{output['good'].daily_sold:>6.1f} sold daily "
+                f"({output['sell_saturation_per_building']:.1%} market saturation / building)"
+            )
+        
+        daily_burn = hit['recipe'].daily.inputs.ceil()
+        print(f"Buy: {daily_burn} daily for {daily_burn.get_total_value(exchange.code, 'buy'):.2f}")
+
+        print()
+            #print(f"  Sell {product:<3}: {count:>3}, {price:>5.0f}/u ({price*count:>5.0f}/recipe) with {good.daily_sold:<6.1f} sold daily ({output['sell_saturation_per_building']:.1%} per building)")
+
+        # for product, count in hit['recipe'].outputs.resources.items():
+        #     good = exchange.get_good(product)
+        #     price = good.sell_price
+        #     print(f"  Sell {product:<3}: {count:>3}, {price:>5.0f}/u ({price*count:>5.0f}/recipe) with {good.daily_sold:<6.1f} sold daily")
+    print(f"Good manufacture goals for {planet.name}, sorted by ROI with the best at the bottom.\n")
 
 if __name__ == "__main__":
     main()
