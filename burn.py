@@ -4,6 +4,12 @@ import re
 import sys
 import prunpy as prun
 
+INVALID_CLIPBOARD_ERROR = """
+    No valid burn data found in clipboard.
+    You need to copy the text from XIT BURN_PlanetName,
+    from the "Needs" header to the last "Days" entry.
+"""
+
 def parse_clipboard_data():
     # Get the clipboard data
     clipboard_data = pyperclip.paste()
@@ -43,6 +49,10 @@ def parse_clipboard_data():
                 "needed": needed,
                 "days_left": days_left
             }
+
+    if len(data_dict) == 0:
+        print(INVALID_CLIPBOARD_ERROR)
+        sys.exit(1)
 
     # Return the dictionary
     return data_dict
