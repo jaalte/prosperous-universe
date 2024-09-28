@@ -8,6 +8,7 @@
 # Ignore the API key file
 apikey.txt
 username.txt
+preferred_exchange.txt
 
 # Ignore python module-specific folders
 /prunpy/prunpy.egg-info/

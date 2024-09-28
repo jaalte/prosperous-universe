@@ -76,9 +76,15 @@ class Building:
                 self.recipes.append(Recipe(recipedata))
 
     # function to get total cost of building by resourcelist
-    def get_cost(self, exchange=None):
-        exchange = exchange or self.planet.get_nearest_exchange()[0]
-        return self.construction_materials.get_total_value(exchange, "buy")
+    def get_cost(self, exchange_override=None):
+        from prunpy.data_loader import loader
+
+        if exchange_override:
+            exchange = loader.get_exchange(exchange_override)
+            return self.construction_materials.get_total_value(exchange_override, "buy")
+        else:
+            exchange = self.planet.get_nearest_exchange()[0]
+            return self.construction_materials.get_total_value(exchange, "buy")
     
     def get_daily_maintenance(self):
         return self.construction_materials/180

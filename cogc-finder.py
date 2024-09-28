@@ -3,16 +3,16 @@ import sys
 from prunpy.utils.terminal_color_scale import terminal_color_scale as color
 
 
-def find_nearby_with_cogc(cogc, exchange):
+def find_nearby_with_cogc(cogc, exchange_code):
     planets = prun.loader.get_all_planets()
     filtered_planets = {}
     for name, planet in planets.items():
-        if planet.get_nearest_exchange()[0] == exchange and planet.cogc == cogc:
+        if planet.get_nearest_exchange()[0] == exchange_code and planet.cogc == cogc:
             filtered_planets[name] = planet
     planets = filtered_planets
     
     if len(planets) > 0:
-        print(f"\n    {cogc} planets near {exchange}:")
+        print(f"\n    {cogc} planets near {exchange_code}:")
         for name, planet in planets.items():
             name_string = f"{planet.natural_id}"
             shortened_name = ''
@@ -41,15 +41,15 @@ def find_nearby_with_cogc(cogc, exchange):
 
 def main():
     if len(sys.argv) > 1:
-        exchange = sys.argv[1]
+        exchange_code = sys.argv[1]
     else:
-        exchange = 'NC1'
+        exchange_code = 'NC1'
 
     # Pre-load data
     _ = prun.loader.get_exchange_goods()
 
     for cogc in prun.constants.COGCS:
-        find_nearby_with_cogc(cogc, exchange)
+        find_nearby_with_cogc(cogc, exchange_code)
 
 if __name__ == "__main__":
     main()

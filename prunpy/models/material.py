@@ -2,24 +2,30 @@ from prunpy.models.logistics import Container
 
 class Material:
 
-    def __init__(self, rawdata_or_ticker):
+    def __new__(cls, rawdata_or_ticker):
+        if isinstance(rawdata_or_ticker, Material):
+            return rawdata_or_ticker  # Return the same instance if already Material
 
         if isinstance(rawdata_or_ticker, str):
-            rawdata = loader.materials[rawdata_or_ticker]
+            from prunpy.data_loader import loader
+            return loader.materials[rawdata_or_ticker]  # Return the existing Material from loader
+
+        # If we don't have an existing Material or ticker, create a new instance
+        return super(Material, cls).__new__(cls)
+
+    def __init__(self, rawdata):
+        if isinstance(rawdata, dict):
+            # Initialize the instance with rawdata only if not previously initialized
+            self.ticker = rawdata['Ticker']
+            self.rawname = rawdata['Name']
+            self.hash = rawdata['MaterialId']
+            self.weight = round(rawdata['Weight'], 2)
+            self.volume = round(rawdata['Volume'], 2)
+            self.category_name_raw = rawdata['CategoryName']
+            self.category_hash_raw = rawdata['CategoryId']
         else:
-            rawdata = rawdata_or_ticker
-
-        #self.rawdata = rawdata
-        self.ticker = rawdata['Ticker']
-        self.rawname = rawdata['Name']
-        self.hash = rawdata['MaterialId']
-
-        # Round weight and volume to 2 decimal places
-        self.weight = round(rawdata['Weight'], 2)
-        self.volume = round(rawdata['Volume'], 2)
-
-        self.category_name_raw = rawdata['CategoryName']
-        self.category_hash_raw = rawdata['CategoryId']
+            # If rawdata is not a dict, avoid reinitialization
+            pass
 
     @property
     def name(self):
@@ -64,6 +70,21 @@ class Material:
             if self.weight == 0: return 1
             return float('inf')
         return round(self.weight / self.volume, 2)
+
+    def get_value(self, exchange=None, trade_type="buy"):
+        from prunpy.data_loader import loader 
+        
+        exchange = loader.get_exchange(exchange)
+
+        if not isinstance(trade_type, str):
+            return NotImplemented
+        trade_type = trade_type.lower()
+
+        if trade_type == "buy":
+            return exchange.get_good(self.ticker).buy_price
+        else: # trade_type == "sell" or other:
+            return exchange.get_good(self.ticker).sell_price
+
 
     def __str__(self):
         return self.ticker

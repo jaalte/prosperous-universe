@@ -211,7 +211,7 @@ class ExchangeGood:
 
     @property
     def price_history(self):
-        exchange = loader.exchanges[self.exchange_code]
+        exchange = loader.get_exchange(self.exchange_code)
         return exchange.get_price_history(self.ticker)
 
     @property

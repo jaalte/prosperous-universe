@@ -137,10 +137,82 @@ def match_storage_ratio(weight_or_ratio, volume=None):
     return results
     
 
-def analyze_local_market(market_id):
-    rawdata = prun.fio.request("GET", f"/localmarket/{market_id}")
-    print(json.dumps(rawdata, indent=2))
+def analyze_local_markets():
+    # market_data = {}
 
+    # for name, planet in prun.loader.planets.items():
+    #     if planet.rawdata.get('HasLocalMarket') == True:
+    #         print(name)
+    #         try:
+    #             rawdata = prun.fio.request("GET", f"/localmarket/planet/{planet.name}")
+    #             market_data[name] = rawdata
+    #         except:
+    #             print(f"Failed to get market data for {planet.name}")
+    #             pass
+
+    # # Save market data to market_data.json
+    # with open('market_data.json', 'w') as f:
+    #     json.dump(market_data, f)
+
+    # Load it again
+    with open('market_data.json', 'r') as f:
+        market_data = json.load(f)
+
+    # for name, exchange in prun.loader.exchanges.items():
+    #     market_data[name] = exchange.get_raw_local_market_data()
+
+    exchange_market_data = {}
+    exchange_names = []
+    for code, exchange in prun.loader.exchanges.items():
+        market_name = exchange.name.replace(" Commodity Exchange", "")
+        if not market_name.endswith(" Station"):
+            market_name += " Station"
+        #market_name = market_name.replace(" ", "%20")
+        exchange_names.append(market_name)
+
+        try:
+            response = requests.get(f"https://rest.fnar.net/localmarket/planet/{market_name}", headers={"accept": "application/json"})
+
+            if response.status_code == 200:
+                rawdata = response.json()
+                market_data[market_name] = rawdata
+        except:
+            print(f"Failed to get market data for {market_name}")
+    
+
+
+    shipping_ads = []
+
+    for name, rawdata in market_data.items():
+        shipping_ads += rawdata.get('ShippingAds', [])
+    
+
+
+    #print(json.dumps(shipping_ads, indent=4))
+    for ad in shipping_ads:
+        origin = ad.get('OriginPlanetName')
+        destination = ad.get('DestinationPlanetName')
+        ratio = ad.get('CargoWeight') / ad.get('CargoVolume')
+        materials = match_storage_ratio(ratio)
+        company = ad.get('CreatorCompanyName')
+        company_code = ad.get('CreatorCompanyCode')
+
+        if len(materials) > 4:
+            materials = f"[{len(materials)} possible materials]"
+
+        if len(materials) == 0:
+            #print(ad)
+            materials = "[Unknown]"
+            pass
+
+        if len(materials) == 1:
+            materials = materials[0]
+
+            material_class = prun.loader.materials[materials]
+            count = round(ad.get('CargoWeight') / material_class.weight, 0)
+            materials = f"{count:.0f} {materials}"
+
+        print(f" {materials} from {origin} -> {destination} by {company} ({company_code})")
 
 def main():
     #find_largest_pop()
@@ -305,87 +377,17 @@ def main():
 
     # print(len(materials.keys()))
 
-    # market_data = {}
 
-    # for name, planet in prun.loader.planets.items():
-    #     if planet.rawdata.get('HasLocalMarket') == True:
-    #         print(name)
-    #         try:
-    #             rawdata = prun.fio.request("GET", f"/localmarket/planet/{planet.name}")
-    #             market_data[name] = rawdata
-    #         except:
-    #             print(f"Failed to get market data for {planet.name}")
-    #             pass
-
-    # # Save market data to market_data.json
-    # with open('market_data.json', 'w') as f:
-    #     json.dump(market_data, f)
-
-    # Load it again
-    with open('market_data.json', 'r') as f:
-        market_data = json.load(f)
-
-    # for name, exchange in prun.loader.exchanges.items():
-    #     market_data[name] = exchange.get_raw_local_market_data()
-
-    exchange_market_data = {}
-    exchange_names = []
-    for code, exchange in prun.loader.exchanges.items():
-        market_name = exchange.name.replace(" Commodity Exchange", "")
-        if not market_name.endswith(" Station"):
-            market_name += " Station"
-        #market_name = market_name.replace(" ", "%20")
-        exchange_names.append(market_name)
-
-        try:
-            response = requests.get(f"https://rest.fnar.net/localmarket/planet/{market_name}", headers={"accept": "application/json"})
-
-            if response.status_code == 200:
-                rawdata = response.json()
-                market_data[market_name] = rawdata
-        except:
-            print(f"Failed to get market data for {market_name}")
-    
-
-
-    shipping_ads = []
-
-    for name, rawdata in market_data.items():
-        shipping_ads += rawdata.get('ShippingAds', [])
-    
-
-
-    #print(json.dumps(shipping_ads, indent=4))
-    for ad in shipping_ads:
-        origin = ad.get('OriginPlanetName')
-        destination = ad.get('DestinationPlanetName')
-        ratio = ad.get('CargoWeight') / ad.get('CargoVolume')
-        materials = match_storage_ratio(ratio)
-        company = ad.get('CreatorCompanyName')
-        company_code = ad.get('CreatorCompanyCode')
-
-        if len(materials) > 4:
-            materials = f"[{len(materials)} possible materials]"
-
-        if len(materials) == 0:
-            #print(ad)
-            materials = "[Unknown]"
-            pass
-
-        if len(materials) == 1:
-            materials = materials[0]
-
-            material_class = prun.loader.materials[materials]
-            count = round(ad.get('CargoWeight') / material_class.weight, 0)
-            materials = f"{count:.0f} {materials}"
-
-        print(f" {materials} from {origin} -> {destination} by {company} ({company_code})")
 
 
     #print(match_storage_ratio(499.5, 185))
 
-    #analyze_local_market('Montem')
+    #analyze_local_markets()
 
+
+    from prunpy.models.material import Material
+    c = Material('C')
+    print(c.get_value())
 
 if __name__ == "__main__":
     main()

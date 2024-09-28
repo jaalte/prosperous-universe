@@ -80,7 +80,7 @@ class DataLoader:
         cache_key = 'materials_by_ticker'
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
-        materials_by_ticker = {material['Ticker']: Material(material) for material in self.materials_raw}
+        materials_by_ticker = {rawmaterial['Ticker']: Material(rawmaterial) for rawmaterial in self.materials_raw}
         return self._set_cache(cache_key, materials_by_ticker)
 
     @property
@@ -315,6 +315,26 @@ class DataLoader:
     def exchanges(self):
         return self.get_all_exchanges()
 
+    def get_exchange(self, identifier):
+        from prunpy.models.exchange import Exchange
+
+        cache_key = 'exchange_' + str(identifier)
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        if isinstance(identifier, Exchange):
+            return self._set_cache(cache_key, identifier)
+
+        exchanges = self.get_all_exchanges()
+
+        if identifier in exchanges.keys():
+            return self._set_cache(cache_key, exchanges[identifier])
+        
+        if not identifier:
+            exchange = exchanges[self.get_preferred_exchange_code()]
+            return self._set_cache(cache_key, exchange)
+
+        raise Exception(f"Could not find exchange '{identifier}'")
+
     def get_exchange_goods(self):
         from prunpy.models.exchange import ExchangeGood
         cache_key = 'exchange_goods'
@@ -328,13 +348,6 @@ class DataLoader:
             exchange_goods[good['ExchangeCode']][good['MaterialTicker']] = ExchangeGood(good)
 
         return self._set_cache(cache_key, exchange_goods)
-
-    def get_exchange(self, code):
-        cache_key = 'exchange_' + str(code)
-        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
-
-        exchange = self.exchanges[code]
-        return self._set_cache(cache_key, exchange)
 
     def get_max_population(self):
         cache_key = 'max_pops'
@@ -465,5 +478,38 @@ class DataLoader:
                 print(f"Saved username to ./username.txt. Delete that file if you want to reset it.")
 
         return username
+
+    def get_preferred_exchange_code(self):
+        # Load data from ./preferred_exchange.txt, no caching
+
+        exists = os.path.exists('./preferred_exchange.txt')
+        # If it exists
+        if exists:
+            with open('./preferred_exchange.txt', 'r') as f:
+                preferred_exchange = f.read().strip()
+                if preferred_exchange:
+                    return preferred_exchange
+                else:
+                    pass # Remake file as below if invalid
+
+        # If it doesn't exist or otherwise fails to parse
+        valid = False
+        while not valid:
+            preferred_exchange = input("Enter your preferred exchange's code (e.g. NC1): ")
+            if preferred_exchange in loader.exchanges.keys():
+                valid = True
+            else:
+                print("Unrecognized exchange code. Please try again.")
+
+        
+
+        # Prompt to remember preferred_exchange
+        remember = input(f"Remember preferred exchange \"{preferred_exchange}\"? (y/N): ")
+        if remember.lower() == 'y':
+            with open('./preferred_exchange.txt', 'w') as f:
+                f.write(preferred_exchange)
+                print(f"Saved preferred_exchange to ./preferred_exchange.txt. Delete that file if you want to reset it.")
+
+        return preferred_exchange
 
 loader = DataLoader()

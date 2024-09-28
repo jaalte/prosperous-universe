@@ -25,7 +25,7 @@ def main():
     needed -= inventory
     needed = needed.prune_negatives().ceil()
 
-    exchange = prun.loader.exchanges['NC1']
+    exchange = prun.loader.get_exchange('NC1')
     total_cost = 0
     for ticker, amount in needed.resources.items():
         good = exchange.get_good(ticker)
