@@ -1,6 +1,7 @@
 from prunpy.models.building import Building
 from prunpy.models.population import Population
 from prunpy.models.planet import Planet
+from prunpy.models.recipe import Recipe
 from prunpy.utils.resource_list import ResourceList
 from prunpy.api import fio
 from prunpy.constants import DEMOGRAPHICS
@@ -96,7 +97,7 @@ class Base:
 
 class RealBase(Base):
     def __init__(self, planet_natural_id, username):
-
+        self.username = username
         sites = fio.request('GET', f'/sites/{username}')
 
         # Find site whose PlanetIdentifier matches planet_natural_id
@@ -124,11 +125,72 @@ class RealBase(Base):
 
         #print(json.dumps(self.rawsite['Buildings'], indent=4))
 
-        base_production = fio.request('GET', f'/production/{username}/{planet_natural_id}')
-        #print(json.dumps(base_production, indent=4))
+        self.raw_production = fio.request('GET', f'/production/{username}/{planet_natural_id}')
+        #print(json.dumps(self.raw_production, indent=4))
+
+
+
+
+
         for rawbuilding in self.rawsite.get('Buildings', []):
             ticker = rawbuilding.get('BuildingTicker')
             if ticker:
                 self.buildings.append(Building(ticker, self.planet))
 
-        self.username = username
+    def get_storage(self):
+        rawstorage = fio.request('GET', f'/storage/{self.username}/{self.planet.natural_id}')
+        return ResourceList(rawstorage['StorageItems'])
+
+    @property
+    def storage(self):
+        return self.get_storage()
+
+    def get_daily_burn(self):
+        # Gather all recurring orders that haven't started yet
+        daily_burn = ResourceList({})
+        for line in self.raw_production:
+            recurring_orders = []
+            capacity = line.get('Capacity')
+            for order in line.get('Orders', []):
+                if order.get('CompletedPercentage') == None: # Not-started only
+                    inputs = ResourceList(order.get('Inputs'))
+                    outputs = ResourceList(order.get('Outputs'))
+                    #recipe = loader.get_recipe(order.get('BuildingRecipeId'))
+
+                    recipe = Recipe({
+                        'building': order.get('StandardRecipeName')[0:3].rstrip(':'),
+                        'duration': order.get('DurationMs')/1000/60/60,
+                        'inputs': inputs,
+                        'outputs': outputs
+                    })
+
+                    order = {
+                        'recipe': recipe,
+                        'capacity': capacity
+                    }
+
+                    #print(f"Inputs: {inputs}, Outputs: {outputs}, Duration: {order['recipe'].duration}, Capacity: {capacity}")
+
+                    recurring_orders.append(order)
+            
+
+            
+            total_inputs = ResourceList({})
+            total_outputs = ResourceList({})
+            total_duration = 0
+            for order in recurring_orders:
+                total_inputs += order['recipe'].inputs
+                total_outputs += order['recipe'].outputs
+                total_duration += order['recipe'].duration 
+            total_io = total_outputs - total_inputs
+            total_io *= order['capacity']
+
+            daily_cycles = 24/total_duration
+            daily_burn += total_io * daily_cycles
+            #print(f"Total IO: {total_io}, Duration: {total_duration}, Cycles: {daily_cycles}, Burn: {daily_burn}")
+
+        return daily_burn
+
+    @property
+    def burn(self):
+        return self.get_daily_burn()
