@@ -8,14 +8,17 @@ class Recipe:
             self.duration = rawdata.duration
             self.inputs = rawdata.inputs.copy()
             self.outputs = rawdata.outputs.copy()
+            self.id = rawdata.id
 
         # Importing from buildings.json format
         elif 'BuildingRecipeId' in rawdata:
             self.building = rawdata.get('StandardRecipeName')[0:3].rstrip(':')
             self.duration = rawdata.get('DurationMs')/1000/60/60
+            self.id = rawdata.get('StandardRecipeName')
 
             self.inputs = ResourceList(rawdata.get('Inputs'))
             self.outputs = ResourceList(rawdata.get('Outputs'))
+
 
         # Manually specified format
         else:
@@ -28,6 +31,16 @@ class Recipe:
             self.outputs = rawdata.get('outputs')
             if not isinstance(self.outputs, ResourceList):
                 self.outputs = ResourceList(self.outputs)
+
+
+            self.id = f"{self.building}:"
+            for ticker, count in self.inputs.resources.items():
+                self.id += f"{count}x{ticker}-"
+            self.id = self.id[:-1]+"=>"
+
+            for ticker, count in self.outputs.resources.items():
+                self.id += f"{count}x{ticker}-"
+            self.id = self.id[:-1]
          
     def convert_to_daily(self):
         mult = 24 / self.duration
