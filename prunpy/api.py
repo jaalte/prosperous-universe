@@ -15,9 +15,11 @@ MAX_RETRIES = 3
 REQUESTS_PER_RATE_LIMIT = 1
 RATE_LIMIT = 0.2  # seconds
 
+API_KEY_FILE = './apikey.txt'
+
 class FIOAPI:
-    def __init__(self, api_key_file='./apikey.txt'):
-        self.api_key = self._read_api_key(api_key_file)
+    def __init__(self):
+        self.api_key = self._get_api_key()
         #if not self.api_key:
         #    raise ValueError("API key is empty or not read correctly.")
         self.base_url = "https://rest.fnar.net"
@@ -33,13 +35,24 @@ class FIOAPI:
         # Initialize a deque to keep track of request timestamps
         self.request_times = deque()
 
-    def _read_api_key(self, api_key_file):
-        try:
-            with open(api_key_file, 'r') as file:
-                return file.read().strip()
-        except Exception as e:
-            print(f"Error reading API key: {e}")
-            return None
+    # Special function to load, prompt, and cache API key
+    def _get_api_key(self):
+        # If it exists
+        if os.path.exists('./apikey.txt'):
+            with open('./apikey.txt', 'r') as f:
+                api_key = f.read().strip()
+                if api_key:
+                    return api_key
+                else:
+                    pass # Remake file as below
+
+        # If it doesn't exist
+        api_key = input("Enter your API key: ")
+        with open('./apikey.txt', 'w') as f:
+            f.write(api_key)
+        print(f"Saved API key to ./apikey.txt. Delete it if you want to reset it.")
+
+        return api_key
 
     def request(self, method, endpoint, data=None, response_format=None, cache=0, message=None):
         endpoint = self._strip_base_url(endpoint)

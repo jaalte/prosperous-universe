@@ -1,5 +1,6 @@
 from prunpy.api import fio
 from prunpy.constants import DEFAULT_BUILDING_PLANET_NATURAL_ID, DEMOGRAPHICS
+import os
 
 class DataLoader:
     def __init__(self):
@@ -245,6 +246,7 @@ class DataLoader:
         return self._set_cache(cache_key, ids)
 
     def get_planet(self, name_string):
+        from prunpy.models.planet import Planet
         if isinstance(name_string, Planet):
             return self.get_all_planets(key='natural_id')[name_string.natural_id]
         
@@ -368,6 +370,18 @@ class DataLoader:
         
         return self._set_cache(cache_key, recipes)
 
+    # id = "StandardRecipeName" in rawdata
+    def get_recipe(self, id):
+        cache_key = 'recipe_' + str(id)
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        for recipe in self.get_all_recipes():
+            if recipe.id == id:
+                return self._set_cache(cache_key, recipe)
+
+        # Raise error
+        raise Exception(f"Could not find recipe '{id}'")
+
     def get_material_recipes(self, ticker, include_mining_from_planet_id=None, include_purchase_from=None):
         from prunpy.models.recipe import Recipe
         cache_key = f"material_recipes_{ticker}_mining-{include_mining_from_planet_id}_purchase-{include_purchase_from}"
@@ -425,5 +439,31 @@ class DataLoader:
                 raise ValueError(f"Invalid priority mode: {priority_mode}")
 
         return self._set_cache(cache_key, best_recipe)
+
+    # Special function to load, prompt, and cache username
+    def get_username(self):
+        # Load data from ./username.txt, no caching
+
+        exists = os.path.exists('./username.txt')
+        # If it exists
+        if exists:
+            with open('./username.txt', 'r') as f:
+                username = f.read().strip()
+                if username:
+                    return username
+                else:
+                    pass # Remake file as below if invalid
+
+        # If it doesn't exist
+        username = input("Enter your username: ")
+
+        # Prompt to remember username
+        remember = input(f"Remember username \"{username}\"? (y/N): ")
+        if remember.lower() == 'y':
+            with open('./username.txt', 'w') as f:
+                f.write(username)
+                print(f"Saved username to ./username.txt. Delete that file if you want to reset it.")
+
+        return username
 
 loader = DataLoader()
