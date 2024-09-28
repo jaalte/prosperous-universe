@@ -100,9 +100,9 @@ class ResourceList:
         total = 0
         for ticker, amount in self.resources.items():
             if trade_type == "buy":
-                total += exchange.get_good(ticker).buy_price * amount
+                total += exchange.get_good(ticker).buy_price_for_amount(amount)
             else: # trade_type == "sell" or other:
-                total += exchange.get_good(ticker).sell_price * amount
+                total += exchange.get_good(ticker).sell_price_for_amount(amount)
         return total
 
     @property
