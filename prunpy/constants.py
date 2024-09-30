@@ -38,6 +38,14 @@ STL_FUEL_FLOW_RATE = 0.015 # Unknown what it means but it's from /ship/ships/fis
 
 DEMOGRAPHICS =  ["pioneers", "settlers", "technicians", "engineers", "scientists"]
 
+BASIC_HOUSING_BUILDINGS = {
+    'pioneers': 'HB1',
+    'settlers': 'HB2',
+    'technicians': 'HB3',
+    'engineers': 'HB4',
+    'scientists': 'HB5',
+} 
+
 # Moved to prunpy.loader.get_population_upkeep()
 # POPULATION_UPKEEP_PER_100_PER_DAY = {
 #     'pioneers':    ResourceList({'RAT': 4, 'DW': 4,   'OVE': 0.5,                         'PWO': 0.2, 'COF': 0.5}),

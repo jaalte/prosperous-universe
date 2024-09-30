@@ -76,15 +76,20 @@ class Building:
                 self.recipes.append(Recipe(recipedata))
 
     # function to get total cost of building by resourcelist
-    def get_cost(self, exchange_override=None):
+    def get_cost(self, exchange_override=None, include_housing=False):
         from prunpy.data_loader import loader
+
+        materials = self.construction_materials
+
+        if include_housing:
+            materials += self.get_population_housing().get_total_materials()
 
         if exchange_override:
             exchange = loader.get_exchange(exchange_override)
-            return self.construction_materials.get_total_value(exchange_override, "buy")
+            return materials.get_total_value(exchange_override, "buy")
         else:
             exchange = self.planet.get_nearest_exchange()[0]
-            return self.construction_materials.get_total_value(exchange, "buy")
+            return materials.get_total_value(exchange, "buy")
     
     def get_daily_maintenance(self):
         return self.construction_materials/180
@@ -92,6 +97,9 @@ class Building:
     def get_daily_maintenance_cost(self, exchange=None):
         exchange = exchange or self.planet.get_nearest_exchange()[0]
         return self.get_daily_maintenance.get_total_value(exchange, "buy")
+
+    def get_population_housing(self):
+        return self.population_demand.get_housing_needs()
 
     def is_extractor(self):
         return self.ticker in ['COL', 'RIG', 'EXT']
@@ -102,8 +110,8 @@ class Building:
         if cogc == self.cogc_type:
             return 1.25
 
-        if cogc in ['PIONEERS', 'SETTLERS', 'TECHNICIANS', 'ENGINEERS', 'SCIENTISTS']:
-            if self.population_demand[cogc.lower()] > 0:
+        if cogc.upper() in ['PIONEERS', 'SETTLERS', 'TECHNICIANS', 'ENGINEERS', 'SCIENTISTS']:
+            if self.population_demand.get_demographic(cogc.lower()) > 0:
                 return 1.1
             else:
                 return 1.0
