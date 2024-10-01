@@ -47,6 +47,10 @@ class Population:
     def scientists(self):
         return self.population.get('scientists', 0)
 
+    @property
+    def total(self):
+        return sum(self.population.values())
+
     def get_demographic(self, demographic):
         demographic = demographic.lower()
         
