@@ -52,6 +52,12 @@ def main():
             daily_need = recipe.inputs.resources[ticker] * 24 / recipe.duration
             days_available = supply / daily_need
             if days_available < MIN_DAYS_SUPPLY_AVAILABLE: remove = True
+        
+        daily_input_cost = recipe.daily.inputs.get_total_value(exchange.code, 'buy')
+
+        DAYS_BURN = 5
+        burn_cost = daily_input_cost*DAYS_BURN
+        true_roi = (building_cost + burn_cost) / daily_profit_per_building
 
         outputs = []
         for ticker, count in recipe.outputs.resources.items():
@@ -77,16 +83,18 @@ def main():
             'profit_ratio': profit_ratio,
             'daily_profit': daily_profit_per_building,
             'max_daily_profit': max_daily_profit,
+            'daily_input_cost': daily_input_cost,
             'max_count': max_count,
             'building_cost': building_cost,
             'roi': roi,
+            'true_roi': true_roi,
             'outputs': outputs,
         }
 
         hits.append(hit)
     
     # Sort hits by lowest roi
-    hits.sort(key=lambda x: x['roi'], reverse=True)
+    hits.sort(key=lambda x: x['daily_profit'], reverse=False)
 
     # Further filtering
     filtered_hits = []
@@ -123,12 +131,13 @@ def main():
 
     for hit in hits:
         print(
-            f"{str(hit['recipe'])+':':<50} "
-            f"ROI: {hit['roi']:>6.2f}d   "
-            f"  Building cost: {hit['building_cost']:.2f}   "
-            f"  Daily profit / building: {hit['daily_profit']:.2f}   "
-            #f"  Max DP: {hit['max_daily_profit']:.2f} "
+            f"{str(hit['recipe'])+':':<50}"
+            f"    ROI: {hit['roi']:>6.1f}d / {hit['true_roi']:>6.1f}d"
+            f"    II: {hit['building_cost']:.0f} building + {hit['daily_input_cost']*DAYS_BURN:.0f} for {DAYS_BURN} days inputs"
+            f"    Daily profit / building: {hit['daily_profit']:.2f}"
+            #f"   Max DP: {hit['max_daily_profit']:.2f} "
         )
+
         # for ingredient, count in hit['recipe'].inputs.resources.items():
         #     good = exchange.get_good(ingredient)
         #     price = good.buy_price
