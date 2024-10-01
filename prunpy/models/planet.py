@@ -211,6 +211,9 @@ class Planet:
         counts = {key: value['count'] for key, value in data.items()}
         return Population(counts)
 
+    @property
+    def population(self):
+        return self.get_population_count()
 
 
     def get_building_environment_cost(self, area):
