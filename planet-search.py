@@ -7,45 +7,62 @@ from termcolor import colored
 import prunpy as prun
 color = prun.terminal_color_scale
 
-origin_planet_id = 'OT-889a'
+COLONIZED_POPULATION_THRESHOLD = 1000
+
+def parse_arguments():
+    # if len(sys.argv) < 2:
+    #     print("Usage: python planet-finder.py <planet_name> or python planet-finder.py search <RESOURCE1> <RESOURCE2> ... [Fertile|Infertile|Colonized|Uncolonized]")
+    #     sys.exit(1)
+
+    args = list(sys.argv[1:])
+    terms = {}
+
+    # Identify tickers
+    tickers = prun.loader.material_ticker_list
+    terms['resources'] = []
+    for arg in args.copy():
+        if arg.upper() in tickers:
+            terms['resources'].append(arg)
+            args.remove(arg)
+
+    # Identify fertility filter, case insensitive
+    terms['fertility'] = None
+    for arg in args.copy():
+        if arg.lower() in ['fertile', 'infertile']:
+            if arg == 'fertile':
+                terms['fertility'] = True
+            else:
+                terms['fertility'] = False
+            args.remove(arg)
 
 
-def load_json_data(filename):
-    with open(filename, 'r') as f:
-        return json.load(f)
+    # Identify colonized filter, case insensitive
+    terms['colonized'] = None
+    for arg in args.copy():
+        if arg.lower() in ['colonized', 'uncolonized']:
+            if arg == 'colonized':
+                terms['colonized'] = True
+            else:
+                terms['colonized'] = False
+            args.remove(arg)
 
-def find_planets_with_resources(planets, required_resources):
-    matching_planets = []
-    for planet in planets:
-        planet_resources = {resource['type'] for resource in planet['resources']}
-        if all(resource in planet_resources for resource in required_resources):
-            matching_planets.append(planet)
-    return matching_planets
+    terms['planet_whitelist'] = []
+    for arg in args.copy():
+        planet = None
+        try:
+            planet = prun.loader.get_planet(arg)
+        except:
+            pass
+        
+        if planet is not None:
+            terms['planet_whitelist'].append(planet.natural_id)
+            args.remove(arg)
 
-def filter_planets(planets, filters):
-    filtered_planets = {}
-    for name, planet in planets.items():
-        match = True
-        for f in filters:
-            if f.lower() == 'fertile':
-                if planet.rawdata['Fertility'] == -1:
-                    match = False
-                    break
-            elif f.lower() == 'infertile':
-                if planet.rawdata['Fertility'] != -1:
-                    match = False
-                    break
-            elif f.lower() == 'colonized':
-                if planet.get_population_count().pioneers < 1000:
-                    match = False
-                    break
-            elif f.lower() == 'uncolonized':
-                if planet.get_population_count().pioneers > 100:
-                    match = False
-                    break
-        if match:
-            filtered_planets[name] = planet
-    return filtered_planets
+    if len(args) > 0:
+        print(f"Unrecognized arguments: {args}")
+        sys.exit(1)
+
+    return terms
 
 def print_planet_info(planet):
     planet_name_string = ""
@@ -82,80 +99,113 @@ def print_planet_info(planet):
     print(fertility_status)
     print("\n")
 
+def print_terms(terms):
+    header_string = "Searching for planets..."
+
+    resources_string = ""
+    if len(terms['resources']) > 0:
+        resources_string = "\n  Resources: " + ", ".join(terms['resources'])
+
+    # "Ability to grow plants" or "No fertility" based on value
+    fertility_string = ""
+    if terms['fertility'] is not None:
+        fertility_string = "\n  Ability to grow plants" if terms['fertility'] else "\n  No fertility"
+
+    colonized_string = ""
+    if terms['colonized'] is not None:
+        colonized_string = "\n  Colonized" if terms['colonized'] else "\n  Uncolonized"
+
+    # "Within all planets" or "Within these planets" if whitelist is not empty
+    planet_string = "\n  Within all planets"
+    if len(terms['planet_whitelist']) > 0:
+        planet_string = f"\n  Within these planets: {', '.join(terms['planet_whitelist'])}"
+
+
+    print(
+        f"{header_string}"
+        f"{resources_string}"
+        f"{fertility_string}"
+        f"{colonized_string}"
+        f"{planet_string}"
+    )
+
+def apply_filters(planets, terms):
+
+    if len(terms['planet_whitelist']) > 0:
+        planets = filter_planets(planets, lambda p: p.natural_id in terms['planet_whitelist'], "that aren't in the whitelist")
+
+    if len(terms['resources']) > 0:
+        def resource_condition(planet):
+            planet_resources = [ticker for ticker in planet.resources.keys()]
+            return all(resource in planet_resources for resource in terms['resources'])
+        planets = filter_planets(planets, resource_condition, "that don't have required resources")
+
+    if terms['fertility'] is not None:
+        def fertity_condition(planet):
+            if terms['fertility'] is None: return True
+            if planet.environment['fertility'] == -1:
+                fertile = False
+            else:
+                fertile = True
+            return fertile == terms['fertility']
+        planets = filter_planets(planets, fertity_condition, "that aren't fertile")
+
+    if terms['colonized'] is not None:
+        def colonized_condition(planet):
+            if terms['colonized'] is None: return True
+            if planet.population.total < COLONIZED_POPULATION_THRESHOLD:
+                colonized = False
+            else:
+                colonized = True
+            return colonized == terms['colonized']
+        planets = filter_planets(planets, colonized_condition, f"that have less than {COLONIZED_POPULATION_THRESHOLD} population")
+
+    return planets
+
+def filter_planets(planets, condition, message):
+    """
+    Filters the planets list based on a given condition and prints a summary message.
+
+    Parameters:
+    planets (list): The list of planets to be filtered.
+    condition (function): A function that returns True for elements to keep.
+    message (str): The message describing the filter being applied.
+
+    Returns:
+    list: The filtered list of planets.
+    """
+    prior_count = len(planets)
+    planets = [planet for planet in planets if condition(planet)]
+    diff = prior_count - len(planets)
+    pct = diff / prior_count * 100
+    print(f"Removed {diff} ({pct:>.0f}%) planets {message}")
+    return planets
+
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python planet-finder.py <planet_name> or python planet-finder.py search <RESOURCE1> <RESOURCE2> ... [Fertile|Infertile|Colonized|Uncolonized]")
-        sys.exit(1)
 
-    if sys.argv[1].lower() == "search":
-        if len(sys.argv) < 3:
-            print("Usage: python planet-finder.py search <RESOURCE1> <RESOURCE2> ... [Fertile|Infertile|Colonized|Uncolonized]")
-            sys.exit(1)
+    # Terms worth adding:
+    #  Blacklists
+    #  COGC
+    #  Nearest exchanges
+    #  Exchange distance
+    terms = parse_arguments()
+    #print_terms(terms)
 
-        filters = [arg for arg in sys.argv[2:] if arg.lower() in ['fertile', 'infertile', 'colonized', 'uncolonized']]
-        required_resources = set(arg for arg in sys.argv[2:] if arg.lower() not in ['fertile', 'infertile', 'colonized', 'uncolonized'])
+    print(json.dumps(terms, indent=4))
 
-        planets = prun.loader.get_all_planets()
+    planets = prun.loader.get_all_planets()
+    planets = list(planets.values())
+    #if len(terms['planet_whitelist']) > 0:
+        
+
+    planets = apply_filters(planets, terms)
+
+    for planet in planets:
+        print_planet_info(planet)
+    
 
 
-        for name, planet in planets.copy().items():
-            for ticker in required_resources:
-                if ticker not in planet.resources.keys():
-                    if name in planets.keys():
-                        del planets[name]
-
-
-        # matching_planets = find_planets_with_resources(planets, required_resources)
-
-        # all_planet_data = load_json_data(all_planets_file)
-        # updated_planets = []
-        # for planet in matching_planets:
-        #     planet_info = next((p for p in all_planet_data if p["PlanetName"] == planet["name"] or p["PlanetNaturalId"] == planet["name"]), None)
-        #     if planet_info:
-        #         updated_planets.append({
-        #             "name": planet["name"],
-        #             "info": planet_info,
-        #             "resources": planet["resources"]
-        #         })
-
-        if filters:
-            planets = filter_planets(planets, filters)
-
-        if len(planets.keys()):
-            print("Planets with all specified resources and their details:")
-            for name, planet in planets.items():
-                print_planet_info(planet)
-        else:
-            print("No planets found with all specified resources.")
-    else:
-        planet_name = sys.argv[1]
-        planets = load_json_data(planet_resources_file)
-        planet = next((p for p in planets if p["name"] == planet_name), None)
-
-        if planet:
-            all_planet_data = load_json_data(all_planets_file)
-            planet_info = next((p for p in all_planet_data if p["PlanetName"] == planet_name or p["PlanetNaturalId"] == planet_name), None)
-            if planet_info:
-                planet_data = {
-                    "name": planet_name,
-                    "info": planet_info,
-                    "resources": planet["resources"]
-                }
-                print_planet_info(planet_data)
-            else:
-                print(f"No information found for planet {planet_name}")
-        else:
-            all_planet_data = load_json_data(all_planets_file)
-            planet_info = next((p for p in all_planet_data if p["PlanetName"] == planet_name or p["PlanetNaturalId"] == planet_name), None)
-            if planet_info:
-                planet_data = {
-                    "name": planet_name,
-                    "info": planet_info,
-                    "resources": []  # No resource info available in planet-resources.json
-                }
-                print_planet_info(planet_data)
-            else:
-                print(f"No information found for planet {planet_name}")
+    return
 
 if __name__ == "__main__":
     main()
