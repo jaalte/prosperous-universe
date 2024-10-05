@@ -101,7 +101,7 @@ def estimate_costs_volumes(input_string):
         if ticker in resources:
             mpu = resources[ticker]['weight']
             vpu = resources[ticker]['volume']
-            cpu = resources[ticker]['prices']['average'] if resources[ticker]['prices']['average'] else 0
+            cpu = resources[ticker]['prices']['askPrice'] if resources[ticker]['prices']['askPrice'] else 0
 
             tm = mpu * count
             tv = vpu * count
