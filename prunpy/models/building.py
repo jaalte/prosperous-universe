@@ -10,11 +10,11 @@ class Building:
 
         self.ticker = ticker
         if isinstance(planet, str):
-            self.planet = Planet(natural_id=planet)
+            self.planet = loader.get_planet(planet)
         elif isinstance(planet, Planet):
             self.planet = planet
         elif planet is None:
-            self.planet = Planet(natural_id=DEFAULT_PLANET_NATURAL_ID)
+            self.planet = loader.get_planet(DEFAULT_PLANET_NATURAL_ID)
         else:
             raise Exception(f"Invalid planet type: {type(planet)}")
 
