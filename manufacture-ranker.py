@@ -94,7 +94,7 @@ def main():
         hits.append(hit)
     
     # Sort hits by lowest roi
-    hits.sort(key=lambda x: x['daily_profit'], reverse=False)
+    hits.sort(key=lambda x: x['true_roi'], reverse=True)
 
     # Further filtering
     filtered_hits = []
