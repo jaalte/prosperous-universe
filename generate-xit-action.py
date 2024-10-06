@@ -24,6 +24,7 @@ def prompt_user():
     if exchange_code not in ["NC1", "AI1", "CI1", "IC1", "NC2", "CI2"]:
         exchange_code = planet.get_nearest_exchange()[0]
         print("Using nearest exchange: " + exchange_code)
+    exchange = prunpy.loader.get_exchange(exchange_code)
 
     name = "Buy "
     if len(buildings.buildings):
@@ -41,9 +42,9 @@ def prompt_user():
     print("Action copied to clipboard! Ensure you have a warehouse at the specified exchange before running.")
 
     print(
-        f"Total cost estimated at \n{total.get_total_value(exchange_code, 'buy'):.0f} credits,\n"
-        f"{total.weight} weight, and\n"
-        f"{total.volume} volume."
+        f"Total cost estimated at \n{total.get_total_value(exchange_code, 'buy'):.0f} {exchange.currency},\n"
+        f"{total.weight:.2f} weight, and\n"
+        f"{total.volume:.2f} volume."
     )
 
 def generate_xit_action(name, resources, exchange_code="NC1", transfer=True):
@@ -113,11 +114,12 @@ def prompt_buildings(planet):
         try:
             building_dict = parse_building_string(building_string, all_building_tickers)
             success = True
-            print(f"Parsed buildings: {building_dict}")
+            buildings = prunpy.BuildingList(building_dict, planet)
+            print(f"Parsed buildings: {buildings}")
         except ValueError as e:
             print(f"Error: {e}")
     
-    return prunpy.BuildingList(building_dict, planet)
+    return prunpy.BuildingList(buildings, planet)
 
 
 
@@ -173,11 +175,12 @@ def prompt_resources():
         try:
             resource_dict = parse_resource_string(resource_string, all_material_tickers)
             success = True
-            print(f"Parsed resources: {resource_dict}")
+            resources = prunpy.ResourceList(resource_dict)
+            print(f"Parsed resources: {resources}")
         except ValueError as e:
             print(f"Error: {e}")
     
-    return prunpy.ResourceList(resource_dict)
+    return resources
 
 def parse_resource_string(resource_string, valid_tickers):
     resource_dict = {}
