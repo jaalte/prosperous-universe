@@ -18,6 +18,7 @@ from .models.logistics import Container
 from .models import pathfinding
 
 from .utils.resource_list import ResourceList
+from .utils.building_list import BuildingList
 from .utils.terminal_color_scale import terminal_color_scale
 
 # Import utility functions
@@ -27,7 +28,8 @@ from .utils.terminal_color_scale import terminal_color_scale
 __all__ = [
     'fio', 'loader',
     'Planet', 'System', 'Base', 'RealBase', 'Building',
-    'Exchange', 'PriceHistory', 'Recipe', 'ResourceList', 'Population',
+    'Exchange', 'PriceHistory', 'Recipe',
+    'ResourceList', 'BuildingList', 'Population',
     'Container', 'Material', 'Company',
 
     'terminal_color_scale', 'pathfinding',
