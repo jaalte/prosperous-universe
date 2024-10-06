@@ -81,7 +81,7 @@ def generate_xit_action(name, resources, exchange_code="NC1", transfer=True):
                 "type": "CX Buy",
                 "group": "Resources",
                 "exchange": exchange_code,
-                "useCXInv": True,
+                "useCXInv": False,
                 "buyPartial": False,
                 "priceLimits": price_limits
             },
