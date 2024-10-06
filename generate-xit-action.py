@@ -31,8 +31,9 @@ def prompt_user():
         name += f"{buildings} "
     if len(resources.resources):
         name += f"{resources} "
-
     name += f"from {exchange_code}"
+    # Remove commas and replace spaces with dashes
+    name = re.sub(r',', '', name).replace(' ', '-')
 
     output = generate_xit_action(name, total, exchange_code, True)
     output = json.dumps(output, indent=4)
