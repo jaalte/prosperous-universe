@@ -16,3 +16,10 @@ preferred_exchange.txt
 /prunpy/build/
 
 *sell_rates*.csv
+
+# Inflation calc stuff (strains fio api but it works,
+#  ask me if you wanna see the graphs or data)
+compounded_monthly_inflation_rates.png
+monthly_inflation_rates.png
+*inflation_rates*.csv
+graph-inflation.py
