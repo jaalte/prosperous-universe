@@ -13,7 +13,7 @@ from collections import deque
 
 MAX_RETRIES = 3
 REQUESTS_PER_RATE_LIMIT = 1
-RATE_LIMIT = 0.2  # seconds
+RATE_LIMIT = 0.5  # seconds
 
 API_KEY_FILE = './apikey.txt'
 
