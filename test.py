@@ -1,5 +1,6 @@
 import prunpy as prun
 from prunpy import ResourceList
+from prunpy import loader
 import json
 import math
 import requests
@@ -221,6 +222,47 @@ def main():
 
     # for ticker, building in buildings.items():
     #     print(f"{ticker}: {building.planet.name}: {building.get_daily_maintenance()}")
+
+    exchange = loader.get_exchange('NC1')
+
+    materials = []
+
+    for ticker in loader.material_ticker_list:
+        history = prun.PriceHistory(ticker, exchange.code)
+        traded = history.average_traded_daily
+
+        price = exchange.get_good(ticker).sell_price
+        traded_value = traded * price
+
+        materials.append({
+            'ticker': ticker,
+            'good': exchange.get_good(ticker),
+            'price': price,
+            'traded': traded,
+            'traded_value': traded_value
+        })
+        print(f"{ticker}: {traded_value:.2f}")
+
+
+    materials = sorted(materials, key=lambda x: x['traded_value'], reverse=True)
+
+    total_mm = 0
+    total_non_mm = 0
+    for material in materials:
+        if material['good'].mm_buys:
+            total_mm += material['traded_value']
+        else:
+            total_non_mm += material['traded_value']
+
+    for material in materials:
+        print(f"{material['ticker']}: {material['traded_value']:.2f}")
+
+    print(f"Total MM: {total_mm:.2f}")
+    print(f"Total non-MM: {total_non_mm:.2f}")
+    print(f"MM-nMM: {total_mm - total_non_mm:.2f}")
+
+
+    return
 
     from prunpy.models.recipe_tree import RecipeTreeNode
 
