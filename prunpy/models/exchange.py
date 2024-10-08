@@ -225,5 +225,17 @@ class ExchangeGood:
     def spread_ratio(self):
         return self.buy_price / self.sell_price
 
+    @property
+    def mm_buys(self):
+        if len(self.buy_orders) > 0:
+            return self.buy_orders[0]['count'] == float('inf')
+        return False
+
+    @property
+    def mm_sells(self):
+        if len(self.sell_orders) > 0:
+            return self.sell_orders[0]['count'] == float('inf')
+        return False
+
     def __str__(self):
         return f"[{self.ticker} at {self.exchange_code}]"
