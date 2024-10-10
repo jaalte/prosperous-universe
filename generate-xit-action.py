@@ -112,6 +112,10 @@ def prompt_buildings(planet):
     while not success:
         print("Enter a list of building codes, eg \"HB2, 2 CHP, 3 CLF\" (Blank for none)")
         building_string = input("> ")
+        if not building_string:
+            buildings = prunpy.BuildingList({}, planet)
+            success = True
+            break
         try:
             building_dict = parse_building_string(building_string, all_building_tickers)
             success = True
@@ -173,6 +177,10 @@ def prompt_resources():
     while not success:
         print("Enter a list of material codes, eg \"ALU, 2 FE, 3 H2O\" (Blank for none)")
         resource_string = input("> ")
+        if not resource_string:
+            resources = prunpy.ResourceList({})
+            success = True
+            break
         try:
             resource_dict = parse_resource_string(resource_string, all_material_tickers)
             success = True
