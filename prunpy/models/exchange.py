@@ -222,6 +222,7 @@ class ExchangeGood:
     def spread_absolute(self):
         return self.buy_price - self.sell_price
 
+    @property
     def spread_ratio(self):
         return self.buy_price / self.sell_price
 
