@@ -19,7 +19,6 @@ preferred_exchange.txt
 
 # Inflation calc stuff (strains fio api but it works,
 #  ask me if you wanna see the graphs or data)
-compounded_monthly_inflation_rates.png
-monthly_inflation_rates.png
+*inflation*.png
 *inflation_rates*.csv
 graph-inflation.py
