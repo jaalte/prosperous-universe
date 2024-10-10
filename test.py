@@ -216,6 +216,45 @@ def analyze_local_markets():
         print(f" {materials} from {origin} -> {destination} by {company} ({company_code})")
 
 def main():
+
+    buildings = prun.BuildingList({
+        #"POL": 4,
+        "BMP": 2,
+        "CHP": 4,
+        "CLF": 4,
+        "EXT": 3,
+        "FP": 1,
+        "PP1": 2,
+        "PP3": 5,
+    })
+
+    # Cost
+    cost_buildings = buildings.include_housing('cost')
+    cost_cost = cost_buildings.cost
+    cost_area = cost_buildings.area
+
+    # Area
+    area_buildings = buildings.include_housing('area')
+    area_cost = area_buildings.cost
+    area_area = area_buildings.area
+
+    print(f"Cost-focused: {cost_buildings}\n  {cost_cost:.2f} NCC, {cost_area:.2f} area, {cost_cost/cost_area:.2f} per area")
+    print(f"Area-focused: {area_buildings}\n  {area_cost:.2f} NCC, {area_area:.2f} area, {area_cost/area_area:.2f} per area")
+
+    cost_added = area_cost - cost_cost
+    area_added = cost_area - area_area
+    opportunity_cost = cost_added / area_added
+
+    print(f"Cost per extra area: {opportunity_cost:.2f}")
+
+
+    for ticker in ['RSE', 'RBH', 'HMS', 'HSS', 'MED', 'TIO']:
+        spread = prun.loader.get_exchange('NC1').get_good(ticker).spread_ratio
+        print(f"{ticker}: {spread-1:.2%}")
+
+    return
+
+
     #find_largest_pop()
 
     buildings = prun.loader.get_all_buildings()
@@ -261,8 +300,8 @@ def main():
     print(f"Total non-MM: {total_non_mm:.2f}")
     print(f"MM-nMM: {total_mm - total_non_mm:.2f}")
 
+    ##########
 
-    return
 
     from prunpy.models.recipe_tree import RecipeTreeNode
 
@@ -427,9 +466,9 @@ def main():
     #analyze_local_markets()
 
 
-    from prunpy.models.material import Material
-    c = Material('C')
-    print(c.get_value())
+    # from prunpy.models.material import Material
+    # c = Material('C')
+    # print(c.get_value())
 
 if __name__ == "__main__":
     main()

@@ -3,6 +3,7 @@ from prunpy.models.planet import Planet
 from prunpy.models.population import Population
 from prunpy.models.recipe import Recipe
 from prunpy.utils.resource_list import ResourceList
+from prunpy.constants import DEFAULT_BUILDING_PLANET_NATURAL_ID, HOUSING_SIZES
 
 # A single building of a particular ticker. Not a particular one though.
 class Building:
@@ -25,13 +26,18 @@ class Building:
 
         self.area = self.rawdata.get('AreaCost')
 
-        self.population_demand = Population({
-            'pioneers': self.rawdata.get('Pioneers'),
-            'settlers': self.rawdata.get('Settlers'),
-            'technicians': self.rawdata.get('Technicians'),
-            'engineers': self.rawdata.get('Engineers'),
-            'scientists': self.rawdata.get('Scientists'),
-        })
+        
+        if self.ticker in HOUSING_SIZES.keys():
+            self.population_demand = Population(HOUSING_SIZES[self.ticker]).invert()
+        else:
+            self.population_demand = Population({
+                'pioneers': self.rawdata.get('Pioneers'),
+                'settlers': self.rawdata.get('Settlers'),
+                'technicians': self.rawdata.get('Technicians'),
+                'engineers': self.rawdata.get('Engineers'),
+                'scientists': self.rawdata.get('Scientists'),
+            })
+
         self.cogc_type = self.rawdata.get('Expertise')
 
         is_extractor = self.ticker in ['COL', 'RIG', 'EXT']
@@ -82,7 +88,7 @@ class Building:
         materials = self.construction_materials
 
         if include_housing:
-            materials += self.get_population_housing().get_total_materials()
+            materials += self.get_population_housing('cost').get_total_materials()
 
         if exchange_override:
             exchange = loader.get_exchange(exchange_override)
@@ -99,6 +105,8 @@ class Building:
         return self.get_daily_maintenance.get_total_value(exchange, "buy")
 
     def get_population_housing(self):
+        return self.population_demand.get_housing_needs()
+    def get_housing_needs(self):
         return self.population_demand.get_housing_needs()
 
     def is_extractor(self):

@@ -37,28 +37,85 @@ class BuildingList:
             raise Exception(f"Invalid planet type: {type(planet)}")
 
 
-
+    # NOTE: Has to ceil amounts, since you can't actually have partial buildings
     def get_building_instances(self):
         from prunpy.data_loader import loader
-        return {ticker: loader.get_building(ticker, self.planet.natural_id) for ticker in self.buildings}
+
+        buildings = []
+        for ticker, count in self.buildings.items():
+            for _ in range(math.ceil(count)):
+                buildings.append(loader.get_building(ticker, self.planet.natural_id))
+
+        return buildings
+
+    def get_single_building_instances(self):
+        from prunpy.data_loader import loader
+        buildings = []
+        for ticker in self.buildings:
+            buildings.append(loader.get_building(ticker, self.planet.natural_id))
+        return buildings
 
     def get_total_cost(self, exchange=None):
         from prunpy.data_loader import loader 
         exchange = loader.get_exchange(exchange)
 
         total = 0
-        for ticker, building in self.get_building_instances().items():
-            total += building.get_cost(exchange) * self.buildings[ticker]
+        for building in self.get_single_building_instances():
+            cost = building.get_cost(exchange)
+            total += cost * self.buildings[building.ticker]
 
         return total
 
-    def get_total_materials(self):
+    @property
+    def cost(self):
+        return self.get_total_cost()
+
+    def get_total_materials(self, exchange=None):
         from prunpy.utils.resource_list import ResourceList
+        from prunpy.data_loader import loader
+        exchange = loader.get_exchange(exchange)
+
         total = ResourceList()
-        for ticker, building in self.get_building_instances().items():
-            total += building.construction_materials * self.buildings[ticker]
+        for building in self.get_single_building_instances():
+            total += building.construction_materials * self.buildings[building.ticker]
 
         return total
+
+    @property
+    def materials(self):
+        return self.get_total_materials()
+
+    def get_total_area(self, exchange=None):
+        from prunpy.data_loader import loader
+        exchange = loader.get_exchange(exchange)
+
+        total = 0
+        for building in self.get_single_building_instances():
+            total += building.area * self.buildings[building.ticker]
+        return total
+
+    @property
+    def area(self):
+        return self.get_total_area()
+
+    def get_population_needs(self, exchange=None):
+        from prunpy.models.population import Population
+        from prunpy.data_loader import loader
+        exchange = loader.get_exchange(exchange)
+
+        total_pop = Population({})
+        for building in self.get_single_building_instances():
+            total_pop += building.population_demand * self.buildings[building.ticker]
+
+        return total_pop
+
+
+    def get_housing_needs(self, priority='cost'):
+        return self.get_population_needs().get_housing_needs(priority)
+
+    def include_housing(self, priority='cost'):
+        housing = self.get_housing_needs(priority)
+        return self + housing
             
 
     def get_amount(self, ticker):

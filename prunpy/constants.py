@@ -44,7 +44,41 @@ BASIC_HOUSING_BUILDINGS = {
     'technicians': 'HB3',
     'engineers': 'HB4',
     'scientists': 'HB5',
-} 
+}
+
+HOUSING_SIZES = {
+    'HB1': {
+        'pioneers': 100,
+    },
+    'HB2': {
+        'settlers': 100,
+    },
+    'HB3': {
+        'technicians': 100,
+    },
+    'HB4': {
+        'engineers': 100,
+    },
+    'HB5': {
+        'scientists': 100,
+    },
+    'HBB': {
+        'pioneers': 75,
+        'settlers': 75,
+    },
+    'HBC': {
+        'settlers': 75,
+        'technicians': 75,
+    },
+    'HBM': {
+        'technicians': 75,
+        'engineers': 75,
+    },
+    'HBL': {
+        'engineers': 75,
+        'scientists': 75,
+    },
+}
 
 # Moved to prunpy.loader.get_population_upkeep()
 # POPULATION_UPKEEP_PER_100_PER_DAY = {

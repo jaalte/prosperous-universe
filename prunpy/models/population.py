@@ -62,29 +62,89 @@ class Population:
             raise KeyError(f"Population.get called for unknown demographic: {demographic}")
         return self.population[demographic]
 
-    def get(self, demographic):
+    def get(self, demographic, default=0):
         if not demographic in self.population:
-            raise KeyError(f"Population.get called for unknown demographic: {demographic}")
+            return default
         return self.population[demographic]
 
     def get_housing_needs(self, priority='cost'):
         from prunpy.utils.building_list import BuildingList
-        from prunpy.constants import BASIC_HOUSING_BUILDINGS
-        if priority == 'area':
-            pass
+        from prunpy.constants import DEMOGRAPHICS
+        from scipy.optimize import linprog
 
-        # Priority is cost
-        housing = BuildingList()
-        for demographic, count in self.population.items():
-            housing += BuildingList({
-                BASIC_HOUSING_BUILDINGS[demographic]: count/100
-            })
+        if priority not in ['cost', 'area']:
+            raise KeyError(f"Population.get_housing_needs called with unknown priority: {priority}")
 
-        return housing.prune()
+        exchange_code = 'NC1'  # Should be representative across all exchanges
+        target = self.invert()
+
+        # Retrieve housing buildings and their associated costs and areas
+        housing_tickers = ['HB1', 'HB2', 'HB3', 'HB4', 'HB5', 'HBB', 'HBC', 'HBM', 'HBL']
+        housing_objects = BuildingList({
+            ticker: 1 for ticker in housing_tickers
+        }).get_building_instances()
+
+        # Prepare the optimization matrix for scipy.optimize.linprog
+        # The objective is to minimize either cost or area
+        if priority == 'cost':
+            c = [building.get_cost(exchange_code) for building in housing_objects]  # Minimize cost
+        else:
+            c = [building.area for building in housing_objects]  # Minimize area
+
+        # Debugging: Print objective function coefficients
+        #print("Objective function coefficients (c):", c)
+
+        # Coefficients for the inequality constraints
+        A = []
+        b = []
+
+        # For each demographic in DEMOGRAPHICS, create a constraint
+        for demographic in DEMOGRAPHICS:
+            demographic_housing = [building.population_demand.get(demographic, 0) for building in housing_objects]
+            total_required_housing = -self.get(demographic)  # The total required housing for this demographic
+
+            # Debugging: Print constraint row and required housing
+            #print(f"Demographic: {demographic}, Housing constraint row: {demographic_housing}, Total required housing: {total_required_housing}")
+
+            A.append(demographic_housing)
+            b.append(total_required_housing)
+
+        # Set bounds (no negative buildings, so minimum is 0)
+        bounds = [(0, None) for _ in housing_objects]
+
+        # Debugging: Print constraints matrix and bounds
+        #print("Inequality constraints matrix (A):", A)
+        #print("Constraints vector (b):", b)
+        #print("Bounds:", bounds)
+
+        # Solve the linear programming problem using scipy's linprog
+        result = linprog(
+            c,                  # Objective function coefficients (cost or area)
+            A_ub=A,             # Coefficients for inequality constraints (housing)
+            b_ub=b,             # Total required housing for each demographic
+            bounds=bounds,      # Bound constraints (min 0, no max limit)
+            method='highs'      # Using the recommended method
+        )
+
+        # Debugging: Check the result status
+        #print("Optimization result:", result)
+
+        if result.success:
+            # Return the optimized number of buildings needed
+            optimal_solution = result.x
+            need = {housing_objects[i].ticker: float(optimal_solution[i]) for i in range(len(housing_objects))}
+            return BuildingList(need).prune()
+        else:
+            raise ValueError("Optimization failed. Please check the inputs and constraints.")
 
 
+
+            
     #def __getitem__(self, demographic):
     #    return self.population.get(demographic.lower(), 0)
+
+    def invert(self):
+        return Population({demographic: -amount for demographic, amount in self.population.items()})
 
     def __add__(self, other):
         if not isinstance(other, Population):
