@@ -10,9 +10,8 @@ base_cost = 1000
 cost_per_jump = 750
 liquid_assets = 60000
 
-min_demand = 500
-# Expected trade volume in n weeks
-min_volume_demand_ratio = 1
+
+min_daily_bought = 50
 
 ship_specs = {
     "weight": 500,
@@ -42,17 +41,18 @@ def find_trades(origin):
             og = oex.get_good(material_ticker)
             dg = dex.get_good(material_ticker)
             
+            sell_price = dg.buy_price*0.999
+
             if og.buy_price == 0: continue
-            if dg.sell_price == 0: continue
-            if dg.demand < min_demand: continue
-            if dg.demand < dg.rawdata['Traded']*min_volume_demand_ratio: continue
+            if sell_price == 0: continue
+            if dg.daily_sold > min_daily_bought: continue
 
             route = {
                 "origin": oex,
                 "destination": dex,
                 "material": material_ticker,
-                "profit_per_unit": dg.sell_price - og.buy_price,
-                "profit_ratio": dg.sell_price / og.buy_price,
+                "profit_per_unit": sell_price - og.buy_price,
+                "profit_ratio": sell_price / og.buy_price,
                 "origin_good": og,
                 "destination_good": dg,
             }
@@ -84,10 +84,10 @@ def find_trades(origin):
                 sellable_order['material'] = route['material']
 
             # Pop off orders with too low buy volume to be reliable
-            if sellable_orders:
-                while route['destination_good'].rawdata['Traded']*min_volume_demand_ratio < (sellable_orders[0]['count'] or 0):
-                    sellable_orders.pop(0)
-                    if not sellable_orders: break
+            # if sellable_orders:
+            #     while route['destination_good'].rawdata['Traded']*min_volume_demand_ratio < (sellable_orders[0]['count'] or 0):
+            #         sellable_orders.pop(0)
+            #         if not sellable_orders: break
 
             # loop until either is empty
             while len(buyable_orders) > 0 and len(sellable_orders) > 0:
