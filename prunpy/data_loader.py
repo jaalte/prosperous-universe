@@ -479,6 +479,10 @@ class DataLoader:
 
         return username
 
+    @property
+    def username(self):
+        return self.get_username()
+
     def get_preferred_exchange_code(self):
         # Load data from ./preferred_exchange.txt, no caching
 
@@ -511,5 +515,12 @@ class DataLoader:
                 print(f"Saved preferred_exchange to ./preferred_exchange.txt. Delete that file if you want to reset it.")
 
         return preferred_exchange
+    
+    @property
+    def preferred_exchange(self):
+        return self.get_exchange(self.get_preferred_exchange_code())
+    @property
+    def preferred_exchange_code(self):
+        return self.get_preferred_exchange_code()
 
 loader = DataLoader()
