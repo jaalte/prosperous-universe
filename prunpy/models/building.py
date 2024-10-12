@@ -104,10 +104,10 @@ class Building:
         exchange = exchange or self.planet.get_nearest_exchange()[0]
         return self.get_daily_maintenance.get_total_value(exchange, "buy")
 
-    def get_population_housing(self):
-        return self.population_demand.get_housing_needs()
-    def get_housing_needs(self):
-        return self.population_demand.get_housing_needs()
+    def get_population_housing(self, priority='cost'):
+        return self.population_demand.get_housing_needs(priority)
+    def get_housing_needs(self, priority='cost'):
+        return self.population_demand.get_housing_needs(priority)
 
     def is_extractor(self):
         return self.ticker in ['COL', 'RIG', 'EXT']
