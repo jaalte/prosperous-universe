@@ -94,7 +94,10 @@ class Planet:
         self.environment['temperature'] = self.rawdata.get('Temperature')
         self.environment['pressure'] = self.rawdata.get('Pressure')
         self.environment['gravity'] = self.rawdata.get('Gravity')
-        self.environment['fertility'] = self.rawdata.get('Fertility')
+        self.environment['fertility'] = float(self.rawdata.get('Fertility'))
+        if self.environment['fertility'] != -1.0:
+            self.environment['fertility'] *= 10/33
+
 
         self.environment_class = {}
         for prop in ['temperature', 'pressure', 'gravity']:
