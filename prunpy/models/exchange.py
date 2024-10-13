@@ -217,14 +217,23 @@ class ExchangeGood:
     @property
     def daily_sold(self):
         return self.price_history.average_traded_daily
+    @property
+    def daily_traded(self):
+        return self.daily_sold
 
     @property
     def spread_absolute(self):
+        return self.buy_price - self.sell_price
+    @property
+    def spread_amount(self):
         return self.buy_price - self.sell_price
 
     @property
     def spread_ratio(self):
         return self.buy_price / self.sell_price
+    @property
+    def spread_percent(self):
+        return (self.spread_ratio-1)*100
 
     @property
     def mm_buys(self):
