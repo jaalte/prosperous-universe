@@ -5,25 +5,31 @@ class Recipe:
     def __init__(self, rawdata):
         if isinstance(rawdata, Recipe):
             self.building = rawdata.building
-            self.duration = rawdata.duration
+            self.raw_duration = rawdata.raw_duration
             self.inputs = rawdata.inputs.copy()
             self.outputs = rawdata.outputs.copy()
+            self.multipliers = rawdata.multipliers.copy()
             self.id = rawdata.id
 
         # Importing from buildings.json format
         elif 'BuildingRecipeId' in rawdata:
             self.building = rawdata.get('StandardRecipeName')[0:3].rstrip(':')
-            self.duration = rawdata.get('DurationMs')/1000/60/60
+            self.raw_duration = rawdata.get('DurationMs')/1000/60/60
             self.id = rawdata.get('StandardRecipeName')
 
             self.inputs = ResourceList(rawdata.get('Inputs'))
             self.outputs = ResourceList(rawdata.get('Outputs'))
+            self.multipliers = {}
 
 
         # Manually specified format
         else:
             self.building = rawdata.get('building')
-            self.duration = rawdata.get('duration')
+            self.raw_duration = rawdata.get('raw_duration', None)
+            if self.raw_duration is None:
+                self.raw_duration = rawdata.get('duration', None)
+                if self.raw_duration is None:
+                    raise Exception(f"Invalid recipe, no duration or raw_duration: {rawdata}")
 
             self.inputs = rawdata.get('inputs')
             if not isinstance(self.inputs, ResourceList):
@@ -31,6 +37,8 @@ class Recipe:
             self.outputs = rawdata.get('outputs')
             if not isinstance(self.outputs, ResourceList):
                 self.outputs = ResourceList(self.outputs)
+            
+            self.multipliers = rawdata.get('multipliers', {})
 
 
             self.id = f"{self.building}:"
@@ -41,14 +49,26 @@ class Recipe:
             for ticker, count in self.outputs.resources.items():
                 self.id += f"{count}x{ticker}-"
             self.id = self.id[:-1]
-         
+    
+    @property
+    def duration(self):
+        return self.raw_duration / self.multiplier
+    
+    @property
+    def multiplier(self):
+        total_multiplier = 1
+        for multiplier in self.multipliers.values():
+            total_multiplier *= multiplier
+        return total_multiplier
+
     def convert_to_daily(self):
-        mult = 24 / self.duration
+        daily_cycles = 24 / self.raw_duration
         new_rawdata = {
             'building': self.building,
-            'duration': 24,
-            'inputs': self.inputs * mult,
-            'outputs': self.outputs * mult,
+            'raw_duration': 24,
+            'inputs': self.inputs * daily_cycles,
+            'outputs': self.outputs * daily_cycles,
+            'multipliers': self.multipliers,
         }
         return Recipe(new_rawdata)
 
@@ -63,15 +83,6 @@ class Recipe:
     @property
     def delta(self):
         return self.outputs - self.inputs
-
-    def apply_multiplier(self, multiplier):
-        new_rawdata = {
-            'building': self.building,
-            'duration': self.duration / multiplier,
-            'inputs': self.inputs,
-            'outputs': self.outputs,
-        }
-        return Recipe(new_rawdata)
 
     def get_worker_upkeep_per_craft(self):
         building = loader.get_all_buildings()[self.building]
@@ -111,5 +122,11 @@ class Recipe:
     def copy(self):
         return Recipe(self)
 
+    def __json__(self):
+        return self.__str__()
+
     def __str__(self):
-        return f"{self.outputs} <= {self.inputs} in {self.duration:.1f}h @{self.building:<3}"
+        if self.multiplier == 1:
+            return f"{self.outputs} <= {self.inputs} in {self.raw_duration:.1f}h @{self.building:<3}"
+        else:
+            return f"{self.outputs} <= {self.inputs} in {self.duration:.1f}h (x{self.multiplier:.0%}) @{self.building:<3}"

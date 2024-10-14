@@ -47,7 +47,7 @@ class RecipeTreeNode:
 
         newself = self.copy()
         newself.recipe = self.recipe.copy()
-        newself.recipe.duration *= multiplier
+        newself.recipe.raw_duration *= multiplier
         newself.recipe.inputs *= multiplier
         newself.recipe.outputs *= multiplier
         if newself.multiplier:

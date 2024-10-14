@@ -82,7 +82,7 @@ class Planet:
             self.mining_recipes = []
             recipe_rawdata = {
                 'building': extractor_building,
-                'duration': process_hours,
+                'raw_duration': process_hours,
                 'inputs': {},
                 'outputs': {ticker: process_amount}
             }
@@ -298,6 +298,12 @@ class Planet:
 
         return mats_here.get_total_value(exchange) / mats_ideal.get_total_value(exchange)
 
+    def shorten_name(self, max_length):
+        if len(self.name) > max_length:
+            shortened = self.name[:max_length-1].rstrip()
+            return shortened + '…'
+        else:
+            return self.name
 
     # Make Planet printable
     def __str__(self):

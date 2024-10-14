@@ -63,6 +63,16 @@ class Building:
                     recipe = Recipe(rawrecipe)
                     self.recipes.append(recipe)
 
+        if self.ticker in ['FRM', 'ORC']:
+            if self.planet.environment['fertility'] < 0:
+                self.recipes = []
+                return
+            else:
+                for recipe in self.recipes:
+                    fertility = self.planet.environment['fertility']
+                    recipe.multipliers['fertility'] = fertility
+
+
     def _init_extractor_recipes(self, building_ticker):
         self.recipes = []
         for ticker in self.planet.resources:
@@ -73,7 +83,7 @@ class Building:
                 recipedata = {
                     'building': building_ticker,
                     'name': f"@{building_ticker}=>{resource["process_amount"]}x{ticker}",
-                    'duration': resource["process_hours"],
+                    'raw_duration': resource["process_hours"],
                     'inputs': {},
                     'outputs': {
                         ticker: resource["process_amount"]

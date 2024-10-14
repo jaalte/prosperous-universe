@@ -159,7 +159,7 @@ class RealBase(Base):
 
                     recipe = Recipe({
                         'building': order.get('StandardRecipeName')[0:3].rstrip(':'),
-                        'duration': order.get('DurationMs')/1000/60/60,
+                        'raw_duration': order.get('DurationMs')/1000/60/60,
                         'inputs': inputs,
                         'outputs': outputs
                     })

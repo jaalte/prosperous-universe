@@ -419,7 +419,7 @@ class DataLoader:
             mult = 100
             purchase_recipe_rawdata = {
                 'building': exchange.code,
-                'duration': 12,
+                'raw_duration': 12,
                 'inputs': {exchange.currency: buy_price*mult},
                 'outputs': {ticker: 1*mult},
             }

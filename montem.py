@@ -20,10 +20,10 @@ def hms_production_crunch():
     total_mats = hb2_mats + chp_mats + clf_mats*2
     print(f"Total construction materials: {total_mats}")
 
-    chp_recipe = chp.filter_recipes('IND')[0] \
-                    .apply_multiplier(1.4707)
-    clf_recipe = clf.filter_recipes('HMS')[0] \
-                    .apply_multiplier(1.2373)
+    chp_recipe = chp.filter_recipes('IND')[0] # \
+                    #.apply_multiplier(1.4707)
+    clf_recipe = clf.filter_recipes('HMS')[0] # \
+                    #.apply_multiplier(1.2373)
 
     #chp_burn = chp_recipe.daily_burn
     #clf_burn = clf_recipe.daily_burn.remove('IND', quiet=True)
