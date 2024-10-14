@@ -1,5 +1,5 @@
 from prunpy.utils.resource_list import ResourceList
-from prunpy.constants import DEMOGRAPHICS
+from prunpy.constants import DEMOGRAPHICS, DEFAULT_BUILDING_PLANET_NATURAL_ID
 from prunpy.data_loader import loader
 
 class Population:
@@ -70,13 +70,17 @@ class Population:
 
     # Note: Assumes NC1, on a rocky planet with no modifiers
     # Since housing costs are relative, this shouldn't matter much
-    def get_housing_needs(self, priority='cost'):
+    def get_housing_needs(self, priority='cost', planet=None):
         from prunpy.utils.building_list import BuildingList
-        from prunpy.constants import DEMOGRAPHICS
         from scipy.optimize import linprog
 
         if priority not in ['cost', 'area']:
             raise KeyError(f"Population.get_housing_needs called with unknown priority: {priority}")
+
+        if planet is None:
+            planet = loader.get_planet(DEFAULT_BUILDING_PLANET_NATURAL_ID)
+        else:
+            planet = loader.get_planet(planet)
 
         exchange_code = 'NC1'  # Should be representative across all exchanges
         target = self.invert()
@@ -85,7 +89,7 @@ class Population:
         housing_tickers = ['HB1', 'HB2', 'HB3', 'HB4', 'HB5', 'HBB', 'HBC', 'HBM', 'HBL']
         housing_objects = BuildingList({
             ticker: 1 for ticker in housing_tickers
-        }).get_building_instances()
+        }, planet=planet).get_building_instances()
 
         # Prepare the optimization matrix for scipy.optimize.linprog
         # The objective is to minimize either cost or area
@@ -136,7 +140,7 @@ class Population:
             # Return the optimized number of buildings needed
             optimal_solution = result.x
             need = {housing_objects[i].ticker: float(optimal_solution[i]) for i in range(len(housing_objects))}
-            return BuildingList(need).prune()
+            return BuildingList(need, planet).prune()
         else:
             raise ValueError("Optimization failed. Please check the inputs and constraints.")
 

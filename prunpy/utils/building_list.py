@@ -160,7 +160,7 @@ class BuildingList:
         return self.get_population_demand()
 
     def get_housing_needs(self, priority='cost'):
-        return self.get_population_demand().get_housing_needs(priority)
+        return self.get_population_demand().get_housing_needs(priority, planet=self.planet)
 
     def include_housing(self, priority='cost'):
         housing = self.get_housing_needs(priority)
