@@ -4,221 +4,75 @@ from prunpy import loader
 import json
 import math
 import requests
+import numpy as np
+from prunpy import RecipeQueue, RecipeQueueItem
 
-def find_largest_pop():
-    max_pop = {dem: 0 for dem in prun.constants.DEMOGRAPHICS}
-    planets = prun.loader.get_all_planets()
-
-    print("Start:")
-    for name, planet in planets.items():
-        population = planet.get_population_count().population
-        for dem, count in population.items():
-            if max_pop[dem] < count:
-                max_pop[dem] = count
-                print(f"New best {dem} on {planet.name}")
-
-    print(max_pop)
-
-def count_pops_in_area():
-    planets = prun.loader.get_all_planets()
-
-    # filters out planets whose Planet.get_nearest_exchange() isn't NC1
-    planets = {name: planet for name, planet in planets.items() if planet.get_nearest_exchange()[0] == 'NC1'}
-
-    #for name, planet in planets.items():
-        #print(f"{planet.name}: {planet.get_population_count().technicians}")
-
-    total = sum([planet.get_population_count().technicians for name, planet in planets.items()])
-
-    technician_upkeep = prun.ResourceList({'HMS': 0.005})*total
-
-    print(f"Total technicians of all planets: {total}, need {technician_upkeep} upkeep daily")
-
-def estimate_company_value(company_name):
-    company = prun.Company(company_name)
-    
-    _ = prun.loader.rawexchangedata
-    
-    for code, exchange in prun.loader.exchanges.items():
-        goods = exchange.goods
-        
-        own_buy_orders = []
-        own_sell_orders = []
-        for ticker, good in goods.items():
-            for buy_order in good.buy_orders:
-                if buy_order['company_name'] == company.name:
-                    buy_order = buy_order.copy()
-                    buy_order['ticker'] = ticker
-                    buy_order['exchange'] = exchange.code
-                    own_buy_orders.append(buy_order)
-
-            for sell_order in good.sell_orders:
-                if sell_order['company_name'] == company.name:
-                    sell_order = sell_order.copy()
-                    sell_order['ticker'] = ticker
-                    sell_order['exchange'] = exchange.code
-                    own_sell_orders.append(sell_order)
-    
-    total_buy = 0
-    for order in own_buy_orders:
-        total_buy += order['cost'] * order['count']
-    
-    total_sell = 0
-    for order in own_sell_orders:
-        exchange = prun.loader.exchanges[order['exchange']]
-        actual_sell_cost = exchange.get_good(order['ticker']).sell_price_for_amount(order['count'])
-        total_sell += actual_sell_cost # * order['count']
-
-    total = total_buy + total_sell
-    print(f"Company {company.name} has {total_buy} credits in buy orders and {total_sell} credits in sell orders")
-
-    return total
-
-def estimate_all_companies_value():
-    companies = {}
-
-    for exchange in prun.loader.exchanges.values():
-        goods = exchange.goods
-
-        for ticker, good in goods.items():
-            # Process buy orders
-            for buy_order in good.buy_orders:
-                company_name = buy_order['company_name']
-                if company_name not in companies:
-                    companies[company_name] = {
-                        'buy_order_capital': 0,
-                        'sell_order_capital': 0,
-                        'sell_order_capital_optimistic': 0,
-                        'company_name': company_name
-                    }
-
-                buy_order_capital = buy_order['cost'] * buy_order['count']
-                companies[company_name]['buy_order_capital'] += buy_order_capital
-
-            # Process sell orders
-            for sell_order in good.sell_orders:
-                company_name = sell_order['company_name']
-                if company_name not in companies:
-                    companies[company_name] = {
-                        'buy_order_capital': 0,
-                        'sell_order_capital': 0,
-                        'sell_order_capital_optimistic': 0,
-                        'company_name': company_name
-                    }
-
-                # Actual sell cost based on the exchange's pricing
-                actual_sell_cost = exchange.get_good(ticker).sell_price_for_amount(sell_order['count'])
-                companies[company_name]['sell_order_capital'] += actual_sell_cost
-
-                # Optimistic sell cost using the listed cost
-                sell_order_capital_optimistic = sell_order['cost'] * sell_order['count']
-                companies[company_name]['sell_order_capital_optimistic'] += sell_order_capital_optimistic
-
-    # Calculate total capital for each company
-    for company in companies.values():
-        company['total_capital'] = company['buy_order_capital'] + company['sell_order_capital']
-
-    # Sort by descending total capital
-    companies = sorted(companies.values(), key=lambda x: x['total_capital'], reverse=False)
-
-    return companies
-
-def match_storage_ratio(weight_or_ratio, volume=None):
-    if volume is not None:
-        target_ratio = weight_or_ratio / volume
-    else:
-        target_ratio = weight_or_ratio
-
-    tolerance = 0.005
-
-    results = []
-    for ticker, material in prun.loader.materials.items():
-        if math.isclose(material.storage_ratio, target_ratio, rel_tol=tolerance):
-            results.append(ticker)
-    return results
-    
-
-def analyze_local_markets():
-    # market_data = {}
-
-    # for name, planet in prun.loader.planets.items():
-    #     if planet.rawdata.get('HasLocalMarket') == True:
-    #         print(name)
-    #         try:
-    #             rawdata = prun.fio.request("GET", f"/localmarket/planet/{planet.name}")
-    #             market_data[name] = rawdata
-    #         except:
-    #             print(f"Failed to get market data for {planet.name}")
-    #             pass
-
-    # # Save market data to market_data.json
-    # with open('market_data.json', 'w') as f:
-    #     json.dump(market_data, f)
-
-    # Load it again
-    with open('market_data.json', 'r') as f:
-        market_data = json.load(f)
-
-    # for name, exchange in prun.loader.exchanges.items():
-    #     market_data[name] = exchange.get_raw_local_market_data()
-
-    exchange_market_data = {}
-    exchange_names = []
-    for code, exchange in prun.loader.exchanges.items():
-        market_name = exchange.name.replace(" Commodity Exchange", "")
-        if not market_name.endswith(" Station"):
-            market_name += " Station"
-        #market_name = market_name.replace(" ", "%20")
-        exchange_names.append(market_name)
-
-        try:
-            response = requests.get(f"https://rest.fnar.net/localmarket/planet/{market_name}", headers={"accept": "application/json"})
-
-            if response.status_code == 200:
-                rawdata = response.json()
-                market_data[market_name] = rawdata
-        except:
-            print(f"Failed to get market data for {market_name}")
-    
-
-
-    shipping_ads = []
-
-    for name, rawdata in market_data.items():
-        shipping_ads += rawdata.get('ShippingAds', [])
-    
-
-
-    #print(json.dumps(shipping_ads, indent=4))
-    for ad in shipping_ads:
-        origin = ad.get('OriginPlanetName')
-        destination = ad.get('DestinationPlanetName')
-        ratio = ad.get('CargoWeight') / ad.get('CargoVolume')
-        materials = match_storage_ratio(ratio)
-        company = ad.get('CreatorCompanyName')
-        company_code = ad.get('CreatorCompanyCode')
-
-        if len(materials) > 4:
-            materials = f"[{len(materials)} possible materials]"
-
-        if len(materials) == 0:
-            #print(ad)
-            materials = "[Unknown]"
-            pass
-
-        if len(materials) == 1:
-            materials = materials[0]
-
-            material_class = prun.loader.materials[materials]
-            count = round(ad.get('CargoWeight') / material_class.weight, 0)
-            materials = f"{count:.0f} {materials}"
-
-        print(f" {materials} from {origin} -> {destination} by {company} ({company_code})")
+NUM_SLOTS = 5
+MAX_RECIPE_SLOT_MULTIPLIER = 3
 
 def main():
 
+    #print_spread_cba()
+
+
+
+    building = prun.Building('CLF', 'Montem')
+    exchange_code = building.planet.get_nearest_exchange()[0]
+    exchange = prun.loader.get_exchange(exchange_code)
+
+    # Later substitute with a building's recipe queue
+    recipes = [
+        loader.get_best_recipe('HMS'),
+        loader.get_best_recipe('HSS'),
+        loader.get_best_recipe('LC'),
+    ]
+
+    # Note: Doesn't have COGC bonus
+
+    for recipe in recipes:
+        building.queue_recipe(recipe, order_size=1)
+
+    building.recipe_queue.balance()
+
+    print(building.recipe_queue)
+
+    
+
+    return
+
+    recipes = list(target_ratios.resources.keys())
+    target_recipe_multipliers = target_recipe_multipliers.resources
+
+    final_recipe_queue = generate_recipe_queue(recipes, target_recipe_multipliers)
+
+    print("\nFinal recipe queue:")
+    for slot in final_recipe_queue:
+        print(f"{slot['recipe']}: {slot['multiplier']}")
+    print()
+
+    # Pretty print the final recipe_queue
+    #print(json.dumps(final_recipe_queue, indent=4))
+
+
+    return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def old():
+    base_area = 750
     buildings = prun.BuildingList({
-        #"POL": 4,
         "BMP": 2,
         "CHP": 4,
         "CLF": 4,
@@ -248,9 +102,11 @@ def main():
     print(f"Cost per extra area: {opportunity_cost:.2f}")
 
 
-    for ticker in ['RSE', 'RBH', 'HMS', 'HSS', 'MED', 'TIO']:
-        spread = prun.loader.get_exchange('NC1').get_good(ticker).spread_ratio
-        print(f"{ticker}: {spread-1:.2%}")
+    full_base = buildings.include_housing('cost').expand_to_area(base_area-25)
+    print(full_base)
+    print(full_base.area)
+    print(full_base.get_population_demand())
+    
 
     return
 
@@ -469,6 +325,343 @@ def main():
     # from prunpy.models.material import Material
     # c = Material('C')
     # print(c.get_value())
+
+
+
+
+
+
+# Helper function to calculate the difference between trial queue ratios and target multipliers
+def calc_trial_queue_difference(trial_queue, target_multipliers):
+    total_multipliers = np.array([entry['total_multiplier'] for entry in trial_queue])
+    current_ratios = total_multipliers / total_multipliers.sum()
+
+    target_ratios = np.array([target_multipliers[entry['recipe']] for entry in trial_queue])
+    
+    # Return the sum of squared differences (a simple distance measure)
+    return np.sum((current_ratios - target_ratios) ** 2)
+
+# Function to generate the trial queue based on recipes and target multipliers
+def generate_recipe_queue(recipes, target_recipe_multipliers):
+    # Initialize the trial queue
+    trial_queue = []
+    for recipe in recipes:
+        trial_queue.append({
+            'recipe': recipe,
+            'total_multiplier': 1,  # Start with 1 as each recipe must take up at least 1 slot
+            'max_multiplier': MAX_RECIPE_SLOT_MULTIPLIER,
+            'remaining_slots': NUM_SLOTS - len(recipes)
+        })
+    print("Initialized trial_queue:")
+    for entry in trial_queue:
+        print(f"{entry['recipe']}: total_multiplier={entry['total_multiplier']}, max_multiplier={entry['max_multiplier']}")
+
+    # Try to allocate multipliers to recipes based on the distance from target multipliers
+    iteration = 1
+    while True:
+        print(f"\n--- Iteration {iteration} ---")
+        best_queue = None
+        best_difference = float('inf')
+
+        for entry in trial_queue:
+            if entry['total_multiplier'] < entry['max_multiplier']:
+                # Temporarily increase the multiplier for testing
+                entry['total_multiplier'] += 1
+                print(f"Testing by increasing {entry['recipe']} multiplier to {entry['total_multiplier']}")
+
+                # Calculate the difference from target multipliers
+                current_difference = calc_trial_queue_difference(trial_queue, target_recipe_multipliers)
+                print(f"Difference score: {current_difference}")
+
+                # Keep track of the best trial queue so far
+                if current_difference < best_difference:
+                    best_difference = current_difference
+                    best_queue = [dict(e) for e in trial_queue]
+                    print(f"Best queue so far with {entry['recipe']} multiplier increased.")
+
+                # Undo the increment for the next test
+                entry['total_multiplier'] -= 1
+        
+        if best_queue:
+            # Update the trial queue with the best queue found
+            trial_queue = best_queue
+            print(f"Updated trial_queue at the end of iteration {iteration}:")
+            for entry in trial_queue:
+                print(f"{entry['recipe']}: total_multiplier={entry['total_multiplier']}, max_multiplier={entry['max_multiplier']}")
+
+            # Check if any recipe has reached its max and adjust accordingly
+            for entry in trial_queue:
+                if entry['total_multiplier'] >= entry['max_multiplier']:
+                    # If a recipe reached its max, increase its max and reduce remaining slots
+                    entry['max_multiplier'] += MAX_RECIPE_SLOT_MULTIPLIER
+                    entry['remaining_slots'] -= 1
+                    print(f"{entry['recipe']} reached its max. Increasing max_multiplier to {entry['max_multiplier']} and remaining_slots to {entry['remaining_slots']}")
+                    
+                    if entry['remaining_slots'] < 0:
+                        # No more slots left to allocate
+                        print("No more slots available. Stopping allocation.")
+                        break
+        else:
+            # No improvements, stop the loop
+            print("No further improvements found. Ending allocation process.")
+            break
+
+        iteration += 1
+
+    # Print the final trial queue before distribution
+    print("\nFinal trial_queue before distribution:")
+    for entry in trial_queue:
+        print(f"{entry['recipe']}: total_multiplier={entry['total_multiplier']}, max_multiplier={entry['max_multiplier']}")
+
+    # Now distribute the trial queue into slots
+    recipe_queue = []
+    for entry in trial_queue:
+        remaining_multiplier = entry['total_multiplier']
+        while remaining_multiplier > 0:
+            multiplier_to_assign = min(remaining_multiplier, MAX_RECIPE_SLOT_MULTIPLIER)
+            recipe_queue.append({
+                'recipe': entry['recipe'],
+                'multiplier': multiplier_to_assign
+            })
+            remaining_multiplier -= multiplier_to_assign
+
+    return recipe_queue
+
+# Function to pretty print the final recipe queue
+def print_recipe_queue(recipe_queue):
+    print("\nFinal Recipe Queue:")
+    for slot in recipe_queue:
+        print(f"{slot['recipe']}: {slot['multiplier']}")
+
+
+
+
+def print_spread_cba():
+    sell_run = prun.ResourceList({
+        'RSE': 10,
+        'RBH': 10,
+        'HMS': 60,
+        'HSS': 20,
+        'MED': 60,
+        'TIO': 300,
+    })
+
+    for ticker, count in sell_run.resources.items():
+        spreadp = prun.loader.get_exchange('NC1').get_good(ticker).spread_percent
+        spreada = prun.loader.get_exchange('NC1').get_good(ticker).spread_amount
+        total_difference = spreada * count
+        print(f"{ticker}: {spreadp:.2f} ({spreada:.2f}), Total for {count} = {total_difference:.2f}")
+
+def find_largest_pop():
+    max_pop = {dem: 0 for dem in prun.constants.DEMOGRAPHICS}
+    planets = prun.loader.get_all_planets()
+
+    print("Start:")
+    for name, planet in planets.items():
+        population = planet.get_population_count().population
+        for dem, count in population.items():
+            if max_pop[dem] < count:
+                max_pop[dem] = count
+                print(f"New best {dem} on {planet.name}")
+
+    print(max_pop)
+
+def count_pops_in_area():
+    planets = prun.loader.get_all_planets()
+
+    # filters out planets whose Planet.get_nearest_exchange() isn't NC1
+    planets = {name: planet for name, planet in planets.items() if planet.get_nearest_exchange()[0] == 'NC1'}
+
+    #for name, planet in planets.items():
+        #print(f"{planet.name}: {planet.get_population_count().technicians}")
+
+    total = sum([planet.get_population_count().technicians for name, planet in planets.items()])
+
+    technician_upkeep = prun.ResourceList({'HMS': 0.005})*total
+
+    print(f"Total technicians of all planets: {total}, need {technician_upkeep} upkeep daily")
+
+def estimate_company_value(company_name):
+    company = prun.Company(company_name)
+    
+    _ = prun.loader.rawexchangedata
+    
+    for code, exchange in prun.loader.exchanges.items():
+        goods = exchange.goods
+        
+        own_buy_orders = []
+        own_sell_orders = []
+        for ticker, good in goods.items():
+            for buy_order in good.buy_orders:
+                if buy_order['company_name'] == company.name:
+                    buy_order = buy_order.copy()
+                    buy_order['ticker'] = ticker
+                    buy_order['exchange'] = exchange.code
+                    own_buy_orders.append(buy_order)
+
+            for sell_order in good.sell_orders:
+                if sell_order['company_name'] == company.name:
+                    sell_order = sell_order.copy()
+                    sell_order['ticker'] = ticker
+                    sell_order['exchange'] = exchange.code
+                    own_sell_orders.append(sell_order)
+    
+    total_buy = 0
+    for order in own_buy_orders:
+        total_buy += order['cost'] * order['count']
+    
+    total_sell = 0
+    for order in own_sell_orders:
+        exchange = prun.loader.exchanges[order['exchange']]
+        actual_sell_cost = exchange.get_good(order['ticker']).sell_price_for_amount(order['count'])
+        total_sell += actual_sell_cost # * order['count']
+
+    total = total_buy + total_sell
+    print(f"Company {company.name} has {total_buy} credits in buy orders and {total_sell} credits in sell orders")
+
+    return total
+
+def estimate_all_companies_value():
+    companies = {}
+
+    for exchange in prun.loader.exchanges.values():
+        goods = exchange.goods
+
+        for ticker, good in goods.items():
+            # Process buy orders
+            for buy_order in good.buy_orders:
+                company_name = buy_order['company_name']
+                if company_name not in companies:
+                    companies[company_name] = {
+                        'buy_order_capital': 0,
+                        'sell_order_capital': 0,
+                        'sell_order_capital_optimistic': 0,
+                        'company_name': company_name
+                    }
+
+                buy_order_capital = buy_order['cost'] * buy_order['count']
+                companies[company_name]['buy_order_capital'] += buy_order_capital
+
+            # Process sell orders
+            for sell_order in good.sell_orders:
+                company_name = sell_order['company_name']
+                if company_name not in companies:
+                    companies[company_name] = {
+                        'buy_order_capital': 0,
+                        'sell_order_capital': 0,
+                        'sell_order_capital_optimistic': 0,
+                        'company_name': company_name
+                    }
+
+                # Actual sell cost based on the exchange's pricing
+                actual_sell_cost = exchange.get_good(ticker).sell_price_for_amount(sell_order['count'])
+                companies[company_name]['sell_order_capital'] += actual_sell_cost
+
+                # Optimistic sell cost using the listed cost
+                sell_order_capital_optimistic = sell_order['cost'] * sell_order['count']
+                companies[company_name]['sell_order_capital_optimistic'] += sell_order_capital_optimistic
+
+    # Calculate total capital for each company
+    for company in companies.values():
+        company['total_capital'] = company['buy_order_capital'] + company['sell_order_capital']
+
+    # Sort by descending total capital
+    companies = sorted(companies.values(), key=lambda x: x['total_capital'], reverse=False)
+
+    return companies
+
+def match_storage_ratio(weight_or_ratio, volume=None):
+    if volume is not None:
+        target_ratio = weight_or_ratio / volume
+    else:
+        target_ratio = weight_or_ratio
+
+    tolerance = 0.005
+
+    results = []
+    for ticker, material in prun.loader.materials.items():
+        if math.isclose(material.storage_ratio, target_ratio, rel_tol=tolerance):
+            results.append(ticker)
+    return results
+    
+
+def analyze_local_markets():
+    # market_data = {}
+
+    # for name, planet in prun.loader.planets.items():
+    #     if planet.rawdata.get('HasLocalMarket') == True:
+    #         print(name)
+    #         try:
+    #             rawdata = prun.fio.request("GET", f"/localmarket/planet/{planet.name}")
+    #             market_data[name] = rawdata
+    #         except:
+    #             print(f"Failed to get market data for {planet.name}")
+    #             pass
+
+    # # Save market data to market_data.json
+    # with open('market_data.json', 'w') as f:
+    #     json.dump(market_data, f)
+
+    # Load it again
+    with open('market_data.json', 'r') as f:
+        market_data = json.load(f)
+
+    # for name, exchange in prun.loader.exchanges.items():
+    #     market_data[name] = exchange.get_raw_local_market_data()
+
+    exchange_market_data = {}
+    exchange_names = []
+    for code, exchange in prun.loader.exchanges.items():
+        market_name = exchange.name.replace(" Commodity Exchange", "")
+        if not market_name.endswith(" Station"):
+            market_name += " Station"
+        #market_name = market_name.replace(" ", "%20")
+        exchange_names.append(market_name)
+
+        try:
+            response = requests.get(f"https://rest.fnar.net/localmarket/planet/{market_name}", headers={"accept": "application/json"})
+
+            if response.status_code == 200:
+                rawdata = response.json()
+                market_data[market_name] = rawdata
+        except:
+            print(f"Failed to get market data for {market_name}")
+    
+
+
+    shipping_ads = []
+
+    for name, rawdata in market_data.items():
+        shipping_ads += rawdata.get('ShippingAds', [])
+    
+
+
+    #print(json.dumps(shipping_ads, indent=4))
+    for ad in shipping_ads:
+        origin = ad.get('OriginPlanetName')
+        destination = ad.get('DestinationPlanetName')
+        ratio = ad.get('CargoWeight') / ad.get('CargoVolume')
+        materials = match_storage_ratio(ratio)
+        company = ad.get('CreatorCompanyName')
+        company_code = ad.get('CreatorCompanyCode')
+
+        if len(materials) > 4:
+            materials = f"[{len(materials)} possible materials]"
+
+        if len(materials) == 0:
+            #print(ad)
+            materials = "[Unknown]"
+            pass
+
+        if len(materials) == 1:
+            materials = materials[0]
+
+            material_class = prun.loader.materials[materials]
+            count = round(ad.get('CargoWeight') / material_class.weight, 0)
+            materials = f"{count:.0f} {materials}"
+
+        print(f" {materials} from {origin} -> {destination} by {company} ({company_code})")
+
 
 if __name__ == "__main__":
     main()

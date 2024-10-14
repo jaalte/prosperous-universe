@@ -2,6 +2,7 @@ from prunpy.data_loader import loader
 from prunpy.models.planet import Planet
 from prunpy.models.population import Population
 from prunpy.models.recipe import Recipe
+from prunpy.models.recipe_queue import RecipeQueue, RecipeQueueItem
 from prunpy.utils.resource_list import ResourceList
 from prunpy.constants import DEFAULT_BUILDING_PLANET_NATURAL_ID, HOUSING_SIZES
 
@@ -54,6 +55,8 @@ class Building:
         extra_materials = self.planet.get_building_environment_cost(self.area)
         self.construction_materials = self.min_construction_materials + extra_materials
 
+        self.recipe_queue = RecipeQueue(5)
+
     def _init_crafter_recipes(self, building_ticker):
         for building in loader.allbuildings_raw:
             if building['Ticker'] == building_ticker:
@@ -90,6 +93,13 @@ class Building:
                     }
                 }
                 self.recipes.append(Recipe(recipedata))
+
+    def queue_recipe(self, recipe, order_size=1):
+        if not isinstance(recipe, Recipe):
+            raise TypeError
+        if not isinstance(order_size, int) and not isinstance(order_size, float):
+            raise TypeError
+        self.recipe_queue.queue_recipe(recipe, order_size)
 
     # function to get total cost of building by resourcelist
     def get_cost(self, exchange_override=None, include_housing=False):

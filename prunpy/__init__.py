@@ -1,6 +1,7 @@
 # prunpy/__init__.py
 
 from .api import fio
+from .api import fio as api
 from .data_loader import loader
 
 # Import key classes from the models package
@@ -11,6 +12,7 @@ from .models.building import Building
 from .models.exchange import Exchange
 from .models.price_history import PriceHistory
 from .models.recipe import Recipe
+from .models.recipe_queue import RecipeQueue, RecipeQueueItem
 from .models.population import Population
 from .models.company import Company
 from .models.material import Material
@@ -28,7 +30,7 @@ from .utils.terminal_color_scale import terminal_color_scale
 __all__ = [
     'fio', 'loader',
     'Planet', 'System', 'Base', 'RealBase', 'Building',
-    'Exchange', 'PriceHistory', 'Recipe',
+    'Exchange', 'PriceHistory', 'Recipe', 'RecipeQueue', 'RecipeQueueItem',
     'ResourceList', 'BuildingList', 'Population',
     'Container', 'Material', 'Company',
 

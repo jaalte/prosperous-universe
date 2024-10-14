@@ -72,6 +72,16 @@ class Recipe:
         }
         return Recipe(new_rawdata)
 
+    def order_size_multiply(self, order_size):
+        new_rawdata = {
+            'building': self.building,
+            'raw_duration': self.raw_duration * order_size,
+            'inputs': self.inputs * order_size,
+            'outputs': self.outputs * order_size,
+            'multipliers': self.multipliers,
+        }
+        return Recipe(new_rawdata)
+
     @property
     def daily(self):
         return self.convert_to_daily()
