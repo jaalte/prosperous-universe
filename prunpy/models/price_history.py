@@ -28,7 +28,8 @@ class PriceHistory:
     def average_traded_daily(self):
         if not self.intervals.get('DAY_ONE'):
             return 0
-        return self.intervals['DAY_ONE'].average_traded
+        # Averaged over a week
+        return self.intervals['DAY_ONE'].average_traded_in(7)
 
 class PriceHistoryInterval:
     def __init__(self, material_ticker, exchange_ticker, interval_name, listings):
@@ -77,6 +78,11 @@ class PriceHistoryInterval:
     @property
     def average_traded(self):
         return sum([listing['Traded'] for listing in self.listings]) / len(self.listings)
+
+    def average_traded_in(self, interval_count):
+        # Filter to last interval_count intervals
+        interval_range = self.listings[-interval_count:]
+        return sum([listing['Traded'] for listing in interval_range]) / len(interval_range)
 
     def __len__(self):
         return len(self.listings)
