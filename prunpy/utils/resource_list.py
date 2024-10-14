@@ -151,6 +151,11 @@ class ResourceList:
         new_resources = {ticker: round(amount) for ticker, amount in self.resources.items()}
         return ResourceList(new_resources)
 
+    def normalize(self):
+        total = sum(self.resources.values())
+        new_resources = {ticker: amount / total for ticker, amount in self.resources.items()}
+        return ResourceList(new_resources)
+
     def add(self, ticker, amount):
         add_list = None
         if isinstance(ticker, dict):
