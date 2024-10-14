@@ -67,6 +67,9 @@ class Population:
             return default
         return self.population[demographic]
 
+
+    # Note: Assumes NC1, on a rocky planet with no modifiers
+    # Since housing costs are relative, this shouldn't matter much
     def get_housing_needs(self, priority='cost'):
         from prunpy.utils.building_list import BuildingList
         from prunpy.constants import DEMOGRAPHICS
