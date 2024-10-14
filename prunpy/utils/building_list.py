@@ -37,7 +37,6 @@ class BuildingList:
         else:
             raise Exception(f"Invalid planet type: {type(planet)}")
 
-
     # NOTE: Has to ceil amounts, since you can't actually have partial buildings
     def get_building_instances(self):
         from prunpy.data_loader import loader
@@ -169,9 +168,10 @@ class BuildingList:
     
     def strip_housing(self):
         return BuildingList(
-            {ticker: amount for ticker, amount in self.buildings.items() if ticker not in HOUSING_SIZES.keys()}
+            {ticker: amount for ticker, amount in self.buildings.items() if ticker not in HOUSING_SIZES.keys()},
+            planet=self.planet
         )
-        
+
     def get_amount(self, ticker):
         return self.buildings.get(ticker, 0)
 
@@ -182,7 +182,7 @@ class BuildingList:
         if ticker in self.buildings:
             new_buildings = self.buildings.copy()
             del new_buildings[ticker]
-            return BuildingList(new_buildings)
+            return BuildingList(new_buildings, planet=self.planet)
         elif not quiet:
             raise KeyError(f"Building '{ticker}' does not exist in the BuildingList.")
 
@@ -192,39 +192,40 @@ class BuildingList:
 
     def invert(self):
         new_buildings = {ticker: -amount for ticker, amount in self.buildings.items()}
-        return BuildingList(new_buildings)
+        return BuildingList(new_buildings, planet=self.planet)
 
     def prune_negatives(self):
         new_buildings = {ticker: amount for ticker, amount in self.buildings.items() if amount > 0}
-        return BuildingList(new_buildings)
+        return BuildingList(new_buildings, planet=self.planet)
 
     def prune(self, threshold=0):
         new_resources = {ticker: amount for ticker, amount in self.buildings.items() if amount > threshold}
-        return BuildingList(new_resources)
+        return BuildingList(new_resources, planet=self.planet)
 
     def floor(self):
         new_buildings = {ticker: math.floor(amount) for ticker, amount in self.buildings.items()}
-        return BuildingList(new_buildings)
+        return BuildingList(new_buildings, planet=self.planet)
 
     def ceil(self):
         new_buildings = {ticker: math.ceil(amount) for ticker, amount in self.buildings.items()}
-        return BuildingList(new_buildings)
+        return BuildingList(new_buildings, planet=self.planet)
 
     def round(self):
         new_buildings = {ticker: round(amount) for ticker, amount in self.buildings.items()}
-        return BuildingList(new_buildings)
+        return BuildingList(new_buildings, planet=self.planet)
 
     def add(self, ticker, amount=1):
         add_list = None
         if isinstance(ticker, dict):
-            add_list = BuildingList(ticker)
+            add_list = BuildingList(ticker, planet=self.planet)
         if isinstance(ticker, BuildingList):
             add_list = ticker
+            self._check_planet_match(add_list)
         if isinstance(ticker, str):
-            add_list = BuildingList({ticker: amount})
+            add_list = BuildingList({ticker: amount}, planet=self.planet)
 
         if add_list is not None:
-            add_list = BuildingList(add_list)
+            add_list = BuildingList(add_list, planet=self.planet)
             self += add_list
             return
 
@@ -236,15 +237,16 @@ class BuildingList:
     def subtract(self, ticker, amount):
         sub_list = None
         if isinstance(ticker, dict):
-            sub_list = BuildingList(ticker)
+            sub_list = BuildingList(ticker, planet=self.planet)
         if isinstance(ticker, BuildingList):
             sub_list = ticker
+            self._check_planet_match(sub_list)
         if isinstance(ticker, str):
-            sub_list = BuildingList({ticker: amount})
+            sub_list = BuildingList({ticker: amount}, planet=self.planet)
 
         if sub_list is not None:
-            sub_list = BuildingList(add_list)
-            self -= add_list
+            sub_list = BuildingList(sub_list, planet=self.planet)
+            self -= sub_list
             return
 
         if ticker in self.buildings:
@@ -255,38 +257,41 @@ class BuildingList:
     def split(self):
         single_buildings = []
         for ticker, amount in self.buildings.items():
-            single_buildings.append(BuildingList({ticker: amount}))
+            single_buildings.append(BuildingList({ticker: amount}, planet=self.planet))
         return single_buildings
 
     def __add__(self, other):
         if not isinstance(other, BuildingList):
             return NotImplemented
+        self._check_planet_match(other)
+        
         new_buildings = self.buildings.copy()
         for ticker, amount in other.buildings.items():
             if ticker in new_buildings:
                 new_buildings[ticker] += amount
             else:
                 new_buildings[ticker] = amount
-        return BuildingList(new_buildings)
+        return BuildingList(new_buildings, planet=self.planet)
 
     def __sub__(self, other):
         if not isinstance(other, BuildingList):
             return NotImplemented
-        new_buildings = self.buildings.copy()
+        self._check_planet_match(other)
 
+        new_buildings = self.buildings.copy()
         for ticker, amount in other.buildings.items():
             if ticker in new_buildings:
                 new_buildings[ticker] -= amount
             else:
                 new_buildings[ticker] = -amount
 
-        return BuildingList(new_buildings)
+        return BuildingList(new_buildings, planet=self.planet)
 
     def __mul__(self, multiplier):
         if not isinstance(multiplier, int) and not isinstance(multiplier, float):
             return NotImplemented
         new_buildings = {ticker: amount * multiplier for ticker, amount in self.buildings.items()}
-        return BuildingList(new_buildings)
+        return BuildingList(new_buildings, planet=self.planet)
 
     def __rmul__(self, multiplier):
         return self.__mul__(multiplier)
@@ -297,7 +302,7 @@ class BuildingList:
         if divisor == 0:
             raise ZeroDivisionError("Division by zero is not allowed.")
         new_buildings = {ticker: amount / divisor for ticker, amount in self.buildings.items()}
-        return BuildingList(new_buildings)
+        return BuildingList(new_buildings, planet=self.planet)
 
 
     def __len__(self):
@@ -315,7 +320,15 @@ class BuildingList:
         return json.dumps(self.buildings, indent=2)
 
     def copy(self):
-        return BuildingList(self.buildings.copy())
+        return BuildingList(self.buildings.copy(), planet=self.planet)
+
+    def _check_planet_match(self, other):
+        if not isinstance(other, BuildingList):
+            return
+
+        if other.planet != self.planet:
+            print(f"WARN: BuildingList operations being done between BuildingLists with different planets: {str(self)} @ {self.planet.name} and {str(other)} @ {other.planet.name}. Defaulting to {self.planet.name}")
+        return
 
     def __str__(self):
         def format_float(value, max_decimals=2):

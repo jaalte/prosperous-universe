@@ -71,7 +71,7 @@ def analyze_planet(planet_name):
         base_area = 500-25
         building = prun.Building(recipe.building, planet)
     
-        base_seed = prun.BuildingList({recipe.building: 1})
+        base_seed = prun.BuildingList({recipe.building: 1}, planet=planet)
         base_seed = base_seed.include_housing('cost')
 
         bonus = building.get_cogc_bonus(planet.cogc)
@@ -91,6 +91,11 @@ def analyze_planet(planet_name):
         building_cost = building.get_cost(exchange.code) 
         seed_cost = base_seed.get_total_cost(exchange)
         housing_cost = seed_cost-building_cost
+        
+        print(f"DEBUG: Base seed: {base_seed}, building: {building}")
+        print(f"  Seed: {base_seed}, {base_seed.get_total_materials(exchange)}, {base_seed.get_total_cost(exchange)}")
+        print(f"  Building: {building}, {building.construction_materials}, {building.get_cost(exchange)}")
+        print(f"  DEBUG: Seed cost {seed_cost} - building cost {building_cost} = housing cost {housing_cost}")
 
         daily_profit_per_area = daily_profit_per_building / base_seed.area
         
