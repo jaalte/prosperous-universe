@@ -305,6 +305,9 @@ class Planet:
         else:
             return self.name
 
+    def __eq__(self, other):
+        return self.natural_id == other.natural_id
+
     # Make Planet printable
     def __str__(self):
         # Note: Reimplement once Planet.system class is added
