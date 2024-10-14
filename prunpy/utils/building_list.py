@@ -3,6 +3,7 @@ import re
 
 from prunpy.models.planet import Planet
 from prunpy.constants import DEFAULT_BUILDING_PLANET_NATURAL_ID as DEFAULT_PLANET
+from prunpy.constants import HOUSING_SIZES
 
 class BuildingList:
     def __init__(self, rawdata={}, planet=None):
@@ -94,11 +95,57 @@ class BuildingList:
             total += building.area * self.buildings[building.ticker]
         return total
 
+    def expand_to_area(self, max_area=475):
+        ratio = max_area / self.area
+
+        new_area = float('inf')
+        full_base = None
+
+        while new_area > max_area or not full_base.is_housing_sufficient():
+            full_base = self * ratio
+
+            # Calculate the total housing needed
+            total_needed_housing = self.get_housing_needs()
+
+            for building, count in full_base.buildings.items():
+                if building in HOUSING_SIZES:
+                    for demo in total_needed_housing.population.population.keys():
+                        housing_capacity = {}
+                        # Only provide enough housing by calculating the exact number of buildings required
+                        housing_capacity[demo] = HOUSING_SIZES[building][demo] * count
+                        if housing_capacity[demo] >= total_needed_housing:
+                            exact_count_needed = math.ceil(total_needed_housing / HOUSING_SIZES[building][demo])
+                            full_base.buildings[building] = exact_count_needed
+                            total_needed_housing -= HOUSING_SIZES[building][demo] * exact_count_needed
+                        else:
+                            full_base.buildings[building] = math.ceil(count)  # Fallback in case housing is still needed
+                else:
+                    # For non-housing buildings, floor the values to avoid overestimation
+                    full_base.buildings[building] = math.floor(count)
+
+            # Recalculate area after adjustments
+            new_area = full_base.area
+
+            # Adjust the ratio if the area is still too large
+            if new_area > max_area or not full_base.is_housing_sufficient():
+                ratio *= 0.99
+
+        return full_base
+
+
+
+    def is_housing_sufficient(self):
+        pop = self.get_population_demand()
+        for count in pop.population.values():
+            if count > 0: return False
+        return True
+
+
     @property
     def area(self):
         return self.get_total_area()
 
-    def get_population_needs(self, exchange=None):
+    def get_population_demand(self, exchange=None):
         from prunpy.models.population import Population
         from prunpy.data_loader import loader
         exchange = loader.get_exchange(exchange)
@@ -109,15 +156,22 @@ class BuildingList:
 
         return total_pop
 
+    @property
+    def population(self):
+        return self.get_population_demand()
 
     def get_housing_needs(self, priority='cost'):
-        return self.get_population_needs().get_housing_needs(priority)
+        return self.get_population_demand().get_housing_needs(priority)
 
     def include_housing(self, priority='cost'):
         housing = self.get_housing_needs(priority)
         return self + housing
-            
-
+    
+    def strip_housing(self):
+        return BuildingList(
+            {ticker: amount for ticker, amount in self.buildings.items() if ticker not in HOUSING_SIZES.keys()}
+        )
+        
     def get_amount(self, ticker):
         return self.buildings.get(ticker, 0)
 
