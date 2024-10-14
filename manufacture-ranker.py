@@ -91,7 +91,7 @@ def analyze_planet(planet_name):
         building_cost = building.get_cost(exchange.code) 
         seed_cost = base_seed.get_total_cost(exchange)
         housing_cost = seed_cost-building_cost
-
+        
         daily_profit_per_area = daily_profit_per_building / base_seed.area
         
         roi = seed_cost / daily_profit_per_building

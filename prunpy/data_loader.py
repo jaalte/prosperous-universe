@@ -291,13 +291,14 @@ class DataLoader:
         buildings = {}
         for rawbuilding in loader.allbuildings_raw:
             ticker = rawbuilding.get('Ticker')
-            planet = Planet(natural_id=DEFAULT_BUILDING_PLANET_NATURAL_ID)
+            planet = self.get_planet(planet_id)
             buildings[ticker] = Building(ticker, planet)
 
         return self._set_cache(cache_key, buildings)
 
     def get_building(self, ticker, planet_id=DEFAULT_BUILDING_PLANET_NATURAL_ID):
-        return self.get_all_buildings().get(ticker, planet_id)
+        building = self.get_all_buildings(planet_id).get(ticker)
+        return building
 
     def get_all_exchanges(self):
         from prunpy.models.exchange import Exchange

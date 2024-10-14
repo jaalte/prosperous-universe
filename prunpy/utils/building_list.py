@@ -52,7 +52,7 @@ class BuildingList:
         from prunpy.data_loader import loader
         buildings = []
         for ticker in self.buildings:
-            buildings.append(loader.get_building(ticker, self.planet.natural_id))
+            buildings.append(loader.get_building(ticker, planet_id=self.planet.natural_id))
         return buildings
 
     def get_total_cost(self, exchange=None):
