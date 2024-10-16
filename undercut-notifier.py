@@ -18,7 +18,7 @@ def check_orders():
         for ticker, good in goods.items():
             for buy_order in good.buy_orders:
                 if buy_order['company_name'] == own_company.name:
-                    print(json.dumps(buy_order, indent=2))
+                    #print(json.dumps(buy_order, indent=2))
                     buy_order = buy_order.copy()
                     buy_order['ticker'] = ticker
                     buy_order['exchange'] = exchange.code
