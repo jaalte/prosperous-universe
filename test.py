@@ -15,6 +15,24 @@ def main():
     #print_spread_cba()
 
 
+    planets = loader.get_all_planets()
+
+    fertile_planets = {code: [] for code in loader.exchanges.keys()}
+
+    for name, planet in planets.items():
+        if planet.environment['fertility'] > -1:
+            exchange, _ = planet.get_nearest_exchange()
+            fertile_planets[exchange].append(planet)
+
+    print()
+    for exchange_code, exchange_planets in fertile_planets.items():
+        print(f"  {exchange_code} fertile planets:")
+        exchange_planets.sort(key=lambda planet: planet.environment['fertility'], reverse=True)
+        for planet in exchange_planets:
+            print(f"    {planet.shorten_name(10):<10}: {planet.environment['fertility']:<8.2%} {planet.population} {planet.exchange_distance}j->{exchange_code}")
+        print()
+
+    return
 
     building = prun.Building('CLF', 'Montem')
     exchange_code = building.planet.get_nearest_exchange()[0]
