@@ -271,17 +271,6 @@ class Planet:
 
         return text
     
-    def get_population_string(self):
-        max_pop = loader.get_max_population()
-        population = self.get_population_count()
-        population_string = ''
-        for demographic in DEMOGRAPHICS:
-            pop = population.get(demographic)
-            letter = demographic[0].upper()
-            top = math.log10(max_pop[demographic])
-            population_string += color(pop,3,top,'', logarithmic=True, value_override=letter)
-        return population_string
-
     def get_resource_string(self, separator=', '):
         string = ""
         for ticker, resource in self.resources.items():

@@ -30,7 +30,7 @@ def find_nearby_with_cogc(cogc, exchange_code):
                 f"      {name_string:<21} "
                 f"{color(planet.exchange_distance,0,15, ">2", inverse=True)} jumps from "
                 f"{planet.get_nearest_exchange()[0]}    "
-                f"Population {planet.get_population_string()}    "
+                f"Population {planet.population}    "
                 f"Modifiers: [{planet.get_environment_string()}] "
                 f"(~{color(planet.get_building_cost_factor(),1,15,">4.1f",inverse=True)}x cost)    "
                 f"Resources: {planet.get_resource_string(separator=', '):<30}    "

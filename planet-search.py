@@ -76,7 +76,7 @@ def print_planet_info(planet):
     pioneers = population.pioneers
 
     print(f"{planet.natural_id} {planet_name_string}")
-    print(f"Population: {planet.get_population_string()}")
+    print(f"Population: {planet.population}")
     print(f"{color(distance,0,10,'.0f',inverse=True)} jumps from {exchange}")
 
     # Resources
