@@ -147,11 +147,26 @@ class DataLoader:
         rawexchanges = fio.request("GET", "/exchange/station", cache='forever')
         return self._set_cache(cache_key, rawexchanges)
 
+    def get_all_exchange_price_history(self):
+        cache_key = f'get_all_exchange_price_history'
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        print("Fetching exchange price history...")
+        allhistory = fio.request("GET", f"/exchange/cxpc/full", cache=60*60*24)
+
+        exchanges_history = {code: {} for code in self.exchanges.keys()}
+        for history in allhistory:
+            exchanges_history[history['ExchangeCode']][history['MaterialTicker']] = history
+
+        return self._set_cache(cache_key, exchanges_history)
+
     def get_raw_exchange_price_history(self, exchange_ticker, material_ticker):
         cache_key = f'get_raw_exchange_price_history_{exchange_ticker}.{material_ticker}'
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
-        history = fio.request("GET", f"/exchange/cxpc/{material_ticker}.{exchange_ticker}", cache=60*60*24*3)
+        history = self.get_all_exchange_price_history()[exchange_ticker][material_ticker]['Entries']
+
+        #history = fio.request("GET", f"/exchange/cxpc/{material_ticker}.{exchange_ticker}", cache=60*60*24*3)
         
         return self._set_cache(cache_key, history)
 
