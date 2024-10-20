@@ -3,15 +3,16 @@ import re
 import pyperclip
 import json
 
-
 def main():
     prompt_user()
 
 
 
 def prompt_user():
-    print("Enter the name or natural ID of the planet you're building on:")
+    print("Enter the name or natural ID of the planet you're building on (Assumes terran world if blank):")
     planet_string = input("> ")
+    if not planet_string:
+        planet_string = prunpy.constants.DEFAULT_BUILDING_PLANET_NATURAL_ID 
     planet = prunpy.loader.get_planet(planet_string)
     
     buildings = prompt_buildings(planet)
