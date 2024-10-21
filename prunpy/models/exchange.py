@@ -184,8 +184,6 @@ class ExchangeGood:
 
     @property
     def supply(self):
-        # Get average price for all orders
-        #total_cost = sum([i['cost'] * i['count'] for i in self.sell_orders])
         if len(self.sell_orders) == 0:
             return 0
 
@@ -194,12 +192,10 @@ class ExchangeGood:
             total_count += order['count']
 
 
-        return total_count#, total_cost/total_count
+        return total_count
 
     @property
     def demand(self):
-        # Get average price for all orders
-        #total_cost = sum([i['cost'] * i['count'] for i in self.buy_orders])
         if len(self.buy_orders) == 0:
             return 0
 
@@ -207,7 +203,7 @@ class ExchangeGood:
         for order in self.buy_orders:
             total_count += order['count']
 
-        return total_count#, total_cost/total_count
+        return total_count
 
     @property
     def price_history(self):
