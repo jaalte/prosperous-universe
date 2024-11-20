@@ -11,7 +11,11 @@ MAX_MARKET_SATURATION_PER_BUILDING = 0.25
 DAYS_BURN = 3
 
 SORT_KEY = 'true_roi'
-REVERSE_SORT = True
+
+REVERSE_SORT_MAP = {
+    'true_roi': True,
+    'dppa': False,
+}
 
 def main():
     planet_names = get_planet_names()
@@ -24,7 +28,11 @@ def main():
     all_hits = filter_hits(all_hits)
 
     # Sort hits by lowest roi
-    all_hits.sort(key=lambda x: x[SORT_KEY], reverse=REVERSE_SORT)
+    if SORT_KEY in REVERSE_SORT_MAP:
+        reverse_sort = REVERSE_SORT_MAP[SORT_KEY]
+    else:
+        reverse_sort = False
+    all_hits.sort(key=lambda x: x[SORT_KEY], reverse=reverse_sort)
 
     display_hits(all_hits)
 
