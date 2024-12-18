@@ -82,7 +82,7 @@ def print_planet_info(planet):
     # Resources
     print(colored("Resources:", "white"))
     for ticker, resource in planet.resources.items():
-        print(f"- {ticker}: {color(resource["factor"],0,1,'.2%')}")
+        print(f"- {ticker}: {color(resource['factor'],0,1,'.2%')}")
 
     # Fertility
     fertility = planet.rawdata["Fertility"]

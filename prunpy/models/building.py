@@ -85,7 +85,7 @@ class Building:
             if resource["extractor_building"] == building_ticker:
                 recipedata = {
                     'building': building_ticker,
-                    'name': f"@{building_ticker}=>{resource["process_amount"]}x{ticker}",
+                    'name': f"@{building_ticker}=>{resource['process_amount']}x{ticker}",
                     'raw_duration': resource["process_hours"],
                     'inputs': {},
                     'outputs': {
