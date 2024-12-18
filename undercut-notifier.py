@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 
-import prunpy as prun
+import prunpy
+import importlib
 import json
 import time
 import sys
 
 def check_orders():
-    own_company = prun.Company('fishnet fabrication')
-    _ = prun.loader.rawexchangedata
+    own_company = prunpy.Company('fishnet fabrication')
+    _ = prunpy.loader.rawexchangedata
 
     own_buy_orders = []
     own_sell_orders = []
 
-    for code, exchange in prun.loader.exchanges.items():
+    for code, exchange in prunpy.loader.exchanges.items():
         goods = exchange.goods
         
         for ticker, good in goods.items():
@@ -36,7 +37,7 @@ def check_orders():
     overcutting_buy_orders = []
     for my_order in own_buy_orders:
         ticker = my_order['ticker']
-        all_orders = prun.loader.exchanges[my_order['exchange']].goods[ticker].buy_orders
+        all_orders = prunpy.loader.exchanges[my_order['exchange']].goods[ticker].buy_orders
 
         for order in all_orders:
             if order['cost'] > my_order['cost']:
@@ -46,7 +47,7 @@ def check_orders():
     undercutting_sell_orders = []
     for my_order in own_sell_orders:
         ticker = my_order['ticker']
-        all_orders = prun.loader.exchanges[my_order['exchange']].goods[ticker].sell_orders
+        all_orders = prunpy.loader.exchanges[my_order['exchange']].goods[ticker].sell_orders
 
         for order in all_orders:
             if order['cost'] < my_order['cost']:
@@ -67,7 +68,12 @@ def check_orders():
 
 def main():
     if any("listen" in arg.lower() for arg in sys.argv):
+        # Clear terminal
+        print("\033[H\033[J", end="")
+
+        # Loop
         while True:
+            importlib.reload(prunpy)
             check_orders()
             time.sleep(15*60+10)  # Sleep for 15 minutes (900 seconds)
     else:
