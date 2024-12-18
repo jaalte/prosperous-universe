@@ -5,17 +5,41 @@ from prunpy.data_loader import loader
 
 MIN_DAYS_SUPPLY_AVAILABLE = 30 # days worth per building
 MIN_DAYS_DEMAND_AVAILABLE = 0 # days worth per building
-MIN_DAILY_SOLD = 50
+MIN_daily_traded = 50
 MAX_MARKET_SATURATION_PER_BUILDING = 0.25
 
 DAYS_BURN = 3
 
-SORT_KEY = 'true_roi'
-
-REVERSE_SORT_MAP = {
-    'true_roi': True,
-    'dppa': False,
-}
+SORT_VIEWS = [
+    {
+        'name': 'ROI with inputs',
+        'hit_sort_key': 'true_roi',
+        'hit_reverse_sort': True,
+        'output_sort_key': 'daily_revenue',
+        'output_reverse_sort': True,
+    },
+    {
+        'name': 'Daily profit per area',
+        'hit_sort_key': 'dppa',
+        'hit_reverse_sort': False,
+        'output_sort_key': 'daily_revenue',
+        'output_reverse_sort': True,
+    },
+    {
+        'name': 'Market suitability',
+        'hit_sort_key': lambda hit: hit['outputs'][0]['market_suitability'],
+        'hit_reverse_sort': False,
+        'output_sort_key': 'market_suitability',
+        'output_reverse_sort': True,
+    },
+    {
+        'name': 'Long-term investment viability',
+        'hit_sort_key': lambda hit: hit['daily_profit']/hit['true_roi'],
+        'hit_reverse_sort': False,
+        'output_sort_key': 'daily_revenue',
+        'output_reverse_sort': True,
+    },
+]
 
 def main():
     planet_names = get_planet_names()
@@ -27,14 +51,11 @@ def main():
     leng = len(all_hits)
     all_hits = filter_hits(all_hits)
 
-    # Sort hits by lowest roi
-    if SORT_KEY in REVERSE_SORT_MAP:
-        reverse_sort = REVERSE_SORT_MAP[SORT_KEY]
-    else:
-        reverse_sort = False
-    all_hits.sort(key=lambda x: x[SORT_KEY], reverse=reverse_sort)
+    # Sort the hits
+    sort_view = prompt_sort_view()
+    sort_hits(all_hits, sort_view)
 
-    display_hits(all_hits)
+    display_hits(all_hits, sort_view)
 
 def get_planet_names():
     planet_name = ''
@@ -44,13 +65,16 @@ def get_planet_names():
         print("Usage: python manufacture_ranker.py <planet_name>")
         sys.exit(1)
 
+    blacklist = ["Vallis"]
+
     # If "all", pick a representative set of planets with each COGC
     if planet_name.lower() == 'all':
         best_per_cogc = {}
-        exchange = loader.preferred_exchange.code
+        target_exchange = loader.preferred_exchange.code
         for name, planet in prun.loader.get_all_planets().items():
+            if name in blacklist: continue
             nearest_exchange, distance = planet.get_nearest_exchange()
-            if nearest_exchange != exchange: continue
+            if nearest_exchange != target_exchange: continue
             if planet.cogc not in best_per_cogc:
                 best_per_cogc[planet.cogc] = planet
             else:
@@ -114,30 +138,36 @@ def analyze_planet(planet_name):
             days_available = supply / daily_need
             if days_available < MIN_DAYS_SUPPLY_AVAILABLE: remove = True
         
-        daily_input_cost = recipe.daily.inputs.get_total_value(exchange.code, 'buy')
-
-        burn_cost = daily_input_cost*DAYS_BURN
-        total_cost = seed_cost + daily_input_cost*DAYS_BURN
-        true_roi = (seed_cost + burn_cost) / daily_profit_per_building
+        daily_pop_upkeep = building.population_demand.upkeep
+        daily_burn = recipe.daily.inputs + daily_pop_upkeep
+        daily_burn_cost = daily_burn.get_total_value(exchange.code,'buy')
+        period_burn_cost = daily_burn_cost * DAYS_BURN
+        total_investment_cost = seed_cost + period_burn_cost
+        true_roi = total_investment_cost / daily_profit_per_building
 
         outputs = []
         for ticker, count in recipe.outputs.resources.items():
             good = exchange.get_good(ticker)
-            daily_sold = good.daily_sold
+            daily_traded = good.daily_traded
 
             daily_produced = recipe.daily.outputs.resources[ticker]
+
+            market_saturation_per_building = daily_produced / daily_traded
+            # Daily profit per building (global for recipe) / market saturation per building (for this good) 
+            market_suitability = daily_profit_per_building / market_saturation_per_building
 
             output_data = { # Per building
                 'ticker': ticker,
                 'instant_sell_price': good.sell_price,
                 'patient_sell_price': good.buy_price,
                 'daily_produced': daily_produced,
-                'daily_sold': daily_sold,
-                'sell_saturation_per_building': daily_produced / daily_sold,
+                'daily_revenue': daily_produced*good.buy_price,
+                'daily_traded': daily_traded,
+                'market_saturation_per_building': market_saturation_per_building, 
+                'market_suitability': market_suitability,
                 'good': good
             }
             outputs.append(output_data)
-
 
         hit = {
             'recipe': recipe,
@@ -147,13 +177,15 @@ def analyze_planet(planet_name):
             'profit_ratio': profit_ratio,
             'daily_profit': daily_profit_per_building,
             'dppa': daily_profit_per_area,
+            'market-suitability': market_suitability,
             'max_daily_profit': max_daily_profit,
-            'daily_input_cost': daily_input_cost,
+            'daily_burn': daily_burn,
+            'daily_burn_cost': daily_burn_cost,
 
             'building_cost': building_cost,
             'seed_cost': seed_cost,
             'housing_cost': housing_cost,
-            'total_cost': total_cost,
+            'total_investment_cost': total_investment_cost,
 
             'roi': roi,
             'true_roi': true_roi,
@@ -194,13 +226,13 @@ def filter_hits(hits):
             #if days_available < MIN_DAYS_DEMAND_AVAILABLE:
             #    print(f"Removing {hit['recipe']} due to low output demand")
             #    remove = True
-            #if good.daily_sold < MIN_DAILY_SOLD:
+            #if good.daily_traded < MIN_daily_traded:
             #    print(f"Removing {hit['recipe']} due to low output daily sold")
             #    remove = True
 
         for output in hit['outputs']:
-            if output['sell_saturation_per_building'] > MAX_MARKET_SATURATION_PER_BUILDING:
-                print(f"Removing {hit['recipe']} due to high per-building market saturation of {output['sell_saturation_per_building']:.2%}")
+            if output['market_saturation_per_building'] > MAX_MARKET_SATURATION_PER_BUILDING:
+                print(f"Removing {hit['recipe']} due to high per-building market saturation of {output['market_saturation_per_building']:.2%}")
                 remove = True
 
         if remove: continue
@@ -208,7 +240,52 @@ def filter_hits(hits):
 
     return filtered_hits
 
-def display_hits(hits):
+def prompt_sort_view():
+    # Prompt user to select a sorting view
+    print("Available sorting options:")
+    for i, view in enumerate(SORT_VIEWS):
+        print(f"{i+1}. {view['name']}")
+
+    choice = int(input("Select sorting option: ")) - 1
+    sort_view = SORT_VIEWS[choice]
+    return sort_view
+
+def sort_hits(hits, sort_view):
+    # Sort outputs within each hit
+    output_sort_key = sort_view.get('output_sort_key')
+    output_reverse_sort = sort_view.get('output_reverse_sort', False)
+    if output_sort_key:
+        for hit in hits:
+            if isinstance(output_sort_key, str):
+                hit['outputs'].sort(
+                    key=lambda output: output[output_sort_key],
+                    reverse=output_reverse_sort
+                )
+            elif callable(output_sort_key):
+                hit['outputs'].sort(
+                    key=output_sort_key,
+                    reverse=output_reverse_sort
+                )
+            else:
+                raise ValueError("Invalid output_sort_key in sort_view")
+
+    # Sort hits
+    hit_sort_key = sort_view.get('hit_sort_key')
+    hit_reverse_sort = sort_view.get('hit_reverse_sort', False)
+    if isinstance(hit_sort_key, str):
+        hits.sort(
+            key=lambda hit: hit[hit_sort_key],
+            reverse=hit_reverse_sort
+        )
+    elif callable(hit_sort_key):
+        hits.sort(
+            key=hit_sort_key,
+            reverse=hit_reverse_sort
+        )
+    else:
+        raise ValueError("Invalid hit_sort_key in sort_view")
+
+def display_hits(hits, sort_view):
     MAX_NAME_LENGTH = 10
     padding = " "*20
 
@@ -230,16 +307,16 @@ def display_hits(hits):
         )
 
         print(
-            f"{padding}Investment cost: {hit['total_cost']:.0f} = "
+            f"{padding}Investment cost: {hit['total_investment_cost']:.0f} = "
             f"{hit['building_cost']:.0f} for building + "
             f"{hit['housing_cost']:.0f} for housing + "
-            f"{hit['daily_input_cost']*DAYS_BURN:.0f} for {DAYS_BURN}d inputs"
+            f"{hit['daily_burn_cost']*DAYS_BURN:.0f} for {DAYS_BURN}d inputs"
         )
 
         # for ingredient, count in hit['recipe'].inputs.resources.items():
         #     good = exchange.get_good(ingredient)
         #     price = good.buy_price
-        #     print(f"  Buy  {ingredient:<3}: {count:>3}, {price:>5.0f}/u ({price*count:>5.0f}/recipe) with {good.daily_sold:<6.1f} sold daily")
+        #     print(f"  Buy  {ingredient:<3}: {count:>3}, {price:>5.0f}/u ({price*count:>5.0f}/recipe) with {good.daily_traded:<6.1f} sold daily")
 
         print(f"{padding}Sell:")
         for output in hit['outputs']:
@@ -247,21 +324,22 @@ def display_hits(hits):
                 f"{padding}- {output['daily_produced']:>5.1f} "
                 f" {output['ticker']:>3}/day "
                 f"@{output['instant_sell_price']:>5.0f} <-> {output['patient_sell_price']:>5.0f} /u.    "
-                f"{output['good'].daily_sold:>6.1f} sold daily "
-                f"({output['sell_saturation_per_building']:.1%} market saturation / building)"
+                f"{output['good'].daily_traded:>6.1f} sold daily "
+                f"({output['market_saturation_per_building']:.1%} MS/B): "
+                f"{output['market_suitability']} market suitability"
             )
         
         daily_burn = hit['recipe'].daily.inputs.ceil()
         print(f"{padding}Buy: {daily_burn} daily for {daily_burn.get_total_value(exchange.code, 'buy'):.2f}")
 
         print()
-            #print(f"  Sell {product:<3}: {count:>3}, {price:>5.0f}/u ({price*count:>5.0f}/recipe) with {good.daily_sold:<6.1f} sold daily ({output['sell_saturation_per_building']:.1%} per building)")
+            #print(f"  Sell {product:<3}: {count:>3}, {price:>5.0f}/u ({price*count:>5.0f}/recipe) with {good.daily_traded:<6.1f} sold daily ({output['market_saturation_per_building']:.1%} per building)")
 
         # for product, count in hit['recipe'].outputs.resources.items():
         #     good = exchange.get_good(product)
         #     price = good.sell_price
-        #     print(f"  Sell {product:<3}: {count:>3}, {price:>5.0f}/u ({price*count:>5.0f}/recipe) with {good.daily_sold:<6.1f} sold daily")
-    print(f"Good manufacture goals for {planet.name}, sorted by ROI with the best at the bottom.\n")
+        #     print(f"  Sell {product:<3}: {count:>3}, {price:>5.0f}/u ({price*count:>5.0f}/recipe) with {good.daily_traded:<6.1f} sold daily")
+    print(f"Good manufacture goals for {planet.name}, sorted by {sort_view['name']} with the best at the bottom.\n")
 
 if __name__ == "__main__":
     main()
