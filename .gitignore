@@ -22,3 +22,6 @@ preferred_exchange.txt
 *inflation*.png
 *inflation_rates*.csv
 graph-inflation.py
+
+notifier-bot*
+*fioc*
