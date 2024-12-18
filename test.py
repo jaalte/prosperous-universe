@@ -808,7 +808,7 @@ def analyze_local_markets():
         exchange_names.append(market_name)
 
         try:
-            response = requests.get(f"https://rest.fnar.net/localmarket/planet/{market_name}", headers={"accept": "application/json"})
+            response = requests.get(f"https://rest.fnar.net/localmarket/planet/{market_name}", headers={'accept': 'application/json'})
 
             if response.status_code == 200:
                 rawdata = response.json()

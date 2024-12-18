@@ -255,4 +255,4 @@ class RecipeQueueItem:
 
     def __str__(self):
         multiplied_recipe = self.recipe.order_size_multiply(self.order_size)
-        return f"[RecipeQueueItem {multiplied_recipe} (x{self.order_size}), {"Recurring" if self.recurring else "Non-recurring"}]"
+        return f"[RecipeQueueItem {multiplied_recipe} (x{self.order_size}), {'Recurring' if self.recurring else 'Non-recurring'}]"
