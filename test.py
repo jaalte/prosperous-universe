@@ -1,3 +1,4 @@
+import prunpy
 import prunpy as prun
 from prunpy import ResourceList
 from prunpy import loader
@@ -10,27 +11,197 @@ from prunpy import RecipeQueue, RecipeQueueItem
 NUM_SLOTS = 5
 MAX_RECIPE_SLOT_MULTIPLIER = 3
 
+def radius_crunch(loader, planet_sizes):
+    import numpy as np
+    from sklearn.linear_model import LinearRegression
+    from sklearn.preprocessing import PolynomialFeatures
+    from sklearn.cluster import KMeans
+
+    # Collect data dynamically
+    radii = []
+    masses = []
+    gravities = []
+    temperatures = []
+    pressures = []
+    slots = []
+
+    for planet, slot_count in planet_sizes.items():
+        planet_data = loader.get_planet(planet)
+        radii.append(planet_data.rawdata["Radius"])
+        masses.append(planet_data.rawdata["MassEarth"])
+        gravities.append(planet_data.rawdata["Gravity"])
+        temperatures.append(planet_data.rawdata["Temperature"])
+        pressures.append(planet_data.rawdata["Pressure"])
+        slots.append(slot_count)
+
+    # Convert to numpy arrays
+    features = np.array(list(zip(radii, masses, gravities, temperatures, pressures)))
+    slots = np.array(slots).reshape(-1, 1)
+
+    # Function to evaluate models and print results
+    def evaluate_model(name, predictions, coefficients=None, intercept=None):
+        errors = predictions.flatten() - slots.flatten()
+        absolute_errors = np.abs(errors)
+        percentage_errors = 100 * absolute_errors / slots.flatten()
+        print(f"\n{name} Model:")
+        if coefficients is not None:
+            equation = " + ".join(
+                [f"{coeff:.4e}*x{i}" for i, coeff in enumerate(coefficients.flatten())]
+            )
+            print(f"Equation: y = {equation} + {intercept[0]:.4f}")
+        print("Radius | Mass | Gravity | Temp | Pressure | Predicted | Actual | Abs Error | % Error")
+        for r, m, g, t, p, pred, actual, ae, pe in zip(
+            radii, masses, gravities, temperatures, pressures, predictions.flatten(), slots.flatten(), absolute_errors, percentage_errors
+        ):
+            print(f"{r:.1f} | {m:.2e} | {g:.1f} | {t:.1f} | {p:.1f} | {pred:.1f} | {actual} | {ae:.1f} | {pe:.2f}%")
+
+    # Linear model with all features
+    linear_model = LinearRegression()
+    linear_model.fit(features, slots)
+    linear_pred = linear_model.predict(features)
+    evaluate_model("Linear with Multiple Features", linear_pred, coefficients=linear_model.coef_, intercept=linear_model.intercept_)
+
+    # Polynomial models (degree 2) with all features
+    poly = PolynomialFeatures(2)
+    features_poly = poly.fit_transform(features)
+    poly_model = LinearRegression()
+    poly_model.fit(features_poly, slots)
+    poly_pred = poly_model.predict(features_poly)
+    evaluate_model(
+        "Polynomial (degree 2) with Multiple Features",
+        poly_pred,
+        coefficients=poly_model.coef_,
+        intercept=poly_model.intercept_,
+    )
+
+    # Cluster analysis (optional, to group planets based on features)
+    def fit_clusters(features, slots, n_clusters=2):
+        print("\nPerforming clustering analysis:")
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+        labels = kmeans.fit_predict(features)
+        for cluster in range(n_clusters):
+            print(f"\nCluster {cluster + 1}:")
+            for i, label in enumerate(labels):
+                if label == cluster:
+                    print(
+                        f"  Radius: {radii[i]:.1f}, Mass: {masses[i]:.2e}, Gravity: {gravities[i]:.1f}, "
+                        f"Temp: {temperatures[i]:.1f}, Pressure: {pressures[i]:.1f}, Slots: {slots[i][0]}"
+                    )
+        return labels
+
+    # Perform clustering analysis
+    fit_clusters(features, slots, n_clusters=2)
+
+
+
+
+
 def main():
 
+    planet_sizes = {
+        'Vallis': 387,
+        'Montem': 418,
+        'OT-580a': 393,
+        'OT-580d': 412,
+        "UV-351a": 387,
+        "UV-351b": 399,
+        "UV-351c": 386,
+        "OF-208a": 356,
+        "OF-208b": 389,
+        "OF-208c": 449,
+        "OF-208d": 551,
+        "UV-062a": 409,
+        "UV-062b": 425,
+        "UV-062c": 400,
+        "UV-062d": 442,
+        "UV-062e": 389,
+        "UV-062f": 521,
+    }
+
+    planet_sizes_gas_giants = {
+        'OT-580e': 490,
+        "UV-351d": 635,
+        "UV-351e": 694,
+        "OF-208e": 443,
+        "OF-208f": 627,
+        "OF-208g": 690,
+        "UV-062g": 623,
+        "UV-062h": 713,
+    }
+
+
+    radius_crunch(loader, planet_sizes)
+    #return
+    
     #print_spread_cba()
+    #print_fertile_planets()
 
+    planets = loader.planets
 
-    planets = loader.get_all_planets()
+    for planet, slots in planet_sizes.items():
+        planet = loader.get_planet(planet)
+        print(f"{planet.name}: {planet.rawdata['Radius']}m, {slots} slots")
 
-    fertile_planets = {code: [] for code in loader.exchanges.keys()}
+    planet = loader.get_planet('Vallis')
+    #print(json.dumps(planet.rawdata, indent=2))
 
+    rawsites = prun.fio.request("GET", f"/planet/sites/{planet.natural_id}")
+    print(len(rawsites))
+
+    return
+
+    g_range = (0.999, 1.001)
+
+    candidates = []
     for name, planet in planets.items():
-        if planet.environment['fertility'] > -1:
-            exchange, _ = planet.get_nearest_exchange()
-            fertile_planets[exchange].append(planet)
+        if planet.environment['gravity'] > g_range[0]:
+            if planet.environment['gravity'] < g_range[1]:
+                candidates.append(planet)
+            
+    candidates.sort(key = lambda p: p.environment['gravity'])
 
-    print()
-    for exchange_code, exchange_planets in fertile_planets.items():
-        print(f"  {exchange_code} fertile planets:")
-        exchange_planets.sort(key=lambda planet: planet.environment['fertility'], reverse=True)
-        for planet in exchange_planets:
-            print(f"    {planet.shorten_name(10):<10}: {planet.environment['fertility']:<8.2%} {planet.population} {planet.exchange_distance}j->{exchange_code}")
-        print()
+    for planet in candidates:
+        exchange, distance = planet.get_nearest_exchange()
+        print(f"{planet.name}: {planet.environment['gravity']:0.3f}g, {planet.population.total} workers, {distance:>2}j->{exchange}, Environment: {planet.get_environment_string()}")
+
+
+    return
+
+
+
+
+
+
+
+
+    planets = list(loader.planets.values())
+    #print(json.dumps(planets[0].rawdata, indent=4))
+
+    planets = [planet for planet in planets if not planet.rawdata['HasAdministrationCenter']]
+
+    open_planets = []
+    for planet in planets:
+        exchange, distance = planet.get_nearest_exchange()
+        if exchange in ['NC2', 'CI2']:
+            open_planets.append(planet)
+        else:
+            if distance > 3:
+                open_planets.append(planet)
+    planets = open_planets
+
+    planets = [planet for planet in planets if planet.get_nearest_exchange()[1] > 0]
+    planets = [planet for planet in planets if planet.population.total > 1000]
+    
+    planets.sort(key=lambda planet: planet.population.total, reverse=True)
+
+
+
+    for planet in planets:
+        print(f"{planet.shorten_name(10):<10}:    Population {planet.population.total:<4}, {planet.population.pioneers:<4} pioneers.    {planet.exchange_distance:>2}j->{planet.exchange_code}    COGC: {planet.cogc:<30}")
+
+    #for planet in planets:
+    #    system = prun.System(planet.system_natural_id)
+
 
     return
 
@@ -680,6 +851,23 @@ def analyze_local_markets():
 
         print(f" {materials} from {origin} -> {destination} by {company} ({company_code})")
 
+def print_fertile_planets():
+    planets = loader.get_all_planets()
+
+    fertile_planets = {code: [] for code in loader.exchanges.keys()}
+
+    for name, planet in planets.items():
+        if planet.environment['fertility'] > -1:
+            exchange, _ = planet.get_nearest_exchange()
+            fertile_planets[exchange].append(planet)
+
+    print()
+    for exchange_code, exchange_planets in fertile_planets.items():
+        print(f"  {exchange_code} fertile planets:")
+        exchange_planets.sort(key=lambda planet: planet.environment['fertility'], reverse=True)
+        for planet in exchange_planets:
+            print(f"    {planet.shorten_name(10):<10}: {planet.environment['fertility']:<8.2%} {planet.population} {planet.exchange_distance}j->{exchange_code}")
+        print()
 
 if __name__ == "__main__":
     main()
