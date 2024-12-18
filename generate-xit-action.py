@@ -63,7 +63,7 @@ def generate_xit_action(name, resources, exchange_code="NC1", transfer=True):
         "CI2": "Arclight Warehouse",
     }
 
-    price_limits = {ticker: 0 for ticker in resources.resources.keys()}
+    price_limits = {} #{ticker: 1 for ticker in resources.resources.keys()}
 
     json_data = {
         "global": {
@@ -82,8 +82,8 @@ def generate_xit_action(name, resources, exchange_code="NC1", transfer=True):
                 "type": "CX Buy",
                 "group": "Resources",
                 "exchange": exchange_code,
-                "useCXInv": False,
-                "buyPartial": False,
+                "useCXInv": True,
+                "buyPartial": True,
                 "priceLimits": price_limits
             },
         ]
@@ -122,6 +122,7 @@ def prompt_buildings(planet):
             success = True
             buildings = prunpy.BuildingList(building_dict, planet)
             print(f"Parsed buildings: {buildings}")
+            print(f"Materials needed: {buildings.get_total_materials()}")
         except ValueError as e:
             print(f"Error: {e}")
     
