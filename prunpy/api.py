@@ -88,7 +88,6 @@ class FIOAPI:
         if len(self.request_times) >= REQUESTS_PER_RATE_LIMIT:
             time_to_wait = RATE_LIMIT - (current_time - self.request_times[0])
             if time_to_wait > 0:
-                #print(f"Rate limit reached. Waiting for {time_to_wait:.2f} seconds.")
                 time.sleep(time_to_wait)
 
         # Record the time of this request
@@ -111,6 +110,10 @@ class FIOAPI:
 
                 response.raise_for_status()
 
+                # Check if response is empty
+                if not response.text.strip():  # Empty response body
+                    raise Exception(f"Empty response from {url}. No data returned by the server.")
+
                 # Save response to cache if caching is enabled
                 if cache != 0:
                     self._save_to_cache(cache_path, response, response_format)
@@ -127,12 +130,12 @@ class FIOAPI:
                 except:
                     raise Exception(f"Failed to parse response: {response.text}")
 
-
             except requests.exceptions.RequestException as e:
-                if response.status_code == 522 and attempt < MAX_RETRIES - 1:
-                    print(f"Fetching {endpoint} attempt {attempt + 1}/{MAX_RETRIES} failed with a 522 error. Retrying...")
+                if attempt < MAX_RETRIES - 1:
+                    print(f"Fetching {endpoint} attempt {attempt + 1}/{MAX_RETRIES} failed. Retrying...")
                 else:
                     raise Exception(f"Failed to fetch data: {str(e)}")
+
 
     def _generate_cache_filename(self, url, method, data, response_format):
         """Generate a human-readable cache filename based on the request."""
@@ -162,6 +165,13 @@ class FIOAPI:
 
     def _save_to_cache(self, cache_path, response, response_format):
         """Save the API response to a cache file."""
+        # Check if the response is empty
+        if response_format == 'json' and not response.json():
+            return
+        elif response_format == 'csv' and not response.text.strip():
+            return
+
+        # Save the response to the cache
         with open(cache_path, 'w') as cache_file:
             if response_format == 'json':
                 json.dump(response.json(), cache_file, indent=2)
@@ -169,6 +179,7 @@ class FIOAPI:
                 cache_file.write(response.text)
             else:
                 raise ValueError("Unsupported response format.")
+
 
     def _strip_base_url(self, endpoint):
         return re.sub(r"https?://[^/]+", "", endpoint)
