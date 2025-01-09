@@ -326,7 +326,7 @@ def display_hits(hits, sort_view):
                 f"@{output['instant_sell_price']:>5.0f} <-> {output['patient_sell_price']:>5.0f} /u.    "
                 f"{output['good'].daily_traded:>6.1f} sold daily "
                 f"({output['market_saturation_per_building']:.1%} MS/B): "
-                f"{output['market_suitability']} market suitability"
+                f"{output['market_suitability']:.0f} market suitability"
             )
         
         daily_burn = hit['recipe'].daily.inputs.ceil()
