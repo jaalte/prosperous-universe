@@ -7,6 +7,7 @@
 
 # Ignore the API key file
 apikey.txt
+*secret*
 username.txt
 preferred_exchange.txt
 
