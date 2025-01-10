@@ -152,7 +152,10 @@ def analyze_planet(planet_name):
 
             daily_produced = recipe.daily.outputs.resources[ticker]
 
-            market_saturation_per_building = daily_produced / daily_traded
+            if daily_traded > 0:
+                market_saturation_per_building = daily_produced / daily_traded
+            else:
+                market_saturation_per_building = float('inf')
             # Daily profit per building (global for recipe) / market saturation per building (for this good) 
             market_suitability = daily_profit_per_building / market_saturation_per_building
 
