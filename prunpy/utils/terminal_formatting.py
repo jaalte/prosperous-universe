@@ -1,5 +1,7 @@
 import math
 
+import math
+
 def terminal_color_scale(value, min_value, max_value, format_spec, value_override=None, inverse=False, logarithmic=False, color_map=None, color_override="", bold=False):
     """
     Applies color to the formatted value based on the given range and color map.
@@ -81,11 +83,35 @@ def terminal_color_scale(value, min_value, max_value, format_spec, value_overrid
             color_override = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
         r, g, b = color_override
 
-    # Format the value using the specified format
-    formatted_value = format(value, format_spec)
+    # Format the value using the terminal_format function
+    formatted_value = terminal_format(value, format_spec, color=(r, g, b), bold=bold)
 
-    # Apply color and bold formatting using ANSI escape codes
+    return formatted_value
+
+
+def terminal_format(text, format_spec="", color="", bold=False):
+    """
+    Applies text formatting including optional color and bold attributes.
+    - `text`: The text to format.
+    - `format_spec`: The format specification for the text, same options as fstrings
+    - `color`: The color to apply, as a hex string (e.g., "#RRGGBB") or (R, G, B) tuple.
+    - `bold`: If True, applies bold formatting.
+    """
+    # Apply color if provided
+    r, g, b = (255, 255, 255)  # Default to white
+    if color:
+        if isinstance(color, str):
+            # Parse hex color string
+            hex_color = color.lstrip('#')
+            color = tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+        r, g, b = color
+
+    # Format the text if format_spec is provided
+    formatted_text = format(text, format_spec) if format_spec else str(text)
+
+    # Apply ANSI color and bold formatting
     bold_code = "\033[1m" if bold else ""
-    colored_value = f"{bold_code}\033[38;2;{r};{g};{b}m{formatted_value}\033[0m"
+    result = f"{bold_code}\033[38;2;{r};{g};{b}m{formatted_text}\033[0m"
 
-    return colored_value
+    return result
+

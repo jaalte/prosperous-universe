@@ -1,6 +1,6 @@
 import prunpy as prun
 import sys
-from prunpy.utils.terminal_color_scale import terminal_color_scale as color
+from prunpy.utils.terminal_formatting import terminal_color_scale as color_scale
 
 
 def find_nearby_with_cogc(cogc, exchange_code):
@@ -28,11 +28,11 @@ def find_nearby_with_cogc(cogc, exchange_code):
 
             message = (
                 f"      {name_string:<21} "
-                f"{color(planet.exchange_distance,0,15, ">2", inverse=True)} jumps from "
+                f"{color_scale(planet.exchange_distance,0,15, ">2", inverse=True)} jumps from "
                 f"{planet.get_nearest_exchange()[0]}    "
                 f"Population {planet.population}    "
                 f"Modifiers: [{planet.get_environment_string()}] "
-                f"(~{color(planet.get_building_cost_factor(),1,15,">4.1f",inverse=True)}x cost)    "
+                f"(~{color_scale(planet.get_building_cost_factor(),1,15,">4.1f",inverse=True)}x cost)    "
                 f"Resources: {planet.get_resource_string(separator=', '):<30}    "
             )
             print(message)

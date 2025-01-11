@@ -18,10 +18,10 @@ from .models.company import Company
 from .models.material import Material
 from .models.logistics import Container
 from .models import pathfinding
-
 from .utils.resource_list import ResourceList
 from .utils.building_list import BuildingList
-from .utils.terminal_color_scale import terminal_color_scale
+from .utils.terminal_formatting import terminal_color_scale
+from .utils.terminal_formatting import terminal_format
 
 # Import utility functions
 # from .utils import threshold_round, distance
@@ -33,6 +33,7 @@ __all__ = [
     'Exchange', 'PriceHistory', 'Recipe', 'RecipeQueue', 'RecipeQueueItem',
     'ResourceList', 'BuildingList', 'Population',
     'Container', 'Material', 'Company',
-
-    'terminal_color_scale', 'pathfinding',
+    'terminal_color_scale', 'terminal_format',
+    
+    'pathfinding', # Deprecated
 ]

@@ -5,14 +5,15 @@ import math
 #from prunpy import loader, Base, Container
 import prunpy as prun
 
-color = prun.terminal_color_scale
+color_scale = prun.terminal_color_scale
+terminal_format = prun.terminal_format
 
 MIN_DEMAND = 10000
 MAX_JUMPS = 8
 MIN_DAILY_INCOME = 4000
 MAX_ROI = 100
 MIN_PIONEERS = 1000
-MAX_COLONIZATION_COST = 999999999999 # Large but not infinite
+MAX_COLONIZATION_COST = float('inf') # No limit
 PREFERRED_EXCHANGE = 'NC1'
 MARKET_SATURATION_THRESHOLD = 0.5
 
@@ -207,24 +208,24 @@ def main():
         ticker_color = material.get_color()
         
         message = (
-            f"{color(hit['resource']['factor'], factor_range[0], factor_range[1], '>4.1f', value_override=hit['resource']['daily_amount'])} "
-            f"{color(0, 0, 1, '<3', value_override=hit['resource']['ticker'], color_override=ticker_color, bold=True)}/d/{hit['resource']['extractor_building']} @ "
+            f"{color_scale(hit['resource']['factor'], factor_range[0], factor_range[1], '>4.1f', value_override=hit['resource']['daily_amount'])} "
+            f"{color_scale(0, 0, 1, '<3', value_override=hit['resource']['ticker'], color_override=ticker_color, bold=True)}/d/{hit['resource']['extractor_building']} @ "
             f"{name_string:<21}"
-            f"{color(1,0,1,'<1',value_override=cogc_string)} "
-            f"{color(env_complications,0,4,'',value_override=env_section,inverse=True)} "
+            f"{color_scale(1,0,1,'<1',value_override=cogc_string)} "
+            f"{color_scale(env_complications,0,4,'',value_override=env_section,inverse=True)} "
             f"{hit['planet'].population} "
-            f"{color(hit['planet'].exchange_distance,0,6,'>2.0f', inverse=True)}j"
+            f"{color_scale(hit['planet'].exchange_distance,0,6,'>2.0f', inverse=True)}j"
             f"->{exchange.ticker} "
-            f"{color(hit['price'], price_range[0], price_range[1], '>3.0f')}{exchange.currency}/u, "
-            #f" ({color(hit['demand'],3,5,'>6.0f', logarithmic=True)} demand), "
-            f"{color(hit['daily_income'],0,10000,'>5.0f')}"
+            f"{color_scale(hit['price'], price_range[0], price_range[1], '>3.0f')}{exchange.currency}/u, "
+            #f" ({color_scale(hit['demand'],3,5,'>6.0f', logarithmic=True)} demand), "
+            f"{color_scale(hit['daily_income'],0,10000,'>5.0f')}"
             f"{exchange.currency}/day. "
-            f"{color(hit['colonization_cost'],200000,500000, '>5.0f', inverse=True)}{exchange.currency} investment,"
-            f"{color(hit['roi'],1,4,'>5.1f', logarithmic=True, inverse=True)}d ROI, "
-            #f"{color(hit['max_daily_units'],0,300,'>4.0f')} max units,"
-            #f"{color(hit['ship_saturation_per_extractor']*100,0,100,'>3.0f', inverse=True)}% ship saturation per {hit['resource']['extractor_building']}, "
-            f"max {color(max_extractors, 0,1,'>2.0f', value_override=max_extractors)}{hit['resource']['extractor_building']}"
-            f"@{color(hit['max_income'],0,50000,'>6.0f')}{exchange.currency}/day/ship, "
+            f"{color_scale(hit['colonization_cost'],200000,500000, '>5.0f', inverse=True)}{exchange.currency} investment,"
+            f"{color_scale(hit['roi'],1,4,'>5.1f', logarithmic=True, inverse=True)}d ROI, "
+            #f"{color_scale(hit['max_daily_units'],0,300,'>4.0f')} max units,"
+            #f"{color_scale(hit['ship_saturation_per_extractor']*100,0,100,'>3.0f', inverse=True)}% ship saturation per {hit['resource']['extractor_building']}, "
+            f"max {color_scale(max_extractors, 0,1,'>2.0f', value_override=max_extractors)}{hit['resource']['extractor_building']}"
+            f"@{color_scale(hit['max_income'],0,50000,'>6.0f')}{exchange.currency}/day/ship, "
             f"limited by {hit['limiting_factor']}"
         )
         print(message)
@@ -294,5 +295,5 @@ if __name__ == "__main__":
     # span = (0, 50)
     # diff = span[1] - span[0]
     # for i in range(span[0]-2*diff, span[1]+2*diff):
-    #     formatted_amount = color(i, span[0], span[1], '<2.1f')
+    #     formatted_amount = color_scale(i, span[0], span[1], '<2.1f')
     #     print(formatted_amount)

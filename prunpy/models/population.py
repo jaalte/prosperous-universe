@@ -3,7 +3,7 @@ import math
 from prunpy.utils.resource_list import ResourceList
 from prunpy.constants import DEMOGRAPHICS, DEFAULT_BUILDING_PLANET_NATURAL_ID
 from prunpy.data_loader import loader
-from prunpy.utils.terminal_color_scale import terminal_color_scale as color
+from prunpy.utils.terminal_formatting import terminal_color_scale as color_scale
 
 class Population:
     def __init__(self, population_dict):
@@ -193,5 +193,5 @@ class Population:
             pop = self.get(demographic)
             letter = demographic[0].upper()
             top = math.log10(max_pop[demographic])
-            population_string += color(pop,3,top,'', logarithmic=True, value_override=letter)
+            population_string += color_scale(pop,3,top,'', logarithmic=True, value_override=letter)
         return population_string

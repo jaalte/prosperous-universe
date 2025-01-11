@@ -5,7 +5,7 @@ from prunpy.models.recipe import Recipe
 from prunpy.utils.resource_list import ResourceList
 from prunpy.constants import EXTRACTORS, PLANET_THRESHOLDS, DEMOGRAPHICS, DEFAULT_BUILDING_PLANET_NATURAL_ID
 from prunpy.models.pathfinding import jump_distance
-from prunpy.utils.terminal_color_scale import terminal_color_scale as color
+from prunpy.utils.terminal_formatting import terminal_color_scale as color_scale
 
 import math
 import time
@@ -275,7 +275,7 @@ class Planet:
         string = ""
         for ticker, resource in self.resources.items():
             factor_range = resource['factor_range']
-            string += f"{color(resource['factor'], factor_range[0], factor_range[1], '', value_override=resource['ticker'])} "
+            string += f"{color_scale(resource['factor'], factor_range[0], factor_range[1], '', value_override=resource['ticker'])} "
         return string
 
     def get_building_cost_factor(self):
