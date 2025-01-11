@@ -6,7 +6,7 @@ from prunpy.data_loader import loader
 MIN_DAYS_SUPPLY_AVAILABLE = 30 # days worth per building
 MIN_DAYS_DEMAND_AVAILABLE = 0 # days worth per building
 MIN_daily_traded = 50
-MAX_MARKET_SATURATION_PER_BUILDING = 0.25
+MAX_MARKET_SATURATION_PER_BUILDING = 0.02
 
 DAYS_BURN = 3
 
@@ -114,8 +114,11 @@ def analyze_planet(planet_name):
         if max_count <= 0: continue
 
         upkeep_cost = recipe.get_worker_upkeep_per_craft().get_total_value(exchange.code, 'buy')
+        upkeep_cost -= building.get_cost(exchange.code) / 180
 
         daily_profit_per_building = recipe.get_profit_per_day(exchange.code)
+        daily_profit_per_building -= upkeep_cost
+
         profit_ratio = recipe.get_profit_ratio(exchange.code)
         max_daily_profit = max_count * daily_profit_per_building
         if daily_profit_per_building <= 0: continue
