@@ -203,9 +203,12 @@ def main():
 
         exchange = hit['exchange']
 
+        material = prun.loader.get_material(hit['resource']['ticker'])
+        ticker_color = material.get_color()
+        
         message = (
             f"{color(hit['resource']['factor'], factor_range[0], factor_range[1], '>4.1f', value_override=hit['resource']['daily_amount'])} "
-            f"{hit['resource']['ticker']:<3}/d/{hit['resource']['extractor_building']} @ "
+            f"{color(0, 0, 1, '<3', value_override=hit['resource']['ticker'], color_override=ticker_color, bold=True)}/d/{hit['resource']['extractor_building']} @ "
             f"{name_string:<21}"
             f"{color(1,0,1,'<1',value_override=cogc_string)} "
             f"{color(env_complications,0,4,'',value_override=env_section,inverse=True)} "

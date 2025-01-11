@@ -1,6 +1,6 @@
 import math
 
-def terminal_color_scale(value, min_value, max_value, format_spec, value_override=None, inverse=False, logarithmic=False, color_map=None):
+def terminal_color_scale(value, min_value, max_value, format_spec, value_override=None, inverse=False, logarithmic=False, color_map=None, color_override="", bold=False):
     """
     Applies color to the formatted value based on the given range and color map.
     Supports coloration for values outside the min and max range.
@@ -75,10 +75,17 @@ def terminal_color_scale(value, min_value, max_value, format_spec, value_overrid
     if value_override is not None:
         value = value_override
 
+    if len(color_override) > 0:
+        if isinstance(color_override, str):
+            hex_color = color_override.lstrip('#')
+            color_override = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        r, g, b = color_override
+
     # Format the value using the specified format
     formatted_value = format(value, format_spec)
 
-    # Apply color using ANSI escape codes for RGB
-    colored_value = f"\033[38;2;{r};{g};{b}m{formatted_value}\033[0m"
+    # Apply color and bold formatting using ANSI escape codes
+    bold_code = "\033[1m" if bold else ""
+    colored_value = f"{bold_code}\033[38;2;{r};{g};{b}m{formatted_value}\033[0m"
 
     return colored_value
