@@ -11,92 +11,20 @@ from prunpy import RecipeQueue, RecipeQueueItem
 NUM_SLOTS = 5
 MAX_RECIPE_SLOT_MULTIPLIER = 3
 
-def radius_crunch(loader, planet_sizes):
-    import numpy as np
-    from sklearn.linear_model import LinearRegression
-    from sklearn.preprocessing import PolynomialFeatures
-    from sklearn.cluster import KMeans
-
-    # Collect data dynamically
-    radii = []
-    masses = []
-    gravities = []
-    temperatures = []
-    pressures = []
-    slots = []
-
-    for planet, slot_count in planet_sizes.items():
-        planet_data = loader.get_planet(planet)
-        radii.append(planet_data.rawdata["Radius"])
-        masses.append(planet_data.rawdata["MassEarth"])
-        gravities.append(planet_data.rawdata["Gravity"])
-        temperatures.append(planet_data.rawdata["Temperature"])
-        pressures.append(planet_data.rawdata["Pressure"])
-        slots.append(slot_count)
-
-    # Convert to numpy arrays
-    features = np.array(list(zip(radii, masses, gravities, temperatures, pressures)))
-    slots = np.array(slots).reshape(-1, 1)
-
-    # Function to evaluate models and print results
-    def evaluate_model(name, predictions, coefficients=None, intercept=None):
-        errors = predictions.flatten() - slots.flatten()
-        absolute_errors = np.abs(errors)
-        percentage_errors = 100 * absolute_errors / slots.flatten()
-        print(f"\n{name} Model:")
-        if coefficients is not None:
-            equation = " + ".join(
-                [f"{coeff:.4e}*x{i}" for i, coeff in enumerate(coefficients.flatten())]
-            )
-            print(f"Equation: y = {equation} + {intercept[0]:.4f}")
-        print("Radius | Mass | Gravity | Temp | Pressure | Predicted | Actual | Abs Error | % Error")
-        for r, m, g, t, p, pred, actual, ae, pe in zip(
-            radii, masses, gravities, temperatures, pressures, predictions.flatten(), slots.flatten(), absolute_errors, percentage_errors
-        ):
-            print(f"{r:.1f} | {m:.2e} | {g:.1f} | {t:.1f} | {p:.1f} | {pred:.1f} | {actual} | {ae:.1f} | {pe:.2f}%")
-
-    # Linear model with all features
-    linear_model = LinearRegression()
-    linear_model.fit(features, slots)
-    linear_pred = linear_model.predict(features)
-    evaluate_model("Linear with Multiple Features", linear_pred, coefficients=linear_model.coef_, intercept=linear_model.intercept_)
-
-    # Polynomial models (degree 2) with all features
-    poly = PolynomialFeatures(2)
-    features_poly = poly.fit_transform(features)
-    poly_model = LinearRegression()
-    poly_model.fit(features_poly, slots)
-    poly_pred = poly_model.predict(features_poly)
-    evaluate_model(
-        "Polynomial (degree 2) with Multiple Features",
-        poly_pred,
-        coefficients=poly_model.coef_,
-        intercept=poly_model.intercept_,
-    )
-
-    # Cluster analysis (optional, to group planets based on features)
-    def fit_clusters(features, slots, n_clusters=2):
-        print("\nPerforming clustering analysis:")
-        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-        labels = kmeans.fit_predict(features)
-        for cluster in range(n_clusters):
-            print(f"\nCluster {cluster + 1}:")
-            for i, label in enumerate(labels):
-                if label == cluster:
-                    print(
-                        f"  Radius: {radii[i]:.1f}, Mass: {masses[i]:.2e}, Gravity: {gravities[i]:.1f}, "
-                        f"Temp: {temperatures[i]:.1f}, Pressure: {pressures[i]:.1f}, Slots: {slots[i][0]}"
-                    )
-        return labels
-
-    # Perform clustering analysis
-    fit_clusters(features, slots, n_clusters=2)
-
-
-
-
 
 def main():
+
+    categories = {}
+    for ticker, material in prunpy.loader.materials_by_ticker.items():
+        if material.category not in categories:
+            categories[material.category] = ticker
+
+    for category, ticker in categories.items():
+        print(f"{category}: {ticker}")
+
+
+
+    return
 
     planet_sizes = {
         'Vallis': 387,
@@ -868,6 +796,88 @@ def print_fertile_planets():
         for planet in exchange_planets:
             print(f"    {planet.shorten_name(10):<10}: {planet.environment['fertility']:<8.2%} {planet.population} {planet.exchange_distance}j->{exchange_code}")
         print()
+
+def radius_crunch(loader, planet_sizes):
+    import numpy as np
+    from sklearn.linear_model import LinearRegression
+    from sklearn.preprocessing import PolynomialFeatures
+    from sklearn.cluster import KMeans
+
+    # Collect data dynamically
+    radii = []
+    masses = []
+    gravities = []
+    temperatures = []
+    pressures = []
+    slots = []
+
+    for planet, slot_count in planet_sizes.items():
+        planet_data = loader.get_planet(planet)
+        radii.append(planet_data.rawdata["Radius"])
+        masses.append(planet_data.rawdata["MassEarth"])
+        gravities.append(planet_data.rawdata["Gravity"])
+        temperatures.append(planet_data.rawdata["Temperature"])
+        pressures.append(planet_data.rawdata["Pressure"])
+        slots.append(slot_count)
+
+    # Convert to numpy arrays
+    features = np.array(list(zip(radii, masses, gravities, temperatures, pressures)))
+    slots = np.array(slots).reshape(-1, 1)
+
+    # Function to evaluate models and print results
+    def evaluate_model(name, predictions, coefficients=None, intercept=None):
+        errors = predictions.flatten() - slots.flatten()
+        absolute_errors = np.abs(errors)
+        percentage_errors = 100 * absolute_errors / slots.flatten()
+        print(f"\n{name} Model:")
+        if coefficients is not None:
+            equation = " + ".join(
+                [f"{coeff:.4e}*x{i}" for i, coeff in enumerate(coefficients.flatten())]
+            )
+            print(f"Equation: y = {equation} + {intercept[0]:.4f}")
+        print("Radius | Mass | Gravity | Temp | Pressure | Predicted | Actual | Abs Error | % Error")
+        for r, m, g, t, p, pred, actual, ae, pe in zip(
+            radii, masses, gravities, temperatures, pressures, predictions.flatten(), slots.flatten(), absolute_errors, percentage_errors
+        ):
+            print(f"{r:.1f} | {m:.2e} | {g:.1f} | {t:.1f} | {p:.1f} | {pred:.1f} | {actual} | {ae:.1f} | {pe:.2f}%")
+
+    # Linear model with all features
+    linear_model = LinearRegression()
+    linear_model.fit(features, slots)
+    linear_pred = linear_model.predict(features)
+    evaluate_model("Linear with Multiple Features", linear_pred, coefficients=linear_model.coef_, intercept=linear_model.intercept_)
+
+    # Polynomial models (degree 2) with all features
+    poly = PolynomialFeatures(2)
+    features_poly = poly.fit_transform(features)
+    poly_model = LinearRegression()
+    poly_model.fit(features_poly, slots)
+    poly_pred = poly_model.predict(features_poly)
+    evaluate_model(
+        "Polynomial (degree 2) with Multiple Features",
+        poly_pred,
+        coefficients=poly_model.coef_,
+        intercept=poly_model.intercept_,
+    )
+
+    # Cluster analysis (optional, to group planets based on features)
+    def fit_clusters(features, slots, n_clusters=2):
+        print("\nPerforming clustering analysis:")
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+        labels = kmeans.fit_predict(features)
+        for cluster in range(n_clusters):
+            print(f"\nCluster {cluster + 1}:")
+            for i, label in enumerate(labels):
+                if label == cluster:
+                    print(
+                        f"  Radius: {radii[i]:.1f}, Mass: {masses[i]:.2e}, Gravity: {gravities[i]:.1f}, "
+                        f"Temp: {temperatures[i]:.1f}, Pressure: {pressures[i]:.1f}, Slots: {slots[i][0]}"
+                    )
+        return labels
+
+    # Perform clustering analysis
+    fit_clusters(features, slots, n_clusters=2)
+
 
 if __name__ == "__main__":
     main()

@@ -21,8 +21,8 @@ class Material:
             self.hash = rawdata['MaterialId']
             self.weight = round(rawdata['Weight'], 2)
             self.volume = round(rawdata['Volume'], 2)
-            self.category_name_raw = rawdata['CategoryName']
-            self.category_hash_raw = rawdata['CategoryId']
+            self.category_name = rawdata['CategoryName'].title()
+            self.category_hash = rawdata['CategoryId']
         else:
             # If rawdata is not a dict, avoid reinitialization
             pass
@@ -57,12 +57,9 @@ class Material:
         self.cached_name = s
         return s
 
-
-
     @property
-    def category_name(self):
-        # Capitalize first letter of each word
-        return self.category_name_raw.title()
+    def category(self):
+        return self.category_name
 
     @property
     def storage_ratio(self):
@@ -84,7 +81,26 @@ class Material:
             return exchange.get_good(self.ticker).buy_price
         else: # trade_type == "sell" or other:
             return exchange.get_good(self.ticker).sell_price
-
+            
+    def get_color(self):
+        from prunpy.constants import MATERIAL_CATEGORY_COLORS_BRIGHTENED as colors
+        if self.category in colors:
+            return colors[self.category]
+        else:
+            return '#AAAAAA'
 
     def __str__(self):
-        return self.ticker
+
+        def hex_to_rgb(hex_color):
+            hex_color = hex_color.lstrip('#')
+            return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+        r, g, b = hex_to_rgb(self.get_color())
+        # ANSI escape code for bold text
+        bold = "\033[1m"
+        # Create ANSI escape code for the foreground color
+        fg_color = f"\033[38;2;{r};{g};{b}m"
+        # Reset code to end the styling
+        reset = "\033[0m"
+
+        return f"{bold}{fg_color}{self.ticker}{reset}"

@@ -258,6 +258,8 @@ class ResourceList:
         return ResourceList(self.resources.copy())
 
     def __str__(self):
+        from prunpy.data_loader import loader
+
         def format_float(value, max_decimals=2):
             if value == round(value, 0):  # No decimals needed
                 return f"{int(value)}"
@@ -268,6 +270,7 @@ class ResourceList:
 
         formatted_resources = []
         for name, count in self.resources.items():
-            formatted_resources.append(f"{format_float(count)} {name}")  # Display with 2 decimal places
+            material = loader.get_material(name)
+            formatted_resources.append(f"{format_float(count)} {material}")  # Display with 2 decimal places
 
         return ', '.join(formatted_resources)

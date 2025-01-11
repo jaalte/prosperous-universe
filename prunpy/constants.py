@@ -96,3 +96,76 @@ COGCS = ['FUEL_REFINING', 'FOOD_INDUSTRIES', 'METALLURGY', 'AGRICULTURE', 'CHEMI
 DEFAULT_BUILDING_PLANET_NATURAL_ID = "CB-045b"
 
 BOGUS_ORDER_THRESHOLD = 5
+
+MATERIAL_CATEGORY_COLORS = {
+    "Agricultural Products": "#005500",  # RSI
+    "Alloys": "#8B5C2F",  # AST
+    "Chemicals": "#C63E6A",  # TCL
+    "Construction Materials": "#286BE4",  # SEA
+    "Construction Parts": "#375A78",  # AEF
+    "Construction Prefabs": "#1E2E71",  # RBH
+    "Consumables (Basic)": "#B23336",  # DW
+    "Consumables (Luxury)": "#73000A",  # KOM
+    "Drones": "#606830",  # CCD
+    "Electronic Devices": "#6725A5",  # BSC
+    "Electronic Parts": "#693DC5",  # MB
+    "Electronic Pieces": "#8660CB",  # BCO
+    "Electronic Systems": "#402658",  # ACS
+    "Elements": "#4C3D30",  # TC
+    "Energy Systems": "#234D36",  # CBL
+    "Fuels": "#609931",  # FF
+    "Gases": "#117B7D",  # AMM
+    "Liquids": "#629FCC",  # BTS
+    "Medical Equipment": "#64B964",  # ADR
+    "Metals": "#4B4B4B",  # CU
+    "Minerals": "#A87F57",  # BOR
+    "Ores": "#60656F",  # LIO
+    "Plastics": "#8A3072",  # DCL
+    "Ship Engines": "#AB3C12",  # AEN
+    "Ship Kits": "#A9630F",  # LCB
+    "Ship Parts": "#AA7411",  # SSC
+    "Ship Shields": "#EF920E",  # APT
+    "Software Components": "#9A8B41",  # BAI
+    "Software Systems": "#4C4413",  # IMM
+    "Software Tools": "#8C6C1D",  # DA
+    "Textiles": "#616931",  # CF
+    "Unit Prefabs": "#333132",  # CQS
+    "Utility": "#AFA397"  # UTS
+}
+
+MATERIAL_CATEGORY_COLORS_BRIGHTENED = {
+    "Agricultural Products": "#008a00",
+    "Alloys": "#a56d37",
+    "Chemicals": "#c63e6a",
+    "Construction Materials": "#286be4",
+    "Construction Parts": "#47749b",
+    "Construction Prefabs": "#283d98",
+    "Consumables (Basic)": "#b83438",
+    "Consumables (Luxury)": "#99000d",
+    "Drones": "#889344",
+    "Electronic Devices": "#6f27b2",
+    "Electronic Parts": "#683dc5",
+    "Electronic Pieces": "#855fcb",
+    "Electronic Systems": "#653c8b",
+    "Elements": "#856b54",
+    "Energy Systems": "#3c865e",
+    "Fuels": "#6cac37",
+    "Gases": "#159b9e",
+    "Liquids": "#619fcc",
+    "Medical Equipment": "#65bc65",
+    "Metals": "#858585",
+    "Minerals": "#b3875d",
+    "Ores": "#828997",
+    "Plastics": "#a43987",
+    "Ship Engines": "#b53f13",
+    "Ship Kits": "#b4690f",
+    "Ship Parts": "#b47b12",
+    "Ship Shields": "#ef920e",
+    "Software Components": "#ac9b48",
+    "Software Systems": "#857721",
+    "Software Tools": "#a57f22",
+    "Textiles": "#889445",
+    "Unit Prefabs": "#797476",
+    "Utility": "#b7aa9e"
+}
+
