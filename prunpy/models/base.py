@@ -88,9 +88,6 @@ class Base:
         # Remove duplictes (same BuildingRecipeId)
         self.available_recipes = list(set([item for sublist in self.available_recipes for item in sublist]))
 
-    def get_burn_rate(self):
-        raw_burn_rate = loader.raw_burn_rate
-
     def __str__(self):
         buildings_str = ', '.join([f"{count} {name}" for name, count in self.building_counts.items()])
         return f"[Base ({self.planet.name}):\n  Buildings: {buildings_str}]"

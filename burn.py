@@ -17,6 +17,8 @@ def main():
     username = loader.get_username()
     base = prun.RealBase(planet.natural_id, username)
     burn_rate = base.get_daily_burn()
+    pop_consumption = base.get_daily_population_maintenance()
+    burn_rate -= pop_consumption
     inventory = base.storage
     # target_days is arg2
 	
