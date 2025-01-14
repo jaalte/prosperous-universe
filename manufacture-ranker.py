@@ -4,9 +4,6 @@ import math
 from prunpy.data_loader import loader
 
 MIN_DAYS_SUPPLY_AVAILABLE = 30 # days worth per building
-MIN_DAYS_DEMAND_AVAILABLE = 0 # days worth per building
-MIN_daily_traded = 50
-MAX_MARKET_SATURATION_PER_BUILDING = 0.02
 
 DAYS_BURN = 3
 
@@ -17,6 +14,12 @@ SORT_VIEWS = [
         'hit_reverse_sort': True,
         'output_sort_key': 'daily_revenue',
         'output_reverse_sort': True,
+        'filters': {
+            'dppa': (200,float('inf'))
+        },
+        'main_output_filters': {
+            'market_saturation_per_building': (0,0.02) # Max 2% market saturation
+        }
     },
     {
         'name': 'Daily profit per area',
@@ -24,6 +27,8 @@ SORT_VIEWS = [
         'hit_reverse_sort': False,
         'output_sort_key': 'daily_revenue',
         'output_reverse_sort': True,
+        'filters': {},
+        'main_output_filters': {},
     },
     {
         'name': 'Market suitability',
@@ -31,15 +36,28 @@ SORT_VIEWS = [
         'hit_reverse_sort': False,
         'output_sort_key': 'market_suitability',
         'output_reverse_sort': True,
+        'filters': {},
+        'main_output_filters': {},
     },
     {
         'name': 'Long-term investment viability',
-        'hit_sort_key': lambda hit: hit['daily_profit']/hit['true_roi'],
+        'hit_sort_key': 'dppa',
         'hit_reverse_sort': False,
         'output_sort_key': 'daily_revenue',
         'output_reverse_sort': True,
+        'filters': {
+            'dppa': (200,float('inf'))
+        },
+        'main_output_filters': {
+            'market_saturation_per_building': (0,0.02) # Max 2% market saturation
+        }
     },
 ]
+
+UNIVERSAL_FILTERS = {
+    'market_saturation_per_building': (0,0.25) # Max 25% market saturation per building
+}
+UNIVERSAL_MAIN_OUTPUT_FILTERS = {}
 
 def main():
     planet_names = get_planet_names()
@@ -48,14 +66,13 @@ def main():
     for planet_name in planet_names:
         all_hits += analyze_planet(planet_name)
 
-    leng = len(all_hits)
-    all_hits = filter_hits(all_hits)
+    hits = all_hits
 
-    # Sort the hits
+    # Filter and sort the hits
     sort_view = prompt_sort_view()
-    sort_hits(all_hits, sort_view)
-
-    display_hits(all_hits, sort_view)
+    sort_hits(hits, sort_view)
+    hits = filter_hits(hits, sort_view)
+    display_hits(hits, sort_view)
 
 def get_planet_names():
     planet_name = ''
@@ -65,7 +82,7 @@ def get_planet_names():
         print("Usage: python manufacture_ranker.py <planet_name>")
         sys.exit(1)
 
-    blacklist = ["Vallis"]
+    blacklist = []
 
     # If "all", pick a representative set of planets with each COGC
     if planet_name.lower() == 'all':
@@ -100,6 +117,7 @@ def analyze_planet(planet_name):
 
     hits = []
     for recipe in all_recipes:
+        recipe = recipe.copy()
         base_area = 500-25
         building = prun.Building(recipe.building, planet)
     
@@ -107,6 +125,7 @@ def analyze_planet(planet_name):
         base_seed = base_seed.include_housing('cost')
 
         bonus = building.get_cogc_bonus(planet.cogc)
+        #print(f"DEBUG: {bonus}x COGC bonus to {building.ticker} on {planet.name}")
         recipe.multipliers['cogc'] = bonus
         # Optionally add expert bonus later
 
@@ -139,7 +158,6 @@ def analyze_planet(planet_name):
             supply = exchange.get_good(ticker).supply
             daily_need = recipe.daily.inputs.resources[ticker]
             days_available = supply / daily_need
-            if days_available < MIN_DAYS_SUPPLY_AVAILABLE: remove = True
         
         daily_pop_upkeep = building.population_demand.upkeep
         daily_burn = recipe.daily.inputs + daily_pop_upkeep
@@ -205,14 +223,46 @@ def analyze_planet(planet_name):
 
     return hits
     
-def filter_hits(hits):
+def filter_hits(hits, sort_view):
+
+    # Add default filters
+    for key, value_range in UNIVERSAL_FILTERS.items():
+        if key not in sort_view['filters'].keys():
+            sort_view['filters'][key] = value_range
+
+
 
     # Further filtering
     filtered_hits = []
     for hit in hits:
         exchange = loader.get_exchange(hit['exchange'])
-        #print(hit['recipe'])
         remove = False
+
+        for key, value_range in sort_view['filters'].items():
+            if key not in hit.keys():
+                print(f"WARN: key {key} not found in hit")
+                continue
+            hit_value = hit[key]
+            if hit_value < value_range[0]:
+                remove = True
+                print(f"Removing {hit['recipe']} due to {key} {hit_value:0.2f} < {value_range[0]}")
+            elif hit_value > value_range[1]:
+                remove = True
+                print(f"Removing {hit['recipe']} due to {key} {hit_value:0.2f} > {value_range[1]}")
+
+        main_output = hit['outputs'][0]
+        for key, value_range in sort_view['main_output_filters'].items():
+            if key not in main_output.keys():
+                print(f"WARN: key {key} not found in main output of recipe {hit['recipe']}")
+                continue
+            hit_value = main_output[key]
+            if hit_value < value_range[0]:
+                remove = True
+                print(f"Removing {hit['recipe']} due to main output of recipe {key} {hit_value:0.2f} < {value_range[0]}")
+            elif hit_value > value_range[1]:
+                remove = True
+                print(f"Removing {hit['recipe']} due to main output of recipe {key} {hit_value:0.2f} > {value_range[1]}")
+
         for ingredient, count in hit['recipe'].inputs.resources.items():
             #print(f"  {ingredient}: {count}")
             supply = exchange.get_good(ingredient).supply
@@ -226,20 +276,9 @@ def filter_hits(hits):
             good = exchange.get_good(product)
             daily_made = hit['recipe'].outputs.resources[product] * 24 / hit['recipe'].duration
             days_available = good.demand / daily_made
-
             has_market_maker = False
 
-            #if days_available < MIN_DAYS_DEMAND_AVAILABLE:
-            #    print(f"Removing {hit['recipe']} due to low output demand")
-            #    remove = True
-            #if good.daily_traded < MIN_daily_traded:
-            #    print(f"Removing {hit['recipe']} due to low output daily sold")
-            #    remove = True
 
-        for output in hit['outputs']:
-            if output['market_saturation_per_building'] > MAX_MARKET_SATURATION_PER_BUILDING:
-                print(f"Removing {hit['recipe']} due to high per-building market saturation of {output['market_saturation_per_building']:.2%}")
-                remove = True
 
         if remove: continue
         filtered_hits.append(hit)
@@ -300,7 +339,7 @@ def display_hits(hits, sort_view):
         planet = hit['planet']
 
         print(
-            f"{planet.shorten_name(10):<{MAX_NAME_LENGTH}}"
+            f"{planet.colorful_name(MAX_NAME_LENGTH, f"<{MAX_NAME_LENGTH}")}"
             f"({planet.natural_id}) "
             f"{str(hit['recipe'])+':':<40}"
         )
