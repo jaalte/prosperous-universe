@@ -182,42 +182,6 @@ class ResourceList:
         new_resources = {ticker: amount / total for ticker, amount in self.resources.items()}
         return ResourceList(new_resources)
 
-    def add(self, ticker, amount):
-        add_list = None
-        if isinstance(ticker, dict):
-            add_list = ResourceList(ticker)
-        if isinstance(ticker, ResourceList):
-            add_list = ticker
-        if isinstance(ticker, str):
-            add_list = ResourceList({ticker: amount})
-
-        if add_list is not None:
-            add_list = ResourceList(add_list)
-            self += add_list
-            return
-
-        if ticker in self.resources:
-            self.resources[ticker] += amount
-        else:
-            self.resources[ticker] = amount
-
-    def subtract(self, ticker, amount):
-        sub_list = None
-        if isinstance(ticker, dict):
-            sub_list = ResourceList(ticker)
-        if isinstance(ticker, ResourceList):
-            sub_list = ticker
-
-        if sub_list is not None:
-            sub_list = ResourceList(add_list)
-            self -= add_list
-            return
-
-        if ticker in self.resources:
-            self.resources[ticker] += amount
-        else:
-            self.resources[ticker] = amount
-
     def split(self):
         single_resources = []
         for ticker, amount in self.resources.items():
