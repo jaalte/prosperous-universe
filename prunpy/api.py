@@ -129,14 +129,22 @@ class FIOAPI:
                         result = df.to_dict(orient='records')
                     else:
                         raise ValueError("Unsupported response format.")
-                except:
-                    raise Exception(f"Failed to parse response: {response.text}")
+                except Exception as parse_error:
+                    if attempt < MAX_RETRIES - 1:
+                        print(f"Failed to parse response from {endpoint} attempt {attempt + 1}/{MAX_RETRIES}. Retrying...")
+                        time.sleep(1)
+                    else:
+                        raise Exception(f"Failed to parse response: {str(parse_error)}")
 
-            except requests.exceptions.RequestException as e:
+            except Exception as request_error:
                 if attempt < MAX_RETRIES - 1:
-                    print(f"Fetching {endpoint} attempt {attempt + 1}/{MAX_RETRIES} failed. Retrying...")
+                    print(f"Failed to fetch {endpoint} attempt {attempt + 1}/{MAX_RETRIES}. Retrying...")
+                    time.sleep(1)
                 else:
-                    raise Exception(f"Failed to fetch data: {str(e)}")
+                    raise Exception(f"Failed to fetch data: {str(request_error)}")
+
+            if result:
+                break  # If we got a valid result, exit the retry loop
 
         if message:
             print("done")
