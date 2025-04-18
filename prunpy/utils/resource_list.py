@@ -122,6 +122,19 @@ class ResourceList:
             return ResourceList(new_resources)
         elif not quiet:
             raise KeyError(f"Resource '{ticker}' does not exist in the ResourceList.")
+        
+    def expand(self, max_weight=0, max_volume=0):
+        multiplication_factor = 1
+        if max_weight > 0:
+            multiplication_factor = max_weight / self.weight
+        elif max_volume > 0:
+            multiplication_factor = max_volume / self.volume
+        elif max_weight > 0 and max_volume > 0:
+            multiplication_factor = min(max_weight / self.weight, max_volume / self.volume)
+        else:
+            raise ValueError("No expansion target provided in ResourceList.expand()")
+
+        return self * multiplication_factor
 
     @property
     def tickers(self):
