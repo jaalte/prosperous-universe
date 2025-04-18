@@ -13,6 +13,18 @@ MAX_RECIPE_SLOT_MULTIPLIER = 3
 
 
 def main():
+    test_resource_list_expand()
+    return
+
+    resources = prunpy.ResourceList("1 RAT, 2 EXO")
+    resources2 = resources.expand(max_weight=3000)
+    print(resources2)
+
+    sites = prunpy.fio.request('GET', f'/sites/fishmodem')
+
+    print(sites)
+
+    return
 
     exchange = loader.exchanges['NC1']
 
@@ -906,6 +918,55 @@ def radius_crunch(loader, planet_sizes):
 
     # Perform clustering analysis
     fit_clusters(features, slots, n_clusters=2)
+
+def test_resource_list_expand():
+    print("\nTesting ResourceList.expand()")
+    
+    # Test case 1: Simple weight expansion
+    print("\nTest 1: Simple weight expansion")
+    resources = ResourceList("1 RAT, 2 EXO")
+    print(f"Original: {resources}")
+    print(f"Original weight: {resources.weight}")
+    print(f"Original volume: {resources.volume}")
+    
+    target_weight = 3000
+    expanded = resources.expand(weight=target_weight)
+    print(f"Expanded to weight {target_weight}: {expanded}")
+    print(f"Result weight: {expanded.weight}")
+    print(f"Result volume: {expanded.volume}")
+    
+    # Test case 2: Simple volume expansion
+    print("\nTest 2: Simple volume expansion")
+    target_volume = 1000
+    expanded = resources.expand(volume=target_volume)
+    print(f"Expanded to volume {target_volume}: {expanded}")
+    print(f"Result weight: {expanded.weight}")
+    print(f"Result volume: {expanded.volume}")
+    
+    # Test case 3: Both weight and volume constraints
+    print("\nTest 3: Both weight and volume constraints")
+    expanded = resources.expand(weight=3000, volume=1000)
+    print(f"Expanded to weight 3000 and volume 1000: {expanded}")
+    print(f"Result weight: {expanded.weight}")
+    print(f"Result volume: {expanded.volume}")
+    
+    # Test case 4: Real-world example from burn.py
+    print("\nTest 4: Real-world example")
+    planet = loader.get_planet('Montem')
+    username = loader.get_username()
+    base = prun.RealBase(planet.natural_id, username)
+    burn_rate = base.get_daily_burn()
+    pop_consumption = base.get_daily_population_maintenance()
+    burn_rate -= pop_consumption
+    
+    print(f"Original burn rate: {burn_rate}")
+    print(f"Original weight: {burn_rate.weight}")
+    print(f"Original volume: {burn_rate.volume}")
+    
+    expanded = burn_rate.expand(weight=3000, volume=1000)
+    print(f"Expanded to weight 3000 and volume 1000: {expanded}")
+    print(f"Result weight: {expanded.weight}")
+    print(f"Result volume: {expanded.volume}")
 
 
 if __name__ == "__main__":
