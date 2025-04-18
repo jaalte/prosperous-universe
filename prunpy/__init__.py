@@ -22,6 +22,7 @@ from .utils.resource_list import ResourceList
 from .utils.building_list import BuildingList
 from .utils.terminal_formatting import terminal_color_scale
 from .utils.terminal_formatting import terminal_format
+from .utils.terminal_formatting import strip_terminal_formatting
 
 # Import utility functions
 # from .utils import threshold_round, distance
@@ -33,7 +34,7 @@ __all__ = [
     'Exchange', 'PriceHistory', 'Recipe', 'RecipeQueue', 'RecipeQueueItem',
     'ResourceList', 'BuildingList', 'Population',
     'Container', 'Material', 'Company',
-    'terminal_color_scale', 'terminal_format',
+    'terminal_color_scale', 'terminal_format', 'strip_terminal_formatting',
     
     'pathfinding', # Deprecated
 ]

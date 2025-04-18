@@ -2,6 +2,7 @@ import prunpy
 import re
 import pyperclip
 import json
+from prunpy import strip_terminal_formatting
 
 def main():
     prompt_user()
@@ -35,6 +36,7 @@ def prompt_user():
     name += f"from {exchange_code}"
     # Remove commas and replace spaces with dashes
     name = re.sub(r',', '', name).replace(' ', '-')
+    name = strip_terminal_formatting(name)
 
     output = generate_xit_action(name, total, exchange_code, True)
     output = json.dumps(output, indent=4)

@@ -1,4 +1,5 @@
 import math
+import re
 
 def terminal_color_scale(value, min_value, max_value, format_spec, value_override=None, inverse=False, logarithmic=False, color_map=None, color_override="", bold=False):
     """
@@ -112,4 +113,19 @@ def terminal_format(text, format_spec="", color="", bold=False):
     result = f"{bold_code}\033[38;2;{r};{g};{b}m{formatted_text}\033[0m"
 
     return result
+
+
+def strip_terminal_formatting(text):
+    """
+    Removes all ANSI escape sequences from the given text.
+    - `text`: The text containing ANSI formatting to be stripped.
+    Returns the text with all ANSI formatting removed.
+    """
+    # This pattern matches ANSI escape sequences including:
+    # - Color codes (\033[38;2;R;G;Bm)
+    # - Bold codes (\033[1m)
+    # - Reset codes (\033[0m)
+    # And any other ANSI escape sequences
+    ansi_escape = re.compile(r'\x1b\[[0-9;]*[mK]')
+    return ansi_escape.sub('', text)
 
