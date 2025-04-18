@@ -2,10 +2,14 @@ from prunpy.api import fio
 import time
 import json
 
+"""
+Note: company_identifier can be a company name, username, or to refresh existing instance of this class
+- It can also use a company code, but these are NOT UNIQUE. Eg FISH yields a defunct company instead of fishnet fabrication
+"""
 class Company:
-    def __init__(self, company_name):
+    def __init__(self, company_identifier):
 
-        rawdata = self.get_company_data(company_name)
+        rawdata = self.get_company_data(company_identifier)
 
         self.username = rawdata.get('UserName')
 
@@ -24,7 +28,7 @@ class Company:
         self.rating = rawdata.get('OverallRating')
         self.subscription = rawdata.get('SubscriptionLevel')
         self.created_timestamp = rawdata.get('CreatedEpochMs')
-        # Convert to real datetime utc using time
+        # Convert to ISO formatted UTC creation time
         self.created_date_utc = time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(self.created_timestamp/1000))
 
         self.planet_ids = [planet['PlanetNaturalId'] for planet in rawdata.get('Planets')]
@@ -41,15 +45,23 @@ class Company:
             else:
                 identifier_type = 'name'
 
-        cache_time = 60*60*24*7 # 1 week
+        cache_time = 60*60*24 # 1 day
 
         # Get data
         if identifier_type == 'class':
             rawdata = fio.request("GET", f"/company/name/{company_identifier.name}", cache=cache_time)
         elif identifier_type == 'ticker':
             rawdata = fio.request("GET", f"/company/code/{company_identifier}", cache=cache_time)
-        elif identifier_type == 'name':
-            rawdata = fio.request("GET", f"/company/name/{company_identifier}", cache=cache_time)
+        elif identifier_type == 'name':  # Could be username or company name
+            try:
+                rawdata = fio.request("GET", f"/company/name/{company_identifier}", cache=cache_time)
+            except Exception as e:
+                try:
+                    rawdata = fio.request("GET", f"/user/{company_identifier}", cache=cache_time)
+                except Exception as e:
+                    raise ValueError(f"Failed to fetch company \"{company_identifier}\": {str(e)}")
+        else:
+            raise ValueError("Invalid identifier type")
 
         return rawdata
 

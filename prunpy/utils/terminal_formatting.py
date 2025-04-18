@@ -1,7 +1,5 @@
 import math
 
-import math
-
 def terminal_color_scale(value, min_value, max_value, format_spec, value_override=None, inverse=False, logarithmic=False, color_map=None, color_override="", bold=False):
     """
     Applies color to the formatted value based on the given range and color map.

@@ -14,6 +14,35 @@ MAX_RECIPE_SLOT_MULTIPLIER = 3
 
 def main():
 
+    exchange = loader.exchanges['NC1']
+
+    trends = {}
+    for ticker, good in exchange.goods.items():
+        print(f"{ticker}.NC1:")
+        history = good.price_history
+        daily = history.daily
+        if not daily:
+            print("No Daily History")
+            continue
+        #print(daily.listings[-1])
+        trend = good.estimate_price_movement()
+        if not trend:
+            print("Data insufficient for price movement estimation.")
+            continue
+        print(f"{ticker}: {trend*100}%")
+        trends[ticker] = trend
+    # sort trend floats from least to greatest and reconstruct into dict again
+    sorted_trends = {k: v for k, v in sorted(trends.items(), key=lambda item: item[1])}
+    # print each on own line
+    for ticker, trend in sorted_trends.items():
+        good = exchange.get_good(ticker)
+        if good.daily_traded > 100:
+            print(f"{ticker}: {trend*100}% ({good.daily_traded} trades)")
+
+
+    
+    return
+
     categories = {}
     for ticker, material in prunpy.loader.materials_by_ticker.items():
         if material.category not in categories:

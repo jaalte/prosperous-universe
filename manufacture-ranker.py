@@ -84,28 +84,36 @@ def get_planet_names():
 
     blacklist = []
 
-    # If "all", pick a representative set of planets with each COGC
-    if planet_name.lower() == 'all':
-        best_per_cogc = {}
-        target_exchange = loader.preferred_exchange.code
-        for name, planet in prun.loader.get_all_planets().items():
-            if name in blacklist: continue
-            nearest_exchange, distance = planet.get_nearest_exchange()
-            if nearest_exchange != target_exchange: continue
-            if planet.cogc not in best_per_cogc:
-                best_per_cogc[planet.cogc] = planet
-            else:
-                if distance < best_per_cogc[planet.cogc].exchange_distance:
-                    best_per_cogc[planet.cogc] = planet
-                elif distance == best_per_cogc[planet.cogc].exchange_distance:
-                    if planet.population.total > best_per_cogc[planet.cogc].population.total:
-                        best_per_cogc[planet.cogc] = planet
-        planet_names = [planet.name for planet in best_per_cogc.values()]
+    # If planet_name is a CX code, find representative planets near that CX
+    if planet_name.upper() in loader.exchanges.keys():
+        planet_names = get_planets_near_exchange(planet_name, blacklist)
+    # Do so for all CXs if planet_name is 'all'
+    elif planet_name.lower() == 'all':
+        planet_names = []
+        for code in loader.exchanges.keys():
+            planet_names += get_planets_near_exchange(code, blacklist)
     else:
         planet_names = [planet_name]
 
     print(f"DEBUG: Picked planets {", ".join(planet_names)}")
 
+    return planet_names
+
+def get_planets_near_exchange(target_exchange_code, blacklist):
+    best_per_cogc = {}
+    for name, planet in prun.loader.get_all_planets().items():
+        if name in blacklist: continue
+        nearest_exchange, distance = planet.get_nearest_exchange()
+        if nearest_exchange != target_exchange_code: continue
+        if planet.cogc not in best_per_cogc:
+            best_per_cogc[planet.cogc] = planet
+        else:
+            if distance < best_per_cogc[planet.cogc].exchange_distance:
+                best_per_cogc[planet.cogc] = planet
+            elif distance == best_per_cogc[planet.cogc].exchange_distance:
+                if planet.population.total > best_per_cogc[planet.cogc].population.total:
+                    best_per_cogc[planet.cogc] = planet
+    planet_names = [planet.name for planet in best_per_cogc.values()]
     return planet_names
 
 def analyze_planet(planet_name):
@@ -331,7 +339,7 @@ def sort_hits(hits, sort_view):
         raise ValueError("Invalid hit_sort_key in sort_view")
 
 def display_hits(hits, sort_view):
-    MAX_NAME_LENGTH = 10
+    MAX_NAME_LENGTH = 15
     padding = " "*20
 
     for hit in hits:
@@ -340,12 +348,16 @@ def display_hits(hits, sort_view):
 
         print(
             f"{planet.colorful_name(MAX_NAME_LENGTH, f"<{MAX_NAME_LENGTH}")}"
-            f"({planet.natural_id}) "
+            #f"({planet.natural_id}) "
             f"{str(hit['recipe'])+':':<40}"
         )
 
+        nearby_exchange, exchange_distance = planet.get_nearest_exchange()
+        line2_header = f"{planet.natural_id}, {exchange_distance}j->{nearby_exchange}"
+        line2_padding = " "*(len(padding)-len(line2_header))
         print(
-            f"{padding}ROI: {hit['roi']:>6.1f}d / {hit['true_roi']:>6.1f}d"
+            f"{line2_header}{line2_padding}"
+            f"    ROI: {hit['roi']:>6.1f}d / {hit['true_roi']:>6.1f}d"
             f"    Daily profit / building: {hit['daily_profit']:.0f}"
             f"    Daily profit / area: {hit['dppa']:.0f}"
             #f"{padding}Max DP: {hit['max_daily_profit']:.2f} "

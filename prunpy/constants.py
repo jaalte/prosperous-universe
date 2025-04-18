@@ -91,6 +91,23 @@ HOUSING_SIZES = {
 
 COGCS = ['FUEL_REFINING', 'FOOD_INDUSTRIES', 'METALLURGY', 'AGRICULTURE', 'CHEMISTRY', 'RESOURCE_EXTRACTION', 'ELECTRONICS', 'CONSTRUCTION', 'MANUFACTURING', 'PIONEERS', 'SETTLERS', 'TECHNICIANS', 'ENGINEERS', 'SCIENTISTS']
 
+COGC_COLORS = {
+    'FUEL_REFINING': '#6cac37',
+    'FOOD_INDUSTRIES': '#b83438',
+    'METALLURGY': '#4B4B4B',
+    'AGRICULTURE': '#008a00',
+    'CHEMISTRY': '#a43987',
+    'RESOURCE_EXTRACTION': '#828997',
+    'ELECTRONICS': '#683dc5',
+    'CONSTRUCTION': '#283d98',
+    'MANUFACTURING': '#f9822f',
+    'PIONEERS': '#dddddd',
+    'SETTLERS': '#dddddd',
+    'TECHNICIANS': '#dddddd',
+    'ENGINEERS': '#dddddd',
+    'SCIENTISTS': '#dddddd',
+}
+
 # Tacotopia, no resources, no harsh environment, no fertility, has surface (MCG)
 #   also has population and resource_extraction cogc lol
 DEFAULT_BUILDING_PLANET_NATURAL_ID = "CB-045b"

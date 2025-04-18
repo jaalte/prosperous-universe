@@ -95,8 +95,8 @@ class FIOAPI:
 
         # Make a web request
         if type(message) is str:
-            print(message)
-        elif message is not None:
+            print(message, end="")
+        elif message is not None: # Probably never gets called?
             print(f"Fetching {url}...")
 
         for attempt in range(MAX_RETRIES):
@@ -118,13 +118,15 @@ class FIOAPI:
                 if cache != 0:
                     self._save_to_cache(cache_path, response, response_format)
 
+                result = ""
+
                 # Try to encode the response in the requested format
                 try:
                     if response_format == 'json':
-                        return response.json()
+                        result = response.json()
                     elif response_format == 'csv':
                         df = pd.read_csv(StringIO(response.text))
-                        return df.to_dict(orient='records')
+                        result = df.to_dict(orient='records')
                     else:
                         raise ValueError("Unsupported response format.")
                 except:
@@ -135,6 +137,10 @@ class FIOAPI:
                     print(f"Fetching {endpoint} attempt {attempt + 1}/{MAX_RETRIES} failed. Retrying...")
                 else:
                     raise Exception(f"Failed to fetch data: {str(e)}")
+
+        if message:
+            print("done")
+        return result
 
 
     def _generate_cache_filename(self, url, method, data, response_format):

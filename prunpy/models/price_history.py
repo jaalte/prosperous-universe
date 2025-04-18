@@ -25,6 +25,12 @@ class PriceHistory:
         self.intervals = dict(sorted(self.intervals.items(), key=lambda x: x[1].interval_ms, reverse=True))
 
     @property
+    def daily(self):
+        if not self.intervals.get('DAY_ONE'):
+            return None
+        return self.intervals['DAY_ONE']
+
+    @property
     def average_traded_daily(self):
         if not self.intervals.get('DAY_ONE'):
             return 0
@@ -83,6 +89,33 @@ class PriceHistoryInterval:
         # Filter to last interval_count intervals
         interval_range = self.listings[-interval_count:]
         return sum([listing['Traded'] for listing in interval_range]) / len(interval_range)
+
+    def get_moving_average(self, offset_intervals, interval_count):
+        """
+        Calculate the moving average for a specific point in time,
+        accounting for potential gaps in the data.
+
+        :param offset_intervals: Number of intervals back from the end to calculate the moving average.
+        :param interval_count: Number of intervals to include in the moving average.
+        :return: The calculated moving average value, or float('inf') if no data is available.
+        """
+        # Determine the time range for the moving average
+        end_time = self.listings[-1]['DateEpochMs'] - offset_intervals * self.interval_ms
+        start_time = end_time - interval_count * self.interval_ms
+
+        # Filter listings within the time range
+        relevant_prices = [
+            listing['High'] for listing in self.listings
+            if start_time <= listing['DateEpochMs'] <= end_time
+        ]
+
+        # Return infinity if no prices are found
+        if not relevant_prices:
+            return float('inf')
+
+        # Calculate the moving average
+        return sum(relevant_prices) / len(relevant_prices)
+
 
     def __len__(self):
         return len(self.listings)

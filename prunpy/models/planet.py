@@ -3,9 +3,10 @@ from prunpy.data_loader import loader
 from prunpy.models.population import Population
 from prunpy.models.recipe import Recipe
 from prunpy.utils.resource_list import ResourceList
-from prunpy.constants import EXTRACTORS, PLANET_THRESHOLDS, DEMOGRAPHICS, DEFAULT_BUILDING_PLANET_NATURAL_ID
+from prunpy.constants import EXTRACTORS, PLANET_THRESHOLDS, DEMOGRAPHICS, DEFAULT_BUILDING_PLANET_NATURAL_ID, COGC_COLORS
 from prunpy.models.pathfinding import jump_distance
 from prunpy.utils.terminal_formatting import terminal_color_scale as color_scale
+from prunpy.utils.terminal_formatting import terminal_format
 
 import math
 import time
@@ -293,6 +294,15 @@ class Planet:
             return shortened + '…'
         else:
             return self.name
+
+    def colorful_name(self, length, format_string):
+
+        if self.cogc in COGC_COLORS:
+            color = COGC_COLORS[self.cogc]
+        else:
+            color = "#888888"
+
+        return terminal_format(self.shorten_name(length), bold=True, color=color, format_spec=format_string)
 
     def __eq__(self, other):
         return self.natural_id == other.natural_id

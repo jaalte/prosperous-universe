@@ -182,6 +182,34 @@ class ExchangeGood:
         else:
             return earned
 
+    def estimate_price_movement(self, short_window=3, long_window=14):
+        """
+        Estimate the price movement based on the difference between short-term
+        and long-term moving averages.
+
+        :param short_window: The window size for the short-term moving average.
+        :param long_window: The window size for the long-term moving average.
+        :return: A percentage value indicating the price movement, or 0 if values are invalid.
+        """
+        price_history_interval = self.price_history.intervals['DAY_ONE']  # Using DAY_ONE interval
+
+        # Get the most recent moving averages
+        short_ma = price_history_interval.get_moving_average(0, short_window)
+        long_ma = price_history_interval.get_moving_average(0, long_window)
+
+        # Handle invalid or edge cases
+        if (
+            short_ma is None or long_ma is None or
+            short_ma == float('inf') or long_ma == float('inf') or
+            short_ma == 0 or long_ma == 0
+        ):  return 0  # Movement is zero for invalid data or rare/inconsistent sales
+
+        # Calculate the price movement as a percentage of the long-term moving average
+        movement = (short_ma - long_ma) / long_ma * 100
+        return movement
+
+
+
     @property
     def supply(self):
         if len(self.sell_orders) == 0:

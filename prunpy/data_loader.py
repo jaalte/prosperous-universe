@@ -151,12 +151,14 @@ class DataLoader:
         cache_key = f'get_all_exchange_price_history'
         if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
 
-        print("Fetching exchange price history...")
+        print("Fetching exchange price history...", end="")
         allhistory = fio.request("GET", f"/exchange/cxpc/full", cache=60*60*24)
 
         exchanges_history = {code: {} for code in self.exchanges.keys()}
         for history in allhistory:
             exchanges_history[history['ExchangeCode']][history['MaterialTicker']] = history
+
+        print("done")
 
         return self._set_cache(cache_key, exchanges_history)
 
@@ -498,6 +500,19 @@ class DataLoader:
     @property
     def username(self):
         return self.get_username()
+
+    def get_user_company(self):
+        return self.get_company(self.username)
+
+    def get_company(self, company_identifier):
+        from prunpy.models.company import Company
+
+        cache_key = 'company_' + str(company_identifier)
+        if (cached_data := self._get_cached_data(cache_key)) is not None: return cached_data
+
+        company = Company(company_identifier)
+
+        return self._set_cache(cache_key, company)
 
     def get_preferred_exchange_code(self):
         # Load data from ./preferred_exchange.txt, no caching

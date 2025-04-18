@@ -70,10 +70,9 @@ class BuildingList:
     def cost(self):
         return self.get_total_cost()
 
-    def get_total_materials(self, exchange=None):
+    def get_total_materials(self):
         from prunpy.utils.resource_list import ResourceList
         from prunpy.data_loader import loader
-        exchange = loader.get_exchange(exchange)
 
         total = ResourceList()
         for building in self.get_single_building_instances():
@@ -85,9 +84,8 @@ class BuildingList:
     def materials(self):
         return self.get_total_materials()
 
-    def get_total_area(self, exchange=None):
+    def get_total_area(self):
         from prunpy.data_loader import loader
-        exchange = loader.get_exchange(exchange)
 
         total = 0
         for building in self.get_single_building_instances():
@@ -160,7 +158,7 @@ class BuildingList:
         return self.get_population_demand()
 
     def get_housing_needs(self, priority='cost'):
-        return self.get_population_demand().get_housing_needs(priority, planet=self.planet)
+        return self.get_population_demand(exchange=self.planet.get_nearest_exchange()[0]).get_housing_needs(priority, planet=self.planet)
 
     def include_housing(self, priority='cost'):
         housing = self.get_housing_needs(priority)

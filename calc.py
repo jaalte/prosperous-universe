@@ -3,7 +3,8 @@
 import re
 import sys
 import json
-import prunpy as prun
+import prunpy
+from prunpy.utils.terminal_formatting import terminal_format
 
 # Global variables to hold data
 resources = {}
@@ -14,7 +15,7 @@ def load_resources():
     global resources
 
     # Fetch materials data
-    materials = prun.fio.request("GET", "/material/allmaterials", cache=60*60*24)
+    materials = prunpy.fio.request("GET", "/material/allmaterials", cache=60*60*24)
 
     # Initialize resources with materials data
     for material in materials:
@@ -41,7 +42,7 @@ def load_resources():
         }
 
     # Fetch prices data
-    prices = prun.fio.request("GET", "/csv/prices", response_format="csv", cache=900)
+    prices = prunpy.fio.request("GET", "/csv/prices", response_format="csv", cache=900)
 
     # Update resources with prices data
     for price in prices:
@@ -99,6 +100,9 @@ def estimate_costs_volumes(input_string):
 
     for count, ticker in items:
         if ticker in resources:
+            material = prunpy.loader.get_material(ticker)
+            color = material.get_color()
+
             mpu = resources[ticker]['weight']
             vpu = resources[ticker]['volume']
             cpu = resources[ticker]['prices']['askPrice'] if resources[ticker]['prices']['askPrice'] else 0
@@ -111,7 +115,7 @@ def estimate_costs_volumes(input_string):
             total_volume += tv
             total_cost += tc
 
-            print(f"{ticker:<10} {count:<6} {fm(mpu):<6} {fm(vpu):<6} {fm(cpu):<8} {fm(tm):<8} {fm(tv):<8} {fm(tc):<10}")
+            print(f"{terminal_format(ticker, "<10", color=color)} {count:<6} {fm(mpu):<6} {fm(vpu):<6} {fm(cpu):<8} {fm(tm):<8} {fm(tv):<8} {fm(tc):<10}")
 
     print("="*68)
     print(f"{'Total':<40} {fm(total_mass):<8} {fm(total_volume):<8} {fm(total_cost):<10}")
