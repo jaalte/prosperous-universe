@@ -20,6 +20,7 @@ from .models.logistics import Container
 from .models import pathfinding
 from .utils.resource_list import ResourceList
 from .utils.building_list import BuildingList
+from .utils.xit_action import XITAction
 from .utils.terminal_formatting import terminal_color_scale
 from .utils.terminal_formatting import terminal_format
 from .utils.terminal_formatting import strip_terminal_formatting
@@ -32,7 +33,7 @@ __all__ = [
     'fio', 'loader',
     'Planet', 'System', 'Base', 'RealBase', 'Building',
     'Exchange', 'PriceHistory', 'Recipe', 'RecipeQueue', 'RecipeQueueItem',
-    'ResourceList', 'BuildingList', 'Population',
+    'ResourceList', 'BuildingList', 'XITAction', 'Population',
     'Container', 'Material', 'Company',
     'terminal_color_scale', 'terminal_format', 'strip_terminal_formatting',
     
